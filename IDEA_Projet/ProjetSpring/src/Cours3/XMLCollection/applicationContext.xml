@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns = "http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                            http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- Cours3.XMLCollection-
+        <property>
+        Array       <array>
+        List        <list>
+        Set         <set>
+        Map         <map>
+        Properties  <props>
+        base data type -> value
+        referenced data type -> ref
+    -->
+
+    <bean id="collectionData" class="Cours3.XMLCollection.CollectionData">
+        <property name="arrayData">
+            <array>
+                <value>A</value>
+                <value>B</value>
+                <value>C</value>
+            </array>
+        </property>
+        <property name="listData">
+            <list>
+                <value>D</value>
+                <value>E</value>
+                <value>F</value>
+            </list>
+        </property>
+        <property name="setData">
+            <set>
+                <value>G</value>
+                <value>H</value>
+                <value>I</value>
+            </set>
+        </property>
+        <property name="mapData">
+            <map>
+                <entry key="J" value="K"></entry>
+                <entry key="L" value="M"></entry>
+                <entry key="N" value="O"></entry>
+            </map>
+        </property>
+        <property name="propsData">
+            <props>
+                <prop key="P">Q</prop>
+                <prop key="R">S</prop>
+                <prop key="T">U</prop>
+            </props>
+        </property>
+    </bean>
+</beans>

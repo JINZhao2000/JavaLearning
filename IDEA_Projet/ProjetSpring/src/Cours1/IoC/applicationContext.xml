@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns = "http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                            http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!-- configuration service
+        <bean> configuration object
+            id -> get object instance
+            class ->  class name  "/" -> "."
+            property -> DI
+                name -> bean property name;  by setter
+                    setBookDao ##> BookDao ##> bookDao
+                ref -> reference of another id of bean
+    -->
+    <!-- Cours1.IOC-->
+    <bean id="userService" class="Cours1.IoC.UserServiceImpl"></bean>
+</beans>

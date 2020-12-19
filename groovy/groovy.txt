@@ -1,0 +1,67 @@
+> /*println ("hello groovy")//;可以省略
+> println "hello groovy"//省略括号
+> 
+> def i = 18//弱类型
+> println i
+> def s = "hello groovy"
+> println s
+> //list
+> def list = ['a','b']
+> list<<'c'
+> println list.get(2)
+> //map
+> def map = ['key1':'value1','key2':'value2']
+> map.key3='value3'
+> println map.get('key3')
+> */
+> //groovy 闭包->当参数使用
+> def a = {
+>     println "hello groovy"
+> }
+> def method(Closure closure){
+>     closure()
+> }
+> method (a)
+> def b = {
+>     v->
+>         println "hello ${v}"
+> }
+> def method2(Closure closure){
+>     closure("world")
+> }
+> method2(b)
+hello groovy
+hello world
+
+> /*println ("hello groovy")//;可以省略
+> println "hello groovy"//省略括号
+> 
+> def i = 18//弱类型
+> println i
+> def s = "hello groovy"
+> println s
+> //list
+> def list = ['a','b']
+> list<<'c'
+> println list.get(2)
+> //map
+> def map = ['key1':'value1','key2':'value2']
+> map.key3='value3'
+> println map.get('key3')
+> */
+> //groovy 闭包->当参数使用
+> def a = {
+>     println "hello groovy"
+> }
+> def method(Closure closure){
+>     closure()
+> }
+> method (a)
+> def b = {
+>     v->
+>         println "hello ${v}"
+> }
+> def method2(Closure closure){
+>     closure("groovy")
+> }
+> method2(b)

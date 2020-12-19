@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns = "http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                            http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- Cours3.XMLConstructor
+        constructor-arg -> an arg
+            name -> name of arg
+            value -> basic data type
+            ref -> reference the id of another bean
+        <constructor-arg name="userName" value="A"></constructor-arg>
+        <constructor-arg name="age" value="10"></constructor-arg>
+            is not usually used
+
+        use the first constructor by index -> use type
+    -->
+    <bean id="user" class="Cours3.XMLConstructor.User">
+        <constructor-arg index="0" type="java.lang.String" value="2"></constructor-arg>
+        <constructor-arg index="1" type="java.lang.Integer" value="10"></constructor-arg>
+    </bean>
+</beans>

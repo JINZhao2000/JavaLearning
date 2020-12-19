@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns = "http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                            http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- Cours3.XMLSetter -->
+    <bean id="person" class="Cours3.XMLSetter.Person">
+        <property name="pname" value="A"></property>
+
+        <property name="age">
+            <value>10</value>
+        </property>
+
+        <property name="home" ref="homeAddr"></property>
+
+        <property name="company">
+            <ref bean="companyAddr"></ref>
+        </property>
+    </bean>
+    <bean id="homeAddr" class="Cours3.XMLSetter.Adresse">
+        <property name="addr" value="AddrA"></property>
+        <property name="tel" value="TelA"></property>
+    </bean>
+    <bean id="companyAddr" class="Cours3.XMLSetter.Adresse">
+        <property name="addr" value="AddrCA"></property>
+        <property name="tel" value="TelCA"></property>
+    </bean>
+</beans>

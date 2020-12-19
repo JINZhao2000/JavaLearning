@@ -1,0 +1,6 @@
+plugins {
+    id 'war'
+}
+dependencies {
+    compile project(":gradle_service")
+}
