@@ -114,13 +114,64 @@
 
   - 加载完类后，在堆的内存中，就产生了一个 Class 类型的对象，包含了类的完整结构的类型，称为反射
 
-- Class 类 表示 java 中类型本身 class/interface/enum/annotation/primitive type/void
+  - Class 类 表示 java 中类型本身 class/interface/enum/annotation/primitive type/void
 
-  - Class 类的对象包含某个被加载类的结构，一个被加载类对应一个 Class 对象
-  - 当一个 class 被加载时，或当加载器 classloader 的 defineClass() 被 JVM 调用，JVM 便自动产生一个 Class 对象
+    - Class 类的对象包含某个被加载类的结构，一个被加载类对应一个 Class 对象
+    - 当一个 class 被加载时，或当加载器 classloader 的 defineClass() 被 JVM 调用，JVM 便自动产生一个 Class 对象
+
+  - 反射操作泛型
+
+    - ParameterizedType：表示一种参数化类型，比如 Collection\<String\>
+    - GenericArrayType：表示一种元素类型是参数化类型或者类型变量的数组类型
+    - TypeVariable：是各种类型变量的公共父接口
+    - WildcardType：代表一种通配符表达式，比如 ?, ? extends Number, ? super Integer
+
+  - 反射操作注解（Runtime）
+
+    - c.getAnnotations();
+    - c.getAnnotation(AnnoClass.class);
+    - f.getAnnotation(FieldClass.class);
+
+  - setAccessible
+
+    - 启用和禁用访问的安全检查开关，禁止安全检查可以提高反射的运行速度
 
 - 动态编译
+
+  - 场景
+
+    - 可以做一个浏览器端写 java 代码，上传服务器编译和运行的在线测评系统
+
+    - 服务器动态加载某些类文件进行编译
+
+  - 动态编译的两种做法
+
+    - 通过 Runtime 调用 javac，启动新的线程去操作
+
+      ```java
+      Runtime run = Runtime.getRuntime();
+      Process process = run.exec("javac -cp /filepath/ file.java");
+      ```
+
+    - 通过 JavaCompiler 动态编译
+
+      ```java
+      JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+      int result = compiler.run(null,null,null,sourceFile);
+      ```
+
+      - 第一个参数：为 java 编译器提供的参数
+      - 第二个参数：得到 java 编译器的输出信息
+      - 第三个参数：接收编译器的错误信息
+      - 第四个参数：可变参数 string[] 能传入一个或多个源文件
+      - 返回值：0 表示编译成功，非 0 表示编译失败
+
+  - 动态执行编译好的文件
+
+    - Runtime
+    - 反射
 
 - 动态执行 javascript 代码
 
 - 动态字节码操作
+
