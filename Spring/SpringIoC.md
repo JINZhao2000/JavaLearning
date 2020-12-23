@@ -92,9 +92,9 @@ Dependency Injection 依赖注入
         //setter
         private BookDao bookDao;
         
-        BookService bookService = new BookServiceImp();//-> IoC <bean>
-        BookDao bookDao = new BookDaoImp              //-> IoC <bean>
-        bookService.serBookDao(bookDao);              //-> DI <property>
+        BookService bookService = new BookServiceImpl();//-> IoC <bean>
+        BookDao bookDao = new BookDaoImpl();            //-> IoC <bean>
+        bookService.setBookDao(bookDao);              //-> DI <property>
     }
 ```
 
