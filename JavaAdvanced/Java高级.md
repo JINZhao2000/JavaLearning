@@ -171,7 +171,108 @@
     - Runtime
     - 反射
 
-- 动态执行 javascript 代码
+- 动态执行 javascript 代码 - Narshorn
+
+  - 定义引擎
+
+    ```java
+    ScriptEngineManager manager = new ScriptEngineManager();
+    ScriptEngine engine = manager.getEngineByName("javascript");
+    ```
+
+  - 定义和调用共用变量
+
+    ```java
+    engine.put("msg","hello javascript");
+    System.out.println(engine.get("msg"));
+    ```
+
+  - 定义内部变量
+
+    ```java
+    String str = "var user = {name:'abc',age:18};";
+    str+="print(user.name)";
+    engine.eval(str);
+    ```
+
+  - 定义和调用函数
+
+    ```java
+    engine.eval("function add(a,b){return (a+b);}");
+    Invocable jsInvoke = (Invocable)engine;
+    Object res = jsInvoke.invokeFunction("add",new Object[]{10,20});
+    System.out.println(res);
+    ```
+
+  - 导入 Java 类
+
+    ```java
+    String jsCode = "var clazz = Java.type(\"java.util.Arrays\"); var list = clazz.asList([\"a\",\"b\",\"c\"]);";
+    engine.eval(jsCode);
+    List<String> list= (List<String>)engine.get("list");
+    list.forEach(System.out::println);
+    ```
+
+  - 执行 JavaScript 脚本文件
+
+    ```java
+    String path = DemoJS.class.getClassLoader().getResource("").getPath();
+    FileReader reader = new FileReader(new File(path+"test.js"));
+    engine.eval(reader);
+    reader.close();
+    ```
 
 - 动态字节码操作
+
+  - Java 动态性实现方式
+    - 字节码操作
+    - 反射
+  - 运行时操作字节码可以实现以下功能
+    - 动态生成新的类
+    - 动态改变某个类的结构
+  - 优势
+    - 比反射性能高
+    - javassist 性能比 asm 低
+  - 库
+    - BCEL
+    - ASM
+    - CGLIB
+    - Javassist
+
+## 3. JVM
+
+- 类加载全过程
+
+  - 类加载机制
+
+    JVM 把 class 文件加载到内存，并对数据进行校验，解析，初始化，最终形成 JVM 可以直接使用的 Java 类型的过程
+
+    - 加载
+
+      将 class 文件字节码内容加载到内存中，并将这些静态数据转换成方法区中的运行时数据结构，在一个堆中生成一个代表这个类 java.lang.Class 对象，作为方法去类数据访问的接口，这个过程需要类加载器的参与
+
+    - 链接
+
+      - 验证
+
+        确保加载的类信息符合 JVM 规范，没有安全方面的问题
+
+      - 准备
+
+        正式为类变量 (static 变量) 分配内存并设置类变量初始值的阶段，这些内存都将在方法区中分配
+
+      - 解析
+
+        虚拟机常量池内存的符号引用替换为直接引用过程
+
+    - 初始化
+
+      - 初始化阶段是执行类构造器 `<clinit>()` 方法的过程，类构造器 `<clinit()>` 方法是由编译器自动收集类中的所有类变量的赋值动作和静态语句块中的语句合并产生的
+      - 当初始化一个类的时候，如果发现其父类还没有进行过初始化，则需要先触发其父类的初始化
+      - 虚拟机会保证一个类的`<clinit>()` 方法在多线程环境中被正确加锁和同步
+      - 当访问一个 Java 类的静态域时，只有其真正声明这个域的类才会被初始化
+
+    - 使用
+
+    - 卸载
 
