@@ -275,4 +275,128 @@
     - 使用
 
     - 卸载
+    
+  - 堆，栈，方法区
+  
+    ex : 
+  
+    ```java
+    public class Demo1 {
+        public static void main(String[] args) {
+            A a = new A();
+        }
+    }
+    
+    class A{
+        static int i = 100;
+        static {
+            i = 200;
+            System.out.println("Initialized A");
+        }
+        public A(){
+            System.out.println("Constructor A");
+        }
+    }
+    ```
+  
+    - 方法区（Demo1 和 A）
+      - 静态变量
+      - 静态方法
+      - 常量池（类名，方法名等）
+      - 类的代码
+    - 堆
+      - java.lang.Class 对象代表方法区的类信息对应的类（Demo1 和 A 的 Class 对象）
+      - 调用 new A(); 时产生一个 A 的对象实例，并返回给被指的变量名称
+    - 栈
+      - main 方法的栈帧
+      - 调用 new A(); 时将构造方法压入栈帧
+      - 完成后构造方法出栈，然后变量名得到引用对象地址
+  
+  - 类加载主动引用（一定会发生类的初始化）
+  
+    - new 一个类的对象
+    - 调用类的静态成员（除了 final 常量）和静态方法
+    - 使用 java.lang.reflect 包的方法对类进行反射调用
+    - 当虚拟机启动，则一定会初始化 main 方法所在的类
+    - 当初始化一个类的时候，如果其父类没有被初始化，则初始化其父类
+  
+  - 类加载被动引用（不会发生类的初始化）
+  
+    - 当访问一个静态域时，只有真正声明这个域的类才会被初始化
+      - 通过子类引用父类静态变量不会导致子类初始化
+    - 通过数组定义引用，不会触发此类的初始化
+    - 引用常量不会触发此类的初始化（常量在预编译阶段就存入了常量池中了）
+
+- 深入类加载器
+
+  - 类加载器原理
+
+    - 类加载器作用
+
+      将 class 文件字节码内容加载到内存中，并将这些静态数据转换成方法区中的运行时数据结构，在堆中生成一个代表这个类的 java.lang.Class 对象，作为方法区类数据的访问接口
+
+    - 类缓存
+
+      标准的 Java SE 类加载器可以按要求查找类，但一旦某一个类被加载到类加载器中，它将维持（缓存）一段时间，JVM 垃圾回收器可以回收这些对象
+
+  - java.lang.ClassLoader 类介绍
+
+    - 作用
+
+      - java.lang.ClassLoader 类的基本职责就是根据一个指定类的名称，找到或者生成其对应的字节码，然后从这些字节代码中定义出一个 Java 类，即 java.lang.Class 类的一个实例
+      - 除此之外，ClassLoader 还负责加载 Java 应用所需的资源，如图像文件和配置文件等
+
+    - 相关方法
+
+      ```java
+      ClassLoader getParent(); // 获取父类加载器
+      Class<?> loadClass(String name); // 加载名为 name 的类
+      Class<?> findClass(String name); // 查找名为 name 的类
+      Class<?> findLoadedClass(String name); // 查找名为 name 的已经被加载过的类
+      Class<?> defineClass(String name,byte[] b, int off, int len); // 把字节数组 b 中的内容转换为 Java 类
+      void resolveClass(Class<?> c); // 链接指定的 Java 类
+      // 类的名称 name 参数的值是类的全限定名，内部类用$表示
+      ```
+
+  - 类加载器树状结构（组合模式实现）
+
+    - 引导类加载器 bootstrap class loader
+      - 它用来加载 Java 核心库（JAVA_HOME/jre/lib/rt.jar，或 sun.boot.class.path 路径下的内容），是用原生代码实现的，并不继承自 java.lang.ClassLoader
+      - 加载扩展类和应用程序类加载器，并指定他们的父类加载器
+    - 扩展类加载器 extensions class loader
+      - 用来加载 Java 的扩展库 （JAVA_HOME/jre/ext/*.jar，或 java.ext.dirs 路径下的内容），Java 虚拟机的实现会提供一个扩展库的目录，该类加载器在此目录里面查找并加载 Java 类
+      - 由 sun.misc.Launcher$ExtClassLoader 实现
+    - 应用程序类加载器 application class loader
+      - 它根据 Java 应用的类路径（classpath，java.class.path 路径））加载类，一般来说，Java 应用的类都是由它来完成加载的
+      - 由 sun.misc.Launcher$AppClassLoader 实现
+    - 自定义类加载器
+      - 开发人员可以通过继承 java.lang.ClassLoader 类的方式实现自己的类加载器，以满足一些特殊的要求
+      - 父类是 AppClassLoader
+
+  - 类加载器的代理模式
+
+    - 代理模式
+
+      - 交给其他加载器来加载指定的类
+
+    - 双亲委托机制
+
+      - 就是某个特定的类加载器在接到类加载的请求时，首先将加载任务委托给父类加载器，依次追溯，直到最父类的加载器，如果父类加载器可以完成类加载任务时，就成功返回，只有父类加载器无法完成此加载任务时，才自己去加载
+
+      - 双亲委托机制是为了保证 Java 核心库的类型安全
+
+        这种机制就保证不会出现用户自己能定义 java.lang.Object 类的情况
+
+      - 类加载器除了用于加载类，也是安全的最基本的保障
+
+    - 双亲委托机制是代理模式的一种
+
+      - 并不是所有的类加载器都采用双亲委托机制
+      - tomcat 服务器类加载器也使用代理模式，所不同的是它是首先尝试去加载某个类，如果找不到再代理给父类加载器，这与一般的加载器的顺序是相反的
+
+  - 自定义类加载器（文件，网络，加密）
+
+  - 线程上下文类加载器
+
+  - 服务器类加载原理和 OSGI 介绍
 
