@@ -397,15 +397,54 @@
   - 自定义类加载器（文件，网络，加密）
 
     - 自定义类加载器的流程
-    - 首先检查请求类型是否已经被这和个类装载器装在到命名空间中了，如果已经装载，直接返回
+      - 首先检查请求类型是否已经被这和个类装载器装在到命名空间中了，如果已经装载，直接返回
       - 委派类加载请求给父类加载器，如果父类加载器能够完成，则返回父类加载器加载的 Class 实例
       - 调用本类加载器的 findClass(...) 方法，试图获取对应的字节码，如果获取到，则调用 defineClass(...) 导入类型到方法区，如果获取不到对应的字节码或者其他原因失败，返回异常给 loadClass(...)，loadClass(...) 转抛异常，终止加载过程
       - 被两个类加载器加载的同一个类，JVM 不认为是同一个类
     - 文件类加载器
     - 网络类加载器
     - 加密解密类加载器（取反，DES 对称加密解密）
-  
+
   - 线程上下文类加载器
-  
-  - 服务器类加载原理和 OSGI 介绍
+
+    - 双亲委托机制以及类加载器问题
+
+      - 一般情况下，保证同一个类中所关联的其他类都是由当前类的类加载器所加载的
+
+        比如，Class A 本身早 Ext 下找到，那么他里面 new 出来的一些类也就只能用 Ext 去找了（不会低一个级别），所以有些命名 App 可以找到的，却找不到了
+
+      - JDBC API 他有实现 Driven 的部分，我们的 JDBC API 都是由 Root 或者 Ext 来载入的，但是 JDBC  driver 却是由 Ext 或者 App 来载入的，那么就有可能找不到 Driver 了。在 Java 领域中，其实只要分成这种 API + SPI（Service Provide Interface，特定厂商提供）的，都会遇到此问题
+
+      - 常见的 SPI 有 JDBC，JCE，JNDI，JAXP 和 JBI 等，这些 SPI 的接口由 Java 的核心库来提供，如 JAXP 的 SPI 接口定义包含在 javax.xml.parsers 包中，SPI 的接口是 Java 核心库的一部分，是由引导类加载器来加载的，SPI 实现的 Java 类一般是由系统类加载器来加载的，引导类加载器是无法找到 SPI 实现类的，因为它只加载 Java 的核心库
+
+    - 通常动态加载资源时，有三个 ClassLoader 可以选择
+
+      - system class loader / application class loader
+      - 当前类加载器
+      - 当前线程类加载器
+
+    - 线程加载类是为了抛弃双亲委托加载链模式
+
+      每个线程都有一个关联上下文的类加载器，如果使用 `new Thread()` 方式生成一个新线程，新线程将继承其父线程的上下文加载器，如果程序对线程上下文类加载器没有任何改动的话，程序中所有的线程将都使用系统类加载器作为上下文加载器
+
+    - ```java
+      Thread.currentThread().getContextClassLoader(); // default appclassloader
+      Thread.currentThread().setContextClassLoader();
+      ```
+
+  - 服务器类加载原理和 OSGi 介绍
+
+    - Open Service Gateway Initative 面向 Java 的动态模块系统，它为开发人员提供了面向服务和基于组件的运行环境，并提供标准的方式用来管理软件的生命周期
+
+    - Eclispe 就是基于 OSGi 构建的
+
+    - 原理
+
+      OSGi 中每个模块（bundle）都包含 Java 包和类，模块可以声明它所依赖的需要导入（import）的其他模块的 Java 包和类（通过 Import-Package），也可以声明导出（export）自己的包和类，供其他模块使用（通过 Export-Package），也就是说需要能够隐藏和共享一个模块中的某些 Java 包和类。这是通过 OSGi 特有的类加载器机制来实现的，OSGi 中的每个模块都有对应的一个类加载器，它负责加载模块自己包含的 Java 包和类，当它需要加载 Java 核心库的类时（以 java 开头的包和类），它会代理给父类加载器（通常是启动类加载器）来完成，当它需要加载所导入的 Java 类时，它会代理给导出此 Java 类的模块来完成加载。模块也可以显式声明某些 Java 包和类，必须由父类加载器来加载，只需要设置系统属性 org.osgi.framework.bootdelegation 的值即可
+
+    - Equinox：OSGI 的一个实现
+
+## 4. 正则表达式 Regex
+
+
 
