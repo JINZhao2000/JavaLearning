@@ -606,14 +606,44 @@
 - 开发环境中和文本编辑器中的正则
 
   - eclipse
+
+    Search -> File Search -> Regular expression
+
   - Notepad++
+
   - Editplus
+
   - UltraEdit
 
 - 数据库中的正则
 
   - Mysql 5.5+
+
   - Oracle 12g+
 
+    ```sql
+    select ename
+    from emp
+    where esalary REGEXP '.000' // 1000 2000 3000 ...
+    ```
+
 - Java复杂文本操作
+
+  - 相关类位于 java.util.regex 包下面
+
+  - 类 Pattern
+
+    - 正则表达式的编译表示形式
+
+    - ```java
+      Pattern p = Pattern.compile(r,int); // 建立正则表达式，并启用相应模式
+      ```
+
+  - 类 Matcher
+
+    - 通过解释 Pattern 对 character sequence 执行匹配操作的引擎
+
+    - ```java
+      Matcher m = p.matcher(str); // 匹配 str 字符串
+      ```
 
