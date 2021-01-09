@@ -85,3 +85,8 @@
 
 ## 3. WebServer
 
+使用 request & response 式的交流
+
+### 3.1 XML 解析 Extensible Markup Language
+
+作为数据的一种存储格式或用于存储软件的参数，程序解析此配置文件，就可以达到不修改代码就能更改程序的目的
