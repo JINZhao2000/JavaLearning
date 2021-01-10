@@ -90,3 +90,101 @@
 ### 3.1 XML 解析 Extensible Markup Language
 
 作为数据的一种存储格式或用于存储软件的参数，程序解析此配置文件，就可以达到不修改代码就能更改程序的目的
+
+```java
+public static void main(String[] args) throws Exception {
+    SAXParserFactory factory = SAXParserFactory.newInstance();
+    SAXParser parser = factory.newSAXParser();
+    WebHandler handler = new WebHandler();
+    parser.parse(Thread.currentThread().getContextClassLoader().getResourceAsStream("web.xml"),handler);
+	WebContent content = new WebContent(handler.getEntities(), handler.getMappings());
+    String className = content.getClassName("/login");
+    if (className == null){
+	    System.out.println("404 Not Found");
+	}else {
+        Class<?> clz = (Class<Servlet>) Class.forName(className);
+        Servlet servlet = (Servlet) clz.getDeclaredConstructor().newInstance();
+        Method m = clz.getMethod("service");
+        m.invoke(servlet);
+    }
+}
+```
+
+xml 解析类 Handler
+
+```java
+public class WebHandler extends DefaultHandler {
+    private List<Entity> entities;
+    private List<Mapping> mappings;
+    private Entity entity;
+    private Mapping mapping;
+    private String tag;
+    private boolean isMapping;
+    @Override
+    public void startDocument() throws SAXException {
+        System.out.println("--- start ---");
+        entities = new ArrayList<>();
+        mappings = new ArrayList<>();
+    }
+
+    @Override
+    public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+        if(null!=qName){
+            tag = qName;
+            if(tag.equals("servlet")){
+                entity = new Entity();
+                isMapping = false;
+            }else if(tag.equals("servlet-mapping")){
+                mapping = new Mapping();
+                isMapping = true;
+            }
+        }
+    }
+
+    @Override
+    public void characters(char[] ch, int start, int length) throws SAXException {
+        String content = new String(ch,start,length).trim();
+        if(null!=tag){
+            if(isMapping){
+                if(tag.equals("servlet-name")){
+                    mapping.setName(content);
+                }else if(tag.equals("url-pattern")){
+                    mapping.addPattern(content);
+                }
+            }else{
+                if(tag.equals("servlet-name")){
+                    entity.setName(content);
+                }else if(tag.equals("servlet-class")){
+                    entity.setCls(content);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void endElement(String uri, String localName, String qName) throws SAXException {
+        if(null!=qName){
+            if(qName.equals("servlet")){
+                entities.add(entity);
+            }else if(qName.equals("servlet-mapping")){
+                mappings.add(mapping);
+            }
+        }
+        tag = null;
+    }
+
+    @Override
+    public void endDocument() throws SAXException {
+        System.out.println("--- end ---");
+    }
+
+    public List<Entity> getEntities() {
+        return entities;
+    }
+
+    public List<Mapping> getMappings() {
+        return mappings;
+    }
+}
+```
+
