@@ -13,6 +13,7 @@ import java.net.Socket;
  */
 public class Server {
     private ServerSocket serverSocket;
+    private boolean isRunning;
     public static void main(String[] args) {
         Server server = new Server();
         server.start();
@@ -22,31 +23,29 @@ public class Server {
     public void start(){
         try {
             serverSocket = new ServerSocket(8888);
+            isRunning = true;
         } catch (IOException e) {
             System.out.println("[FATAL] Can't start server");
+            this.stop();
         }
     }
     public void receive(){
         try {
             Socket clientSocket = serverSocket.accept();
             System.out.println("[INFO] A client is connected");
-            Request request = new Request(clientSocket);
-            
-            Response response = new Response(clientSocket);
-            response.add("<html>");
-            response.add("<head>");
-            response.add("<title>");
-            response.add("Response success");
-            response.add("</title>");
-            response.add("</head>");
-            response.add("<body>");
-            response.add("Welcome");
-            response.add("</body>");
-            response.add("</html>");
-            response.push(200);
+            while (isRunning) {
+                new Thread(new Dispatcher(clientSocket)).start();
+            }
         } catch (IOException e) {
             System.out.println("[FATAL] A client can't connect to this server");
         }
     }
-    public void stop(){}
+    public void stop(){
+        isRunning = false;
+        try {
+            this.serverSocket.close();
+        } catch (IOException e) {
+            System.out.println("[WARN] Server close failed");
+        }
+    }
 }
