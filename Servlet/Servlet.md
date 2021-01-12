@@ -32,22 +32,22 @@
 
 ### Servlet 开发步骤
 
-将 CATALINA_HOME/lib/servlet-api.jar 目录放到环境变量的 classpath 中
+将 CATALINA_HOME/lib/com.ayy.servlet-api.jar 目录放到环境变量的 classpath 中
 
-编写 servlet
+编写 com.ayy.servlet
 
-​	实现 javax.servlet.Servlet
+​	实现 javax.com.ayy.servlet.Servlet
 
 ​	重写5个方法
 
 ​	在核心的 service() 方法中编写输出语句，打印访问结果
 
 ```java
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.ServletException;
+import javax.com.ayy.servlet.Servlet;
+import javax.com.ayy.servlet.ServletConfig;
+import javax.com.ayy.servlet.ServletRequest;
+import javax.com.ayy.servlet.ServletResponse;
+import javax.com.ayy.servlet.ServletException;
 import java.io.IOException;
 
 public class MyServlet implements Servlet{
@@ -84,14 +84,14 @@ javac MyServlet.java
                       http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
   version="4.0"
   metadata-complete="true">
-    <servlet>
-        <servlet-name>my</servlet-name><!--类代替名-->
-        <servlet-class>MyServlet</servlet-class><!--类名-->
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>my</servlet-name><!--映射的类代替名-->
+    <com.ayy.servlet>
+        <com.ayy.servlet-name>my</com.ayy.servlet-name><!--类代替名-->
+        <com.ayy.servlet-class>MyServlet</com.ayy.servlet-class><!--类名-->
+    </com.ayy.servlet>
+    <com.ayy.servlet-mapping>
+        <com.ayy.servlet-name>my</com.ayy.servlet-name><!--映射的类代替名-->
         <url-pattern>/myservlet</url-pattern><!--对应的访问位置 <项目名/访问位置>-->
-    </servlet-mapping>
+    </com.ayy.servlet-mapping>
 </web-app>
 ```
 
@@ -211,7 +211,7 @@ Content-length:49
 
 ​	必须重写以下方法之一
 
-​	doGet，如果 servlet 支持 HTTP GET 请求
+​	doGet，如果 com.ayy.servlet 支持 HTTP GET 请求
 
 ​	doPost，用于 HTTP POST 请求
 
@@ -235,9 +235,9 @@ __web.xml__
 
 url-pattern 4种方式（优先级）
 
-​	精确匹配	/具体名称	只有 url 路径是具体的名称的时候才会触发 servlet
+​	精确匹配	/具体名称	只有 url 路径是具体的名称的时候才会触发 com.ayy.servlet
 
-​	后缀匹配	*.xxx	只要是以 .xxx 结尾的就匹配触发 servlet
+​	后缀匹配	*.xxx	只要是以 .xxx 结尾的就匹配触发 com.ayy.servlet
 
 ​	通配符匹配	/*	匹配所有请求，包含服务器所有资源
 
@@ -245,22 +245,22 @@ url-pattern 4种方式（优先级）
 
 load-on-startup
 
-1. 元素标记容器是否应该在 web 应用程序启动的时候加载这个 servlet
-2. 它的值必须是一个整数，表示 servlet 被加载的先后顺序
-3. 如果该元素的值为负数或者没有设置，则容器会当 servlet 被请求时再加载
-4. 如果值为正整数或者0时，表示容器在应用启动的时候就加载初始化这个 servlet，值越小，servlet 的优先级越高，就越优先被加载。值相同时，容器会自己选择顺序来加载
+1. 元素标记容器是否应该在 web 应用程序启动的时候加载这个 com.ayy.servlet
+2. 它的值必须是一个整数，表示 com.ayy.servlet 被加载的先后顺序
+3. 如果该元素的值为负数或者没有设置，则容器会当 com.ayy.servlet 被请求时再加载
+4. 如果值为正整数或者0时，表示容器在应用启动的时候就加载初始化这个 com.ayy.servlet，值越小，com.ayy.servlet 的优先级越高，就越优先被加载。值相同时，容器会自己选择顺序来加载
 
-__注解 (servlet 3.0+)__
+__注解 (com.ayy.servlet 3.0+)__
 
 @WebServlet
 
-​	name：servlet 名字 （可选）
+​	name：com.ayy.servlet 名字 （可选）
 
 ​	value：配置 url 路径，可以配置多个
 
 ​	urlPatterns：配置 url 路径，不能和 value 同时使用
 
-​	loadOnStartup：配置 servlet 创建时机，如果是0或者正数，启动程序时创建，如果是负数，则访问时创建，数字越小优先级越高
+​	loadOnStartup：配置 com.ayy.servlet 创建时机，如果是0或者正数，启动程序时创建，如果是负数，则访问时创建，数字越小优先级越高
 
 与 web.xml 不冲突
 
@@ -268,7 +268,11 @@ __注解 (servlet 3.0+)__
 
 ### 4.1 request 对象
 
-get 和 post
+在 Servlet 中用来处理客户请求需求用 doGet 或 doPost 方法的 request 对象
+
+两个核心接口 ServletRequest 和 HttpServletRequest
+
+__get 和 post 区别__ 
 
 ​	get 请求
 
@@ -290,6 +294,109 @@ get 和 post
 
 ​		对应的 Servlet 的方法是 doPost
 
-request 主要方法
+__request 主要方法__ 
 
-​	两个核心接口 ServletRequest 和 HttpServletRequest
+| 方法名                                      | 说明                             |
+| ------------------------------------------- | -------------------------------- |
+| `String getPatamater(String name)`          | 根据表单的组件名称，获取提交数据 |
+| `void setCharacterEncoding(String charset)` | 指定每个请求的编码               |
+
+__request 应用__ 
+
+HTML
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <form action="/Servlet02_war_exploded/rs" method="get">
+        User&nbsp;name:<input type="text" name="username"><br/>
+        Password:<input type="password" name="pwd"><br/>
+        <input type="submit" value="Register">
+    </form>
+</body>
+</html>
+```
+
+Servlet
+
+```java
+@WebServlet(value="/rs")
+public class RegisterServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // get data from request
+        String username = req.getParameter("username");
+        String pwd = req.getParameter("pwd");
+        System.out.println("username: "+username+"\tpwd: "+pwd);
+    }
+}
+```
+
+__get 请求收参问题__ 
+
+产生乱码是因为服务器与客户端沟通编码不一致造成的，因此解决方法是：在客户端与服务端之间设置一个统一的编码，之后就按照此编码进行数据的传输和接收
+
+__get 中文乱码__ 
+
+在 Tomcat 7 及以下版本，客户端 UTF-8 的编码传输数据到服务器端，而服务器端的 request 对象使用的是 ISO8859-1 这个字符编码来接收数据，服务器和客户端沟通的编码不一致因此才会产生中文乱码的
+
+解决办法：在接收到数据后，先获取 request 对象以 ISO8859-1 字符编码接收到的原始数据的字节数组，然后通过字节数组以指定编码构建字符串，解决乱码问题
+
+Tomcat 8 的版本中的 get 方式不会出现乱码了，因为服务器对 url 编码格式可以进行自动转换
+
+```java
+String username = req.getParameter("username");
+username = new String(username.getBytes("ISO8859-1"),"UTF-8");
+```
+
+__post 中文乱码__ 
+
+由于客户端是以 UTF-8 字符编码将表单数据传输到服务端的，因此服务器也需要设置以 UTF-8 字符编码进行接收
+
+解决方案：使用 ServletRequest 接口继承而来的 `setCharacterEncoding(charset)` 方法进行统一的编码设置
+
+```java
+req.setCharacterEncoding("UTF-8");
+```
+
+### 4.2 response 对象
+
+response 对象用于响应请求并向客户端输出信息
+
+__response 主要方法__ 
+
+| 方法名称                       | 作用                               |
+| ------------------------------ | ---------------------------------- |
+| `setHeader(name,value)`        | 设置响应信息头                     |
+| `setContentType(String)`       | 设置响应文件类型，响应式的编码格式 |
+| `setCharacterEncoding(String)` | 设置服务端响应内容编码格式         |
+| `getWriter()`                  | 获取字符输出流                     |
+
+__解决输出中文乱码__ 
+
+不推荐方式：
+
+设置服务器端响应的编码格式
+
+设置客户端响应内容的头内容的文件类型及编码格式
+
+```java
+response.setCharacterEncoding("UTF-8");
+response.setHeader("Content-type","text/html;charset=UTF-8");
+```
+
+推荐方式：
+
+同时设置服务端的编码格式和客户端的响应文件类型及响应时的编码格式
+
+```java
+response.setContentType("text/html;charset=UTF-8");
+```
+
+### 4.3 综合案例 Servlet + JDBC
+
