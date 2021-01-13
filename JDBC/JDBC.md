@@ -354,3 +354,28 @@ ResultSet 是结果集，ResultSetMetaData 是结果集的基本信息，包括�
     - 获取列的别名：getColumnLabel()
   - 通过反射，创建指定类的对象，获取指定的属性并赋值
 
+## 4. 操作 BLOB 类型字段
+
+### 4.1 MySQL BLOB 字段
+
+- MySQL 中，BLOB 字段是一个二进制大型对象，是一个可以储存大量数据的容器，他能容纳不同大小的数据
+
+- 插入 BLOB 类型的数据必须使用 PreparedStatement，因为 BLOB 类型的数据无法使用字符串拼接写的
+
+- MySQL 的四种 BLOB 类型（除了在存储的最大信息量上不同外，他们是等同的）
+
+  | 类型       | 大小     |
+  | ---------- | -------- |
+  | TinyBlob   | 最大 255 |
+  | Blob       | 最大 65K |
+  | MediumBlob | 最大 16M |
+  | LongBlob   | 最大 4G  |
+
+- 实际使用中根据需要存入的数据大小定义不同的 BLOB 类型
+
+- 需要注意的是：如果存储文件过大，数据库性能会下降
+
+- 如果在指定了相关的 Blob 类型以后，还报错：xxx too large，那么在 mysql 的安装目录下，找 my.ini 文件加上如下的配置参数：max_allowed_packet=16M。同时注意：修改 my.ini 文件之后，需要重新启动 mysql 服务器
+
+### 4.2 向数据表中插入大数据类型
+

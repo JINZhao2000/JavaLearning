@@ -67,7 +67,7 @@ public class ConnectionTest {
         System.out.println(connection);
     }
 
-    // 数据与代码解耦
+    // decoupling the data and the code
     //
     @Test
     public void demo05() throws Exception{
