@@ -375,7 +375,47 @@ ResultSet 是结果集，ResultSetMetaData 是结果集的基本信息，包括�
 
 - 需要注意的是：如果存储文件过大，数据库性能会下降
 
-- 如果在指定了相关的 Blob 类型以后，还报错：xxx too large，那么在 mysql 的安装目录下，找 my.ini 文件加上如下的配置参数：max_allowed_packet=16M。同时注意：修改 my.ini 文件之后，需要重新启动 mysql 服务器
+- 如果在指定了相关的 Blob 类型以后，还报错：xxx too large，那么在 mysql 的安装目录下，找 my.ini 文件加上如下的配置参数：max_allowed_packet=16M，默认为1M。同时注意：修改 my.ini 文件之后，需要重新启动 mysql 服务器
 
 ### 4.2 向数据表中插入大数据类型
+
+```java
+void setBlob(int parameterIndex, InputStream inputStream);
+```
+
+### 4.3 从数据表读取大数据类型
+
+```java
+java.io.InputStream getBinaryStream () throws SQLException;
+```
+
+## 5 批量写入数据
+
+使用 Batch 
+
+默认不开启在连接的 url 后面加上参数
+
+```properties
+?rewriteBatchedStatements=true
+```
+
+使用 PreparedStatement
+
+```java
+for (int i = 0; i < 2000; i++) {
+	statement.setObject(1,"name_"+i);
+	statement.addBatch();
+	if((i+1)%500==0){
+		statement.executeBatch();
+	statement.clearBatch();
+	}
+}
+```
+
+继续优化
+
+```java
+connection.setAutoCommit(false);
+connection.commit();
+```
 
