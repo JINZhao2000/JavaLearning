@@ -12,9 +12,7 @@ import java.sql.Statement;
  * @ Author Zhao JIN
  * @ Date 14/01/2021 22H
  * @ Version 1.0
- */
-
-/**
+ *
  * CREATE TABLE goods(
  *  gid INT AUTO_INCREMENT PRIMARY KEY,
  *  NAME VARCHAR(25)

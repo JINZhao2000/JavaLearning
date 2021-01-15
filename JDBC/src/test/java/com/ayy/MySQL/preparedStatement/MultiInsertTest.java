@@ -12,9 +12,7 @@ import java.sql.PreparedStatement;
  * @ Author Zhao JIN
  * @ Date 14/01/2021 22H
  * @ Version 1.0
- */
-
-/**
+ *
  * CREATE TABLE goods(
  *  gid INT AUTO_INCREMENT PRIMARY KEY,
  *  NAME VARCHAR(25)
@@ -75,9 +73,37 @@ public class MultiInsertTest {
         }
     }
 
-    // 323 ms
+    // 27709 ms
     @Test
     public void test03(){
+        Connection connection = null;
+        PreparedStatement statement = null;
+        try{
+            connection = JDBCUtilsForAliyun.getConnection();
+            assert connection!=null;
+            String sql = "insert into goods(name)values(?)";
+            statement = connection.prepareStatement(sql);
+            long start = System.currentTimeMillis();
+            for (int i = 0; i < 200000; i++) {
+                statement.setObject(1,"name_"+i);
+                statement.addBatch();
+                if((i+1)%500==0){
+                    statement.executeBatch();
+                    statement.clearBatch();
+                }
+            }
+            long end = System.currentTimeMillis();
+            System.out.println(end - start);
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            JDBCUtilsForAliyun.close(statement,connection);
+        }
+    }
+
+    // 27751 ms
+    @Test
+    public void test04(){
         Connection connection = null;
         PreparedStatement statement = null;
         try{
@@ -87,7 +113,7 @@ public class MultiInsertTest {
             String sql = "insert into goods(name)values(?)";
             statement = connection.prepareStatement(sql);
             long start = System.currentTimeMillis();
-            for (int i = 0; i < 2000; i++) {
+            for (int i = 0; i < 200000; i++) {
                 statement.setObject(1,"name_"+i);
                 statement.addBatch();
                 if((i+1)%500==0){
