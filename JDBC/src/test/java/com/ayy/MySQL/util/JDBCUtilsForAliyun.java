@@ -1,5 +1,8 @@
 package com.ayy.MySQL.util;
 
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+
+import java.beans.PropertyVetoException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.sql.*;
@@ -29,6 +32,8 @@ public class JDBCUtilsForAliyun {
             return connection;
         } catch (Exception throwables) {
             throwables.printStackTrace();
+        }finally {
+            JDBCUtilsForAliyun.close(is);
         }
         return null;
     }
@@ -128,5 +133,11 @@ public class JDBCUtilsForAliyun {
             JDBCUtilsForAliyun.close(preparedStatement, resultSet);
         }
         return null;
+    }
+
+    private static ComboPooledDataSource dataSource = new ComboPooledDataSource("intergalactoApp");
+
+    public static Connection getConnectionByC3P0() throws SQLException, PropertyVetoException {
+        return dataSource.getConnection();
     }
 }

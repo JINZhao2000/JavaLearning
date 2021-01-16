@@ -509,16 +509,318 @@ connection.commit();
   - 授予权限
 
     ```mysql
-    grant privileges 
-    ```
-
+    grant all privileges on database.table to username@'%' identified by 'pwd';
+    grant select, insert, delete, update on xxx.xxx to xxx@localhost identified by 'pwd';
+```
     
 
 ## 7. DAO 及其实现类
 
+BaseDao.java
 
+CRUD 底层操作
+
+```java
+public abstract class BaseDAO<T> {
+    private final Class<T> clazz;
+
+    {
+        Type genericSuperClass = this.getClass().getGenericSuperclass();
+        ParameterizedType parameterizedType = (ParameterizedType) genericSuperClass;
+        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+        clazz = CastUtils.cast(actualTypeArguments[0]);
+    }
+
+    public int update(Connection connection, String sql, Object... objects) {
+        PreparedStatement preparedStatement = null;
+        try {
+            assert connection != null;
+            preparedStatement = connection.prepareStatement(sql);
+            if (objects.length == 0) {
+                preparedStatement.execute();
+                return 0;
+            }
+            int index = 1;
+            for (Object o : objects) {
+                preparedStatement.setObject(index, o);
+                index++;
+            }
+            return preparedStatement.executeUpdate();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            return -1;
+        } finally {
+            JDBCUtilsForAliyun.close(preparedStatement);
+        }
+    }
+
+    public List<T> getInstanceList(Connection connection, String sql, Object... objects) {
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        try {
+            assert connection != null;
+            preparedStatement = connection.prepareStatement(sql);
+            for (int i = 0; i < objects.length; i++) {
+                preparedStatement.setObject(i + 1, objects[i]);
+            }
+            resultSet = preparedStatement.executeQuery();
+            if (resultSet != null) {
+                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                int columnCount = resultSetMetaData.getColumnCount();
+                List<T> listResult = new ArrayList<>();
+                while (resultSet.next()) {
+
+                    T t = clazz.getDeclaredConstructor().newInstance();
+                    for (int i = 0; i < columnCount; i++) {
+                        Object columnValue = resultSet.getObject(i + 1);
+                        String columeLabel = resultSetMetaData.getColumnLabel(i + 1);
+                        Field field = clazz.getDeclaredField(columeLabel);
+                        field.setAccessible(true);
+                        field.set(t, columnValue);
+                    }
+                    listResult.add(t);
+                }
+                return listResult;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtilsForAliyun.close(preparedStatement, resultSet);
+        }
+        return null;
+    }
+
+    public T getInstance(Connection connection, String sql, Object... objects) {
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        try {
+            assert connection != null;
+            preparedStatement = connection.prepareStatement(sql);
+            for (int i = 0; i < objects.length; i++) {
+                preparedStatement.setObject(i + 1, objects[i]);
+            }
+            resultSet = preparedStatement.executeQuery();
+            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+            int columnCount = resultSetMetaData.getColumnCount();
+            if (resultSet.next()) {
+                T t = clazz.getDeclaredConstructor().newInstance();
+                for (int i = 0; i < columnCount; i++) {
+                    Object object = resultSet.getObject(i + 1);
+                    String columnName = resultSetMetaData.getColumnName(i + 1);
+                    Field field = clazz.getDeclaredField(columnName); // reflect field
+                    field.setAccessible(true); // private -> accessible
+                    field.set(t, object);
+                }
+                return t;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtilsForAliyun.close(preparedStatement, resultSet);
+        }
+        return null;
+    }
+
+    public <E> E getValue(Class<E> clazz,Connection connection, String sql, Object... args) {
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        try {
+            statement = connection.prepareStatement(sql);
+            for (int i = 0; i < args.length; i++) {
+                statement.setObject(i + 1, args[i]);
+            }
+            resultSet = statement.executeQuery();
+            if(resultSet.next()){
+                return CastUtils.cast(resultSet.getObject(1));
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }finally {
+            JDBCUtilsForAliyun.close(resultSet,statement);
+        }
+        return null;
+    }
+}
+```
+
+CustomerDAO.java
+
+接口定义方法规范
+
+```java
+public interface CustomerDAO {
+    void insert(Connection connection, Customer customer);
+
+    void deleteById(Connection connection, int custId);
+
+    void update(Connection connection, Customer customer);
+
+    Customer getCustomerById(Connection connection, int custId);
+
+    Date getBirthById(Connection connection, int custId);
+
+    long getCount(Connection connection);
+
+    List<Customer> getAll(Connection connection);
+}
+```
+
+CustomerDAOImpl
+
+实现类具体定义实现方式
+
+```java
+public class CustomerDAOImpl extends BaseDAO<Customer> implements CustomerDAO {
+    @Override
+    public void insert(Connection connection, Customer customer) {
+        String sql = "insert into customers(cust_id,cust_name,email,birth)values(?,?,?,?)";
+        super.update(connection,sql,customer.getCust_id(),customer.getCust_name(),
+                customer.getEmail(),customer.getBirth());
+    }
+
+    @Override
+    public void deleteById(Connection connection, int custId) {
+        String sql = "delete from customers where cust_id = ?";
+        super.update(connection,sql,custId);
+    }
+
+    @Override
+    public void update(Connection connection, Customer customer) {
+        String sql = "update customers set cust_name = ? , email = ? , birth = ? where cust_id = ?";
+        super.update(connection,sql,customer.getCust_name(),
+                customer.getEmail(),customer.getBirth(),customer.getCust_id());
+    }
+
+    @Override
+    public Customer getCustomerById(Connection connection, int custId) {
+        String sql = "select cust_id, cust_name, email, birth from customers where cust_id = ?";
+        return super.getInstance(connection,sql,custId);
+    }
+
+    @Override
+    public Date getBirthById(Connection connection, int custId) {
+        String sql = "select birth from customers where cust_id = ?";
+        return getValue(Date.class,connection,sql,custId);
+    }
+
+    @Override
+    public long getCount(Connection connection) {
+        String sql = "select count(*) from customers";
+        return getValue(long.class,connection,sql);
+    }
+
+    @Override
+    public List<Customer> getAll(Connection connection) {
+        String sql = "select cust_id, cust_name, email, birth from customers";
+        return super.getInstanceList(connection,sql);
+    }
+}
+```
 
 ## 8. 数据库连接池
+
+### 8.1 数据库连接池的必要性
+
+- 在使用者基于数据库的 web 程序时，传统的模式基本是按以下基本步骤
+  - 在主程序（servlet，beans）中建立数据库连接
+  - 进行 sql 操作
+  - 断开连接
+- 这种模式开发存在问题
+  - 普通的 jdbc 数据库连接使用 DriverManager 来获取，每次向数据库建立连接的时候都要将 Connection 加载到内存中，再验证用户名和密码，需要数据库连接的时候就向数据库请求一个，执行完成后再断开连接，这样的方式将会消耗大量的资源和时间，数据库的连接资源并没有得到很好的重复利用，若有成百上千的人在线，频繁地进行数据库连接操作将占用很多系统资源，严重的甚至会造成服务器崩溃
+  - 对于每一次数据库连接，使用完后都得断开，否则，如果程序出现异常而未能关闭，将会导致数据库系统中的内存泄漏，最终将导致重启数据库（java 的内存泄漏）
+  - 这种开发不能控制被创建的连接对象数，系统资源会被毫无顾忌地分配出去，如果连接过多，也会导致内存泄漏，服务器崩溃
+
+### 8.2 数据库连接池技术
+
+- 为解决传统开发中地数据库连接问题，可以采用连接池技术
+
+- 数据库连接池的基本思想：就是为数据库连接建立一个“缓冲池”，预先在缓冲池中放入一定数量的连接，当需要建立数据库连接时，只需从“缓冲池”中取出一个，用完之后再放回去
+
+- 数据库连接池负责分配，管理和释放数据库连接，它允许应用程序重复使用一个现有的数据库连接，而不是重新建立一个
+
+- 数据库连接池再初始化时将创建一定数量的数据库连接放到连接池中，这些数据库连接的数量是由最小数据库连接数来设定的，无论这些数据库连接是否被使用，连接池都将一直保证至少拥有这么多的连接数量，连接池的最大数据库连接数量限定了这个连接池能占有的最大连接数，当应用程序向连接池请求的连接数超过最大连接数量时，这些请求将被加入到等待队列中
+
+- 数据库连接池的优点
+
+  - 资源重用
+
+    由于数据库连接得以重用，避免了频繁创建，释放连接引起的大量性能开销，在减少系统消耗的基础上，另一方面就也增加了系统运行环境的平稳性
+
+  - 更快的系统反应速度
+
+    数据库连接池在初始化的过程中，往往已经创建了若干数据库连接置于连接池中备用，此时连接的初始化工作均已完成，对于业务请求处理而言，直接利用现有可用的连接，避免了数据库连接初始化的释放过程的时间开销，从而减少了系统的响应时间
+
+  - 新的资源分配手段
+
+    对于多应用共享同一数据库的系统而言，可在应用层通过数据库连接池的配置，实现某一应用最大可用数据库连接数的限制，避免某一应用独占所有数据库资源
+
+  - 统一的连接管理，避免数据库连接泄漏
+
+    在较为完善的数据库连接池的实现中，可根据预先的占用超时规定，强制回收被占用的连接，从而避免了常规数据库连接操作中可能出现的资源泄露
+
+### 8.3 多种开源的数据库连接池
+
+- JDBC 的数据库连接池使用 javax.sql.DataSource 来表示，DataSource 只是一个接口，该接口通常由服务器（Weblogic，WebSphere，Tomcat）提供实现，也有一些开源组织提供实现
+  - DBCP 是 Apache 提供的数据库连接池，Tomcat 服务器自带 dbcp 数据库连接池，速度相对 c3p0 较快，但因自身存在 bug，Hibernate3 已经不再提供支持
+  - C3P0 是一个开源组织提供的一个数据库连接池，速度相对较慢，稳定性还可以，HIbernate 官方推荐使用
+  - Proxool 是 sourceforge 下的一个开源项目数据库连接池，由监控连接池状态的功能，稳定性较 c3p0 差一点
+  - BoneCP 是一个开源组织提供的数据库连接池，速度快
+  - Druid 是阿里提供的数据库连接池，据说是集 dbcp，c3p0，proxool 优点于一身的数据库连接池，但是速度不确定是否有 bonecp 快
+- DataSource 通常被称为数据源，它包含连接池和连接池管理两个部分，习惯上也经常把 DataSource 称为连接池
+- DataSource 用来取代 DriverManager 来获取 Connection，获取速度快，同时可以大幅度提高数据库访问速度
+- 特别注意：
+  - 数据源和数据库连接不同，数据源无需创建多个，它是生产数据库连接的工厂，因此整个应用只需要一个
+
+- C3P0
+
+  ```groovy
+  implementation group: 'com.mchange', name: 'c3p0', version: '0.9.5.2'
+  ```
+
+  c3p0-config.xml
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8" ?>
+  <c3p0-config>
+      <named-config name="intergalactoApp">
+          <property name="driverClass">com.mysql.cj.jdbc.Driver</property>
+          <property name="jdbcUrl">jdbc:mysql://xxxx/xxx</property>
+          <property name="user">username</property>
+          <property name="password">password</property>
+  
+          <!-- When the number of connections in the connection pool is not enough
+              c3p0 will acquire x connections at once-->
+          <property name="acquireIncrement">5</property>
+  
+          <!-- Initial number of connections -->
+          <property name="initialPoolSize">10</property>
+  
+          <property name="minPoolSize">10</property>
+          <property name="maxPoolSize">20</property>
+  
+          <!-- number of statements to maintenance -->
+          <property name="maxStatements">50</property>
+  
+          <property name="maxStatementsPerConnection">2</property>
+      </named-config>
+  </c3p0-config>
+  ```
+
+- DBCP
+
+  ```groovy
+  implementation group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.1.1'
+  ```
+
+  
+
+- Druid
+
+  ```groovy
+  implementation group: 'com.alibaba', name: 'druid', version: '1.2.4'
+  ```
+
+  
 
 ## 9. Apache-DBUtils 实现 CRUD 操作
 

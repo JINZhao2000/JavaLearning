@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<c3p0-config>
+    <named-config name="intergalactoApp">
+        <property name="driverClass">com.mysql.cj.jdbc.Driver</property>
+        <property name="jdbcUrl">jdbc:mysql://xxx:3306/jdbc_test?rewriteBatchedStatements=true</property>
+        <property name="user">user</property>
+        <property name="password">password</property>
+
+        <!-- When the number of connections in the connection pool is not enough
+            c3p0 will acquire x connections at once-->
+        <property name="acquireIncrement">5</property>
+
+        <!-- Initial number of connections -->
+        <property name="initialPoolSize">10</property>
+
+        <property name="minPoolSize">10</property>
+        <property name="maxPoolSize">20</property>
+
+        <!-- number of statements to maintenance -->
+        <property name="maxStatements">50</property>
+
+        <property name="maxStatementsPerConnection">2</property>
+    </named-config>
+</c3p0-config>
