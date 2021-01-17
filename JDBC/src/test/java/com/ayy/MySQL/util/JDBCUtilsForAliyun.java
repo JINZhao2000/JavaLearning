@@ -1,8 +1,8 @@
 package com.ayy.MySQL.util;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.alibaba.druid.pool.DruidDataSourceFactory;
 
-import java.beans.PropertyVetoException;
+import javax.sql.DataSource;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.sql.*;
@@ -135,9 +135,42 @@ public class JDBCUtilsForAliyun {
         return null;
     }
 
-    private static ComboPooledDataSource dataSource = new ComboPooledDataSource("intergalactoApp");
+//    private static ComboPooledDataSource dataSource = new ComboPooledDataSource("intergalactoApp");
+//
+//    public static Connection getConnectionByC3P0() throws SQLException, PropertyVetoException {
+//        return dataSource.getConnection();
+//    }
+//
+//    private static BasicDataSource source;
+//
+//    static {
+//        try {
+//            InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream("dbcp.properties");
+//            Properties pros = new Properties();
+//            pros.load(is);
+//            source = BasicDataSourceFactory.createDataSource(pros);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    public static Connection getConnectionByDBCP() throws Exception {
+//        return source.getConnection();
+//    }
 
-    public static Connection getConnectionByC3P0() throws SQLException, PropertyVetoException {
-        return dataSource.getConnection();
+    private static DataSource sourceDruid;
+
+    static {
+        try {
+            Properties pros = new Properties();
+            InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream("druid.properties");
+            pros.load(is);
+            sourceDruid = DruidDataSourceFactory.createDataSource(pros);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public static Connection getConnectionByDruid() throws Exception {
+        return sourceDruid.getConnection();
     }
 }

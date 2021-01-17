@@ -511,6 +511,7 @@ connection.commit();
     ```mysql
     grant all privileges on database.table to username@'%' identified by 'pwd';
     grant select, insert, delete, update on xxx.xxx to xxx@localhost identified by 'pwd';
+    ```
 ```
     
 
@@ -520,7 +521,7 @@ BaseDao.java
 
 CRUD 底层操作
 
-```java
+​```java
 public abstract class BaseDAO<T> {
     private final Class<T> clazz;
 
@@ -766,11 +767,15 @@ public class CustomerDAOImpl extends BaseDAO<Customer> implements CustomerDAO {
   - Proxool 是 sourceforge 下的一个开源项目数据库连接池，由监控连接池状态的功能，稳定性较 c3p0 差一点
   - BoneCP 是一个开源组织提供的数据库连接池，速度快
   - Druid 是阿里提供的数据库连接池，据说是集 dbcp，c3p0，proxool 优点于一身的数据库连接池，但是速度不确定是否有 bonecp 快
+  
 - DataSource 通常被称为数据源，它包含连接池和连接池管理两个部分，习惯上也经常把 DataSource 称为连接池
-- DataSource 用来取代 DriverManager 来获取 Connection，获取速度快，同时可以大幅度提高数据库访问速度
-- 特别注意：
-  - 数据源和数据库连接不同，数据源无需创建多个，它是生产数据库连接的工厂，因此整个应用只需要一个
 
+- DataSource 用来取代 DriverManager 来获取 Connection，获取速度快，同时可以大幅度提高数据库访问速度
+
+- 特别注意：
+  
+- 数据源和数据库连接不同，数据源无需创建多个，它是生产数据库连接的工厂，因此整个应用只需要一个
+  
 - C3P0
 
   ```groovy
@@ -812,7 +817,20 @@ public class CustomerDAOImpl extends BaseDAO<Customer> implements CustomerDAO {
   implementation group: 'org.apache.commons', name: 'commons-dbcp2', version: '2.1.1'
   ```
 
-  
+  常用基本属性
+
+  | 属性名                     | 作用                                                         |
+  | -------------------------- | ------------------------------------------------------------ |
+  | initialSize                | 连接池启动时创建的初始化连接数量（默认值为 0）               |
+  | maxActive / maxTotal       | 连接池中可同时连接的最大连接数（默认值为 8，高峰单片机在 20 并发左右） |
+  | maxIdle                    | 连接池中最大的空闲连接数，超过的空闲连接将被释放，如果为负数则为无限制（默认为 8 个）在高负载的情况下，因为连接打开比关闭快，连接池中的个数会很快超过 maxIdle，造成频繁的连接开启和关闭 |
+  | minIdle                    | 连接池中最小的空闲连接数，低于这个数量会创建新的连接，尽量不要接近 maxIdle，连接的创建和销毁都是消耗资源的 |
+  | maxWait                    | 最大等待时间，当没有可用连接时，连接池等待连接释放的最大时间，超过改时间会抛出异常，建议设置为 60000ms，避免因线程池不够用，而导致请求被无限制挂起 |
+  | poolPreparedStatements     | 开启池的 prepared，默认为 false（经测试，开启后的性能没有关闭好） |
+  | maxOpenPreparedStatements  | 开启池的 prepared 后最大连接数（默认无限制）                 |
+  | minEvictableIdleTimeMillis | 连接池中连接，在时间段内一直空闲，被踢出连接池的时间         |
+  | removeAbandonedTimeOut     | 超过时间限制，回收没有用的连接（默认为 300，建议 180）       |
+  | removeAbandoned            | 超过上述时间后，是否进行没用连接的回收                       |
 
 - Druid
 
@@ -820,9 +838,13 @@ public class CustomerDAOImpl extends BaseDAO<Customer> implements CustomerDAO {
   implementation group: 'com.alibaba', name: 'druid', version: '1.2.4'
   ```
 
-  
 
 ## 9. Apache-DBUtils 实现 CRUD 操作
+
+- API
+  - QueryRunner
+  - ResultSetHandler
+  - DbUtils
 
 ## 总结
 
