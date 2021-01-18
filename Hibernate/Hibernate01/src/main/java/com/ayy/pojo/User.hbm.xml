@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+    <class name="com.ayy.pojo.User" table="user_table">
+        <id name="uid">
+            <generator class="native"/>
+        </id>
+        <property name="uname"/>
+        <property name="balance"/>
+    </class>
+</hibernate-mapping>

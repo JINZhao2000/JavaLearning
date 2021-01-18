@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <property name="connection.driver_class">com.mysql.cj.jdbc.Driver</property>
+        <property name="connection.url">jdbc:mysql://xxx:3306/jdbc_test?rewriteBatchedStatements=true</property>
+        <property name="connection.username">xxx</property>
+        <property name="connection.password">xxx</property>
+        <property name="dialect">org.hibernate.dialect.MySQL8Dialect</property>
+        <property name="show_sql">true</property>
+        <property name="format_sql">true</property>
+        <property name="hibernate.hbm2ddl.auto">update</property>
+        <mapping resource="com/ayy/pojo/User.hbm.xml"/>
+    </session-factory>
+</hibernate-configuration>
