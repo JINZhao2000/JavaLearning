@@ -523,5 +523,174 @@ Hibernate 中对象有三种状态：瞬时状态（Transient），持久状态�
 
 ### 5.2 对象状态转换相关方法
 
+<img src="./images/lifecycle.png" style="zoom:50%;" />
+
+如上图所示，使用 new 关键字构建对象，该对象的状态是瞬时状态
+
+- 瞬时状态转为持久状态
+
+  使用 Session 对象的 save() 或 saveOrUpdate() 方法保存对象后，该对象的状态由瞬时态变为持久态
+
+  使用 Session 对象的 get() 或 load() 方法获取对象，该对象为持久状态
+  
+- 持久态转换为瞬时状态
+
+  执行 Session 对象的 delete() 方法后，对象由原来的持久态变为瞬时状态，因为此时该对象没有任何的数据库数据关联
+
+- 持久状态转为游离状态
+
+  执行了 Session 对象的 evict()，clear() 或 close() 方法，对象由原来的持久状态转为游离状态
+
+- 游离状态转为持久状态
+
+  重新获取 Session 对象，执行 Session 对象的 update() 或 saveOrUpdate() 方法，对象由游离状态转为持久状态，该对象再次与 Session 对象相关联
+
+- 游离状态转为瞬时状态
+
+  执行 Session 对象的 delete() 方法，对象由游离状态转变为瞬时状态
+
+  处于瞬时状态或游离状态的对象不再被其他对象引用时，会被 Java 虚拟机按照垃圾回收机制处理
+
+new - save - close - update
+
+```java
+// informal
+@Test
+public void testLifeCycle01(){
+    Session session = null;
+    Transaction tx = null;
+    User user = null;
+    try {
+        session = HibernateUtils.getSession();
+        tx = session.beginTransaction();
+
+        user = new User(); // transient
+        user.setUname("Hibernate2");
+        user.setBalance(2000);
+
+        session.save(user); // persistent
+
+        tx.commit();
+    }catch (Exception e){
+        tx.rollback();
+    }finally {
+        HibernateUtils.closeSession();    
+    }
+    try {
+        session = HibernateUtils.getSession();
+        tx = session.beginTransaction();
+
+        user.setUname("Hibernate3"); // detached
+        
+        session.update(user); // persistent
+        
+        tx.commit();
+    }catch (Exception e){
+        tx.rollback();
+    }finally {
+        HibernateUtils.closeSession();
+    }
+}
+```
+
+get/load - clear/evict
+
+```java
+@Test
+public void testLifeCycle02() {
+    Session session = null;
+    User user = null;
+    try {
+        session = HibernateUtils.getSession();
+
+        //user = session.get(User.class,1); // persistent instantly
+        user = session.load(User.class, 2); // persistent proxy
+
+        System.out.println(user);
+
+        session.clear(); // detached
+        //session.evict(user);
+    } catch (Exception e) {
+    } finally {
+        HibernateUtils.closeSession();        
+    }    
+}
+```
+
+update
+
+```java
+@Test
+public void testUpdate(){
+    Session session = null;
+    Transaction tx = null;
+    User user = null;
+    try {
+        session = HibernateUtils.getSession();
+        tx = session.beginTransaction();
+
+        /* illegal
+        user = new User();
+        user.setUid(1);
+        user.setUname("Hibernate4");
+        session.update(user);
+        */
+        // balance => null
+
+        user = session.get(User.class,1);
+        if(null!=user){
+            user.setUname("Hibernate5");
+            session.update(user);
+        }
+
+        tx.commit();
+    } catch (Exception e) {
+        tx.rollback();
+    } finally {
+        HibernateUtils.closeSession();
+    }
+}
+```
+
+delete
+
+```java
+@Test
+public void testDelete(){
+    Session session = null;
+    Transaction tx = null;
+    User user = null;
+    try {
+        session = HibernateUtils.getSession();
+        tx = session.beginTransaction();
+                   
+        /* illegal
+        user = new User();
+        user.setUid(2);
+        session.delete(user);
+        */
+
+        user = session.get(User.class,2);
+        if(null!=user){
+            session.delete(user);
+        }
+
+        tx.commit();
+    } catch (Exception e) {
+        tx.rollback();
+    } finally {
+        HibernateUtils.closeSession();
+    }
+}
+```
+
 ### 5.3 对象三种状态的比较
+
+|   State    | Memory | Session |  DB  |
+| :--------: | :----: | :-----: | :--: |
+| Transient  |   Y    |    N    |  N   |
+| Persistent |   Y    |    Y    |  Y   |
+|  Detached  |   Y    |    N    |  Y   |
+
+## 6. HibernateSchemaExport 使用
 

@@ -17,7 +17,7 @@ import org.junit.Test;
  */
 public class UserTest {
     @Test
-    public void HibernateUpdateTest(){
+    public void testHibernateUpdate(){
         StandardServiceRegistry registry = null;
         SessionFactory sessionFactory = null;
         Session session = null;
@@ -46,7 +46,7 @@ public class UserTest {
     }
 
     @Test
-    public void HibernateQueryTest(){
+    public void testHibernateQuery(){
         StandardServiceRegistry registry = null;
         SessionFactory sessionFactory = null;
         Session session = null;
