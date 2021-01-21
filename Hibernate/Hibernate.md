@@ -694,3 +694,68 @@ public void testDelete(){
 
 ## 6. HibernateSchemaExport 使用
 
+使用 SchemaExport 以后，一下配置不需要
+
+```xml
+<property name="hibernate.hbm2ddl.auto">update</property>
+```
+
+Hibernate 3/4
+
+```java
+@Test
+public void testCreateDB(){
+    Configuration cfg = new Configuration.configure();
+    SchemaExport export = new SchemaExport(cfg);
+    export.create(true,true);
+    ...
+}
+```
+
+Hibernate 5
+
+```java
+@Test
+public void testCreateDB(){
+    StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
+        .configure()
+        .build();
+    
+    /* 5.0.x
+    MetadataImplementor metadataImplementor = (MetadataImplementor) new MetadataSources(registry).buildMetadata();
+    SchemaExport export = new SchemaExport(registry,metadataImplementor);
+    export.create(true,true); // 是否生成 DDL 脚本，是否执行到脚本库
+    */
+    
+    Metadata metadata = new MetadataSources(registry).buildMetadata();
+    SchemaExport export = new SchemaExport();
+    export.create(EnumSet.of(TargetType.DATABASE),metadata);
+}
+```
+
+### 6.2 过时的 MySQL5InnoDBDialect
+
+- 什么是 Hibernate 方言
+
+  Hibernate 方言是用来告诉 Hibernate 如何对指定的数据库生成相应的 SQL 语句
+
+  尽管做了很多尝试去使 SQL 语句标准化，但是不同数据库支持的 SQL 语句还是有很多不同的地方，所以 Hibernate 使用方言来辅助生成正确的 SQL 语句
+
+- MySQL5Dialect 与 MySQL5InnoDBDialect 由什么区别
+
+  最大的区别是在使用 Hibernate 创建表时 MySQL5InnoDBDialect 会在生成的建表 SQL 语句最后加上 `engine=InnoDB`，InnoDB 是一种 MySQL 数据库引擎，MySQL5.5 及以后使用它作为默认引擎，它提供了 ACID 兼容的事务功能，并提供外键支持
+
+- MySQLDialect 与 MySQL5Dialect 有什么区别
+
+  MySQLDialect 是针对 MySQL5 之前的版本，主要变化还是在于建表 SQL 语句
+
+  MySQL 由于 4 到 5 还是有不小的变化，比如 `varchar` 在 4 及以前版本最大长度限制为 255，5.0.3x 之后版本最大长度限制为 65535
+
+  MySQLInnoDBDialect 会在生成的建表的 SQL 语句最后加上 `TYPE=InnoDB` 
+
+- 过时的 MySQL5InnoDBDialect
+
+  升级到 Hibernate 5 的时候，就会发现 MySQL5InnoDBDialect，被标注了 `@Deprecated` 也就是过时了，不仅仅是 MySQL5InnoDBDialect 过时了，所有带 InnoDB 的 Dialect 都被标注过时了 `@Deprecated`，在标注有 InnoDBDialect 过时的同时，新加了 MySQL55Dialect 及 MySQL57Dialect
+
+  如果查看源码就会发现 MySQL5Dialect 与 MySQL5InnoDBDialect 源码一模一样，毕竟 MySQL 从 5.5 开始就默认使用 InnoDB 引擎，MySQL 8 已经移除了 MyISAM 引擎，Hibernate 的作者认为 Dialect 分为两类就没有什么必要了
+
