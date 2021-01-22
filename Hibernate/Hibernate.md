@@ -694,6 +694,8 @@ public void testDelete(){
 
 ## 6. HibernateSchemaExport 使用
 
+### 6.1 SchemaExport 建表
+
 使用 SchemaExport 以后，一下配置不需要
 
 ```xml
@@ -758,4 +760,49 @@ public void testCreateDB(){
   升级到 Hibernate 5 的时候，就会发现 MySQL5InnoDBDialect，被标注了 `@Deprecated` 也就是过时了，不仅仅是 MySQL5InnoDBDialect 过时了，所有带 InnoDB 的 Dialect 都被标注过时了 `@Deprecated`，在标注有 InnoDBDialect 过时的同时，新加了 MySQL55Dialect 及 MySQL57Dialect
 
   如果查看源码就会发现 MySQL5Dialect 与 MySQL5InnoDBDialect 源码一模一样，毕竟 MySQL 从 5.5 开始就默认使用 InnoDB 引擎，MySQL 8 已经移除了 MyISAM 引擎，Hibernate 的作者认为 Dialect 分为两类就没有什么必要了
+
+## 7 Hibernate 映射关系
+
+### 7.1 映射关系
+
+​		简单来说 Hibernate 是 ORM 映射的持久层，全称是 Object Relational Mapping，即对象关系映射
+
+​		它将数据库中的表映射成对应的对象，以对象的形式展现，这样我们就可以通过映射的对象来对数据库中的数据进行间接的操作
+
+​		映射关系是将数据库中的表映射成与之相对应的对象，当对这个对象进行操作的时候，Hibernate 会对数据库中对应的表执行相应的操作，你对该实体的操作实际上就是在间接的操作数据库中与之相对应的表
+
+​		Hibernate 正是实现了这种思想，达到了方便开发人员以面向对象的思想来实现对数据库的操作
+
+Hibernate 主要实现的映射关系
+
+- 基本映射
+- 组件映射
+  - 复合主键映射（特殊）
+  - 基本组件映射
+- 集合映射
+  - List
+  - Map
+  - Set
+- 关系映射
+  - 单向多对一
+  - 单向一对多
+  - 双向一对多
+  - 基于外键单向一对一
+  - 基于外键双向一对一
+  - 基于主键单向一对一
+  - 基于主键双向一对一
+  - 基于主键单向多对多
+  - 基于主键双向多对多
+- 继承映射
+  - 每棵类继承树
+  - 每个具体类（子类）一张表
+  - 每个类一张表
+
+### 7.2 映射结构
+
+Hibernate 在实现 ORM 功能的时候主要用到的文件有：映射类 `*.java`，映射文件 `*.hbm.xml` 和数据库配置文件 `*.properties/*.cfg.xml` 
+
+- 映射类：它是描述数据库表的结构，表中的字段在类中被描述成属性，将来就可以实现把表中的记录映射成为该类的对象了
+- 映射文件：它是指定数据库和映射类之间的关系，包括映射类和数据库表的对应关系，表字段和类属性类型的对应关系以及表字段和类属性名称的对应关系等
+- 数据库配置文件：它是指定与数据库连接时需要的连接信息，比如连接哪种数据库，登录数据库的用户名，登陆密码以及拼接字符串等，还可以把映射类的地址映射信息放在这里
 
