@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Grade2" table="grade2">
+        <id name="gid">
+            <generator class="native"/>
+        </id>
+        <property name="gname"/>
+        <set name="students">
+            <key foreign-key="fk_student2_grade2" not-null="true" column="grade"></key>
+            <one-to-many class="Student2"/>
+        </set>
+    </class>
+</hibernate-mapping>

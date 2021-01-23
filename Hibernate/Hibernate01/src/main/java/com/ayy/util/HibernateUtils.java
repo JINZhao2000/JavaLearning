@@ -36,7 +36,7 @@ public class HibernateUtils {
             }
             session = (null!=factory?factory.openSession():null);
             if(null==session){
-                throw new IllegalArgumentException("Can't create session com.ayy.util.HibernateUtils line 39");
+                throw new IllegalArgumentException("Can't create session");
             }
             sessionThreadLocal.set(session);
         }

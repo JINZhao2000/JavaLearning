@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Student2" table="student2">
+        <id name="sid">
+            <generator class="native"/>
+        </id>
+        <property name="sname"/>
+        <property name="age"/>
+    </class>
+</hibernate-mapping>

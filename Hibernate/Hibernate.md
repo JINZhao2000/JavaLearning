@@ -806,3 +806,412 @@ Hibernate 在实现 ORM 功能的时候主要用到的文件有：映射类 `*.j
 - 映射文件：它是指定数据库和映射类之间的关系，包括映射类和数据库表的对应关系，表字段和类属性类型的对应关系以及表字段和类属性名称的对应关系等
 - 数据库配置文件：它是指定与数据库连接时需要的连接信息，比如连接哪种数据库，登录数据库的用户名，登陆密码以及拼接字符串等，还可以把映射类的地址映射信息放在这里
 
+### 7.3 单向多对一
+
+学生对应年级
+
+Student.java
+
+```java
+public class Student implements Serializable {
+    private Integer sid;
+    private String sname;
+    private Integer age;
+    private Grade grade;
+
+    public Student() {}
+
+    public Student(Integer sid, String sname, Integer age, Grade grade) {
+        this.sid = sid;
+        this.sname = sname;
+        this.age = age;
+        this.grade = grade;
+    }
+
+    public Integer getSid() {
+        return sid;
+    }
+
+    public void setSid(Integer sid) {
+        this.sid = sid;
+    }
+
+    public String getSname() {
+        return sname;
+    }
+
+    public void setSname(String sname) {
+        this.sname = sname;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public Grade getGrade() {
+        return grade;
+    }
+
+    public void setGrade(Grade grade) {
+        this.grade = grade;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{"+this.sname+","+this.age+","+this.grade+"}";
+    }
+}
+```
+
+Grade.java
+
+```java
+public class Grade implements Serializable {
+    private Integer gid;
+    private String gname;
+
+    public Grade() {}
+
+    public Grade(String gname) {
+        this.gname = gname;
+    }
+
+    public Integer getGid() {
+        return gid;
+    }
+
+    public void setGid(Integer gid) {
+        this.gid = gid;
+    }
+
+    public String getGname() {
+        return gname;
+    }
+
+    public void setGname(String gname) {
+        this.gname = gname;
+    }
+
+    @Override
+    public String toString() {
+        return "Grade{"+this.gname+"}";
+    }
+}
+```
+
+Student.hbm.xml
+
+```java
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Student" table="student">
+        <id name="sid">
+            <generator class="native"/>
+        </id>
+        <property name="sname"/>
+        <property name="age"/>
+        <many-to-one name="grade" class="Grade" not-null="true" foreign-key="fk_student_grade"/>
+    </class>
+</hibernate-mapping>
+```
+
+Grade.hbm.xml
+
+```java
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Grade" table="grade">
+        <id name="gid">
+            <generator class="native"/>
+        </id>
+        <property name="gname"/>
+    </class>
+</hibernate-mapping>
+```
+
+DDL
+
+```java
+@Test
+public void testSingleManyToOne(){
+    Session session = null;
+    Transaction tx = null;
+    try {
+        session = HibernateUtils.getSession();
+        tx = session.beginTransaction();
+
+        Grade g1 = new Grade();
+        g1.setGname("Base");
+
+        Grade g2 = new Grade();
+        g2.setGname("Advanced");
+
+        session.save(g1);
+        session.save(g2);
+
+        Student stu1 = new Student();
+        stu1.setSname("Student1");
+        stu1.setAge(10);
+        stu1.setGrade(g1);
+
+        Student stu2 = new Student();
+        stu2.setSname("Student2");
+        stu2.setAge(12);
+        stu2.setGrade(g1);
+
+        Student stu3 = new Student();
+        stu3.setSname("Student3");
+        stu3.setAge(14);
+        stu3.setGrade(g2);
+
+        session.save(stu1);
+        session.save(stu2);
+        session.save(stu3);
+
+        tx.commit();
+    } catch (Exception e) {
+        tx.rollback();
+    } finally {
+        HibernateUtils.closeSession();
+    }
+}
+```
+
+Get
+
+```java
+@Test
+public void testSingleGetManyToOne(){
+    Session session = null;
+    Student stu = null;
+    try {
+        session = HibernateUtils.getSession();
+
+        stu = session.get(Student.class,1);
+        System.out.println(stu);
+
+    } catch (Exception e) {
+    } finally {
+        HibernateUtils.closeSession();
+    }
+}
+```
+
+### 7.4 单向一对多
+
+年级对应学习
+
+Student.java
+
+```java
+public class Student2 implements Serializable {
+    private Integer sid;
+    private String sname;
+    private Integer age;
+
+    public Student2() {}
+
+    public Student2(Integer sid, String sname, Integer age) {
+        this.sid = sid;
+        this.sname = sname;
+        this.age = age;
+    }
+
+    public Integer getSid() {
+        return sid;
+    }
+
+    public void setSid(Integer sid) {
+        this.sid = sid;
+    }
+
+    public String getSname() {
+        return sname;
+    }
+
+    public void setSname(String sname) {
+        this.sname = sname;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "Student{"+this.sname+","+this.age+"}";
+    }
+}
+```
+
+Student.hbm.xml
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Student2" table="student2">
+        <id name="sid">
+            <generator class="native"/>
+        </id>
+        <property name="sname"/>
+        <property name="age"/>
+    </class>
+</hibernate-mapping>
+```
+
+Grade.java
+
+```java
+public class Grade2 implements Serializable {
+    private Integer gid;
+    private String gname;
+    private Set<Student2> students;
+
+    public Set<Student2> getStudents() {
+        return students;
+    }
+
+    public void addStudent(Student2 stu){
+        this.students.add(stu);
+    }
+
+    public void setStudents(Set<Student2> students) {
+        this.students = students;
+    }
+
+    public Grade2() {
+        students = new HashSet<>();
+    }
+
+    public Grade2(String gname) {
+        this.gname = gname;
+    }
+
+    public Integer getGid() {
+        return gid;
+    }
+
+    public void setGid(Integer gid) {
+        this.gid = gid;
+    }
+
+    public String getGname() {
+        return gname;
+    }
+
+    public void setGname(String gname) {
+        this.gname = gname;
+    }
+
+    @Override
+    public String toString() {
+        return "Grade{"+this.gname+","+this.students.toString()+"}";
+    }
+}
+```
+
+Grade.hbm.xml
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Grade2" table="grade2">
+        <id name="gid">
+            <generator class="native"/>
+        </id>
+        <property name="gname"/>
+        <set name="students">
+            <key foreign-key="fk_student2_grade2" not-null="true" column="grade"></key>
+            <one-to-many class="Student2"/>
+        </set>
+    </class>
+</hibernate-mapping>
+```
+
+DDL
+
+```java
+@Test
+public void testSingleOneToMany(){
+    Session session = null;
+    Transaction tx = null;
+    try {
+        session = HibernateUtils.getSession();
+        tx = session.beginTransaction();
+
+        Grade2 g1 = new Grade2();
+        g1.setGname("Base");
+
+        Grade2 g2 = new Grade2();
+        g2.setGname("Advanced");
+
+        Student2 stu1 = new Student2();
+        stu1.setSname("Student1");
+        stu1.setAge(10);
+
+        Student2 stu2 = new Student2();
+        stu2.setSname("Student2");
+        stu2.setAge(12);
+
+        Student2 stu3 = new Student2();
+        stu3.setSname("Student3");
+        stu3.setAge(14);
+
+        g1.addStudent(stu1);
+        g1.addStudent(stu2);
+        g2.addStudent(stu3);
+
+        session.save(g1);
+        session.save(g2);
+        session.save(stu1);
+        session.save(stu2);
+        session.save(stu3);
+
+        tx.commit();
+    } catch (Exception e) {
+        tx.rollback();
+    } finally {
+        HibernateUtils.closeSession();
+    }
+}
+```
+
+Get
+
+```java
+@Test
+public void testSingleGetOneToMany(){
+    Session session = null;
+    Grade2 g = null;
+    try {
+        session = HibernateUtils.getSession();
+        
+        g = session.get(Grade2.class,1);
+        g.getStudents().forEach(System.out::println);    
+    } catch (Exception e) {
+    } finally {
+        HibernateUtils.closeSession();
+    }
+}
+```
+
