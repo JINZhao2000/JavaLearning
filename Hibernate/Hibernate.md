@@ -1215,3 +1215,13 @@ public void testSingleGetOneToMany(){
 }
 ```
 
+### 7.5 双向一对多
+
+配置文件不指定非空
+
+### 7.6 总结
+
+单向多对一效率最高
+
+
+
