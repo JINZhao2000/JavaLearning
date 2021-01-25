@@ -133,4 +133,45 @@ public class StudentGradeTest {
             HibernateUtils.closeSession();
         }
     }
+
+    @Test
+    public void testDoubleOneToMany(){
+        Session session = null;
+        Transaction tx = null;
+        try {
+            session = HibernateUtils.getSession();
+            tx = session.beginTransaction();
+
+            Grade3 g1 = new Grade3();
+            g1.setGname("Base");
+
+            Grade3 g2 = new Grade3();
+            g2.setGname("Advanced");
+
+            Student3 stu1 = new Student3();
+            stu1.setSname("Student1");
+            stu1.setAge(10);
+
+            Student3 stu2 = new Student3();
+            stu2.setSname("Student2");
+            stu2.setAge(12);
+
+            Student3 stu3 = new Student3();
+            stu3.setSname("Student3");
+            stu3.setAge(14);
+
+            g1.addStudent(stu1);
+            g1.addStudent(stu2);
+            g2.addStudent(stu3);
+
+            session.save(g1);
+            session.save(g2);
+
+            tx.commit();
+        } catch (Exception e) {
+            tx.rollback();
+        } finally {
+            HibernateUtils.closeSession();
+        }
+    }
 }

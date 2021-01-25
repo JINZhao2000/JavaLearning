@@ -1219,9 +1219,209 @@ public void testSingleGetOneToMany(){
 
 配置文件不指定非空
 
-### 7.6 总结
+### 7.6 级联操作 cascade
 
-单向多对一效率最高
+​		在双向一对多的关系中，每次保存对象时，学生对象和年纪对象都需要我们持久化 session，既然它们两者有关联关系，可以考虑至持久化一端，另一端被自动的持久化，cascade 就是多对一，一对多，一对一，多对多各种关系之间的一种级联操作行为
 
+​		当 Hibernate 持久化一个瞬时对象时，在默认情况下，它不会自动持久化所关联的其它临时对象，而是会抛出异常 `org.hibernate.TransientObjectException` 
 
+​		级联的意思是：本实体做了什么事，也要拉上另一个关联实体，导致另一个实体跟着做事情
+
+配置文件
+
+年级级联学生
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Grade3" table="grade3">
+        <id name="gid">
+            <generator class="native"/>
+        </id>
+        <property name="gname"/>
+        <set name="students" cascade="save-update">
+            <key foreign-key="fk_student3_grade3" column="grade"/>
+            <one-to-many class="Student3"/>
+        </set>
+    </class>
+</hibernate-mapping>
+```
+
+学生级联年级
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Student3" table="student3">
+        <id name="sid">
+            <generator class="native"/>
+        </id>
+        <property name="sname"/>
+        <property name="age"/>
+        <many-to-one cascade="save-update" name="grade" class="Grade3" foreign-key="fk_student3_grade3"/>
+    </class>
+</hibernate-mapping>
+```
+
+- 在多对一级联中 如果级联 一会删除多中有该对应属性的数据
+- 在一对多级联中 如果为 delete 多的一端不能指明外键为空
+
+### 7.7 维护关系 inverse
+
+​		如果一端的映射文件中设置为 true，说明在映射关系（一对多，多对多等）中让对方来维护关系
+
+​		inverse 权限在 cascade 之上
+
+​		会导致外键为 null
+
+配置文件
+
+```java
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Grade3" table="grade3">
+        <id name="gid">
+            <generator class="native"/>
+        </id>
+        <property name="gname"/>
+        <set name="students" cascade="save-update" inverse="true">
+            <key foreign-key="fk_student3_grade3" column="grade"/>
+            <one-to-many class="Student3"/>
+        </set>
+    </class>
+</hibernate-mapping>
+```
+
+### 7.8 基于外键单向一对一
+
+Person.java
+
+```java
+public class Person implements Serializable {
+    private Integer pid;
+    private String pname;
+    private Integer age;
+    private IdCard card;
+
+    public Person() {}
+
+    public Integer getPid() {
+        return pid;
+    }
+
+    public void setPid(Integer pid) {
+        this.pid = pid;
+    }
+
+    public String getPname() {
+        return pname;
+    }
+
+    public void setPname(String pname) {
+        this.pname = pname;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public IdCard getCard() {
+        return card;
+    }
+
+    public void setCard(IdCard card) {
+        this.card = card;
+    }
+
+    @Override
+    public String toString() {
+        return "Person{"+this.pname+","+this.age+","+this.card+"}";
+    }
+}
+```
+
+Person.hbm.xml
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Person" table="person">
+        <id name="pid">
+            <generator class="native"/>
+        </id>
+        <property name="pname"/>
+        <property name="age"/>
+        <many-to-one cascade="save-update" name="card" class="IdCard" unique="true" foreign-key="fk_person_idcard" column="idcard"/>
+    </class>
+</hibernate-mapping>
+```
+
+IdCard.java
+
+```java
+public class IdCard implements Serializable {
+    private Integer pid;
+    private String code;
+
+    public IdCard() {}
+
+    public Integer getPid() {
+        return pid;
+    }
+
+    public void setPid(Integer pid) {
+        this.pid = pid;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    @Override
+    public String toString() {
+        return "IdCard{"+this.code+"}";
+    }
+}
+```
+
+IdCard.hbm.xml
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="IdCard" table="idcard">
+        <id name="pid">
+            <generator class="native"/>
+        </id>
+        <property name="code"/>
+    </class>
+</hibernate-mapping>
+```
+
+### 7.9 基于外键双向一对一
+
+### 7.10 基于外键单向一对一
 

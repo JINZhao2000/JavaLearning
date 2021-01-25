@@ -3,14 +3,12 @@
         "-//hibernate/Hibernate Mapping DTD 3.0//EN"
         "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
 <hibernate-mapping package="com.ayy.pojo">
-    <class name="Grade3" table="grade3">
-        <id name="gid">
+    <class name="Person" table="person">
+        <id name="pid">
             <generator class="native"/>
         </id>
-        <property name="gname"/>
-        <set name="students" cascade="save-update" inverse="true">
-            <key foreign-key="fk_student3_grade3" column="grade"/>
-            <one-to-many class="Student3"/>
-        </set>
+        <property name="pname"/>
+        <property name="age"/>
+        <many-to-one cascade="save-update" name="card" class="IdCard" unique="true" foreign-key="fk_person_idcard" column="idcard"/>
     </class>
 </hibernate-mapping>

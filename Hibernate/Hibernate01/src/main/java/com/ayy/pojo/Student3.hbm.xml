@@ -9,6 +9,6 @@
         </id>
         <property name="sname"/>
         <property name="age"/>
-        <many-to-one name="grade" class="Grade3" foreign-key="fk_student3_grade3"/>
+        <many-to-one cascade="save-update" name="grade" class="Grade3" foreign-key="fk_student3_grade3"/>
     </class>
 </hibernate-mapping>
