@@ -1423,5 +1423,253 @@ IdCard.hbm.xml
 
 ### 7.9 基于外键双向一对一
 
-### 7.10 基于外键单向一对一
+IdCard.java
+
+```java
+public class IdCard2 implements Serializable {
+    private Integer pid;
+    private String code;
+    private Person2 person;
+
+    public Person2 getPerson() {
+        return person;
+    }
+
+    public void setPerson(Person2 person) {
+        this.person = person;
+    }
+
+    public IdCard2() {}
+
+    public Integer getPid() {
+        return pid;
+    }
+
+    public void setPid(Integer pid) {
+        this.pid = pid;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    @Override
+    public String toString() {
+        return "IdCard{"+this.code+"}";
+    }
+}
+```
+
+IdCard.hbm.xml
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="IdCard2" table="idcard2">
+        <id name="pid">
+            <generator class="native"/>
+        </id>
+        <property name="code"/>
+        <one-to-one cascade="save-update" name="person" property-ref="card"/>
+    </class>
+</hibernate-mapping>
+```
+
+Person.java
+
+```java
+public class Person2 implements Serializable {
+    private Integer pid;
+    private String pname;
+    private Integer age;
+    private IdCard2 card;
+
+    public Person2() {}
+
+    public Integer getPid() {
+        return pid;
+    }
+
+    public void setPid(Integer pid) {
+        this.pid = pid;
+    }
+
+    public String getPname() {
+        return pname;
+    }
+
+    public void setPname(String pname) {
+        this.pname = pname;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public IdCard2 getCard() {
+        return card;
+    }
+
+    public void setCard(IdCard2 card) {
+        this.card = card;
+    }
+
+    @Override
+    public String toString() {
+        return "Person{"+this.pname+","+this.age+","+this.card+"}";
+    }
+}
+```
+
+Person.hbm.xml
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Person2" table="person2">
+        <id name="pid">
+            <generator class="native"/>
+        </id>
+        <property name="pname"/>
+        <property name="age"/>
+        <many-to-one cascade="save-update" name="card" class="IdCard2" unique="true" foreign-key="fk_person2_idcard2" column="idcard"/>
+    </class>
+</hibernate-mapping>
+```
+
+Test
+
+```java
+@Test
+public void testDoubleOneToOne(){
+    Session session = null;
+    Transaction tx = null;
+    try {
+        session = HibernateUtils.getSession();
+        tx = session.beginTransaction();
+
+        IdCard2 c1 = new IdCard2();
+        c1.setCode("100101");
+
+        IdCard2 c2 = new IdCard2();
+        c2.setCode("100102");
+
+        Person2 p1 = new Person2();
+        p1.setPname("Person1");
+        p1.setAge(11);
+
+        Person2 p2 = new Person2();
+        p2.setPname("Person2");
+        p2.setAge(12);
+
+        c1.setPerson(p1);
+        c2.setPerson(p2);
+
+        session.save(c1);
+        session.save(c2);
+
+        tx.commit();
+    } catch (Exception e) {
+        tx.rollback();
+    } finally {
+        HibernateUtils.closeSession();
+    }
+}
+```
+
+### 7.10 基于主键单向一对一
+
+用上面的类
+
+Person.hbm.xml
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="Person3" table="person3">
+        <id name="pid">
+            <generator class="foreign">
+                <param name="property">card</param>
+            </generator>
+        </id>
+        <property name="pname"/>
+        <property name="age"/>
+        <one-to-one name="card" cascade="save-update" constrained="true"/>
+    </class>
+</hibernate-mapping>
+```
+
+IdCard.hbm.xml
+
+```xml-dtd
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="IdCard3" table="idcard3">
+        <id name="pid">
+            <generator class="native"/>
+        </id>
+        <property name="code"/>
+    </class>
+</hibernate-mapping>
+```
+
+Test
+
+```java
+@Test
+public void testDoubleOneToOnePrimaryKey(){
+    Session session = null;
+    Transaction tx = null;
+    try {
+        session = HibernateUtils.getSession();
+        tx = session.beginTransaction();
+
+        IdCard3 c1 = new IdCard3();
+        c1.setCode("100101");
+
+        IdCard3 c2 = new IdCard3();
+        c2.setCode("100102");
+
+        Person3 p1 = new Person3();
+        p1.setPname("Person1");
+        p1.setAge(11);
+
+        Person3 p2 = new Person3();
+        p2.setPname("Person2");
+        p2.setAge(12);
+
+        p1.setCard(c1);
+        p2.setCard(c2);
+
+        session.save(p1);
+        session.save(p2);
+
+        tx.commit();
+    } catch (Exception e) {
+        tx.rollback();
+    } finally {
+        HibernateUtils.closeSession();
+    }
+}
+```
 

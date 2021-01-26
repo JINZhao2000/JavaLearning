@@ -3,7 +3,7 @@ package com.ayy.pojo;
 import java.io.Serializable;
 
 /**
- * @ ClassName Student
+ * @ ClassName Student2
  * @ Description
  * @ Author Zhao JIN
  * @ Date 22/01/2021 23H

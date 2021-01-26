@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/xsd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.ayy.pojo">
+    <class name="IdCard2" table="idcard2">
+        <id name="pid">
+            <generator class="native"/>
+        </id>
+        <property name="code"/>
+        <one-to-one cascade="save-update" name="person" property-ref="card"/>
+    </class>
+</hibernate-mapping>
