@@ -46,17 +46,7 @@
 
 __Docker 的基本组成__ 
 
-- Client
-  - docker build
-  - docker pull
-  - docker run
-- Docker_Host
-  - docker daemon
-  - containers
-  - images
-- Registry
-  - nginx
-  - redis
+<img width="75%" src="./images/dockerArchi.png">
 
 镜像 image：Docker 镜像就如同一个模板，可以通过这个模板来创建服务，通过 run 镜像创建多个容器，最终服务运行或者项目运行就是在容器中
 
@@ -161,13 +151,129 @@ sudo rm -rf /var/lib/docker
 ## Docker 默认工作路径
 ```
 
+__Hello World 流程__ 
+
+开始 -> 寻找本地寻找镜像 -> 如果有镜像，则使用本地镜像 -> 如果没有去云端下载镜像 -> 如果找不到，则返回错误，如果能找到，则下载镜像到本地并运行
+
+<img width="85%" src="./images/dockerHW.png">
+
+__底层原理__ 
+
+- Docker 工作原理
+
+  Docker 是一个 Client-Server 结构的系统，Docker 的守护进程运行在主机上，通过 Socket 从客户端访问
+
+  DockerServer 接收到 Docker-Client 的指令，就会执行这个指令
+
+  <img width="85%" src="./images/dockerCS.png">
+
+- Docker 为什么比虚拟机快
+
+  - Docker 比虚拟机有更少的抽象层
+
+    <img width="75%" src="./images/dockerAndVM.png">
+
+    所以说，新建一个容器的时候，Docker 不需要像虚拟机一样重新加载一个操作系统，避免引导操作，虚拟机是加载 Guest OS，分钟级别的，而 Docker 是利用宿主机的操作系统，省略了这个复杂的过程，是秒级的
+
 ## Docker 命令
 
-### 镜像命令
+- [命令手册](https://docs.docker.com/reference/) 
 
-### 容器命令
+- 帮助命令
 
-### 操作命令
+  ```shell
+  docker version
+  docker info
+  docker <command> --help
+  ```
+
+- 镜像命令
+
+  ```shell
+  docker images # 查看本地主机上的镜像
+  
+  root@iZgw8c1ercy5vvlhqtx2v7Z:~# docker images
+  REPOSITORY    TAG       IMAGE ID       CREATED         SIZE
+  hello-world   latest    bf756fb1ae65   13 months ago   13.3kB
+  
+  # REPOSITORY 镜像的仓库源
+  # TAG 镜像的标签
+  # IMAGE ID 镜像的 ID
+  # CREATED 镜像创建时间
+  # SIZE 镜像的大小
+  
+  root@iZgw8c1ercy5vvlhqtx2v7Z:~# docker images --help
+  
+  Usage:  docker images [OPTIONS] [REPOSITORY[:TAG]]
+  
+  List images
+  
+  Options:
+    -a, --all             # 列出所有镜像
+    -q, --quiet           # 只显示镜像 ID
+  
+  ##########
+  docker search # 搜索镜像
+  
+  root@iZgw8c1ercy5vvlhqtx2v7Z:~# docker search mysql
+  NAME                              DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
+  mysql                             MySQL is a widely used, open-source relation…   10428     [OK]       
+  
+  #
+  
+  root@iZgw8c1ercy5vvlhqtx2v7Z:~# docker search --help
+  
+  Usage:  docker search [OPTIONS] TERM
+  
+  Search the Docker Hub for images
+  
+  Options:
+    -f, --filter=STARS=3000 # 搜索出镜像是 STARS 大于 3000 的
+  
+  root@iZgw8c1ercy5vvlhqtx2v7Z:~# docker search mysql --filter=STARS=3000
+  NAME      DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
+  mysql     MySQL is a widely used, open-source relation…   10428     [OK]       
+  mariadb   MariaDB is a community-developed fork of MyS…   3870      [OK]    
+  
+  ##########
+  docker pull # 下载镜像
+  
+  root@iZgw8c1ercy5vvlhqtx2v7Z:~# docker pull mysql
+  Using default tag: latest # 如果不写版本，默认最近
+  latest: Pulling from library/mysql
+  a076a628af6f: Pull complete # 分层下载，docker image 核心
+  f6c208f3f991: Pull complete 
+  88a9455a9165: Pull complete 
+  406c9b8427c6: Pull complete 
+  7c88599c0b25: Pull complete 
+  25b5c6debdaf: Pull complete 
+  43a5816f1617: Pull complete 
+  1a8c919e89bf: Pull complete 
+  9f3cf4bd1a07: Pull complete 
+  80539cea118d: Pull complete 
+  201b3cad54ce: Pull complete 
+  944ba37e1c06: Pull complete 
+  Digest: sha256:feada149cb8ff54eade1336da7c1d080c4a1c7ed82b5e320efb5beebed85ae8c # 签名
+  Status: Downloaded newer image for mysql:latest
+  docker.io/library/mysql:latest # 真实地址
+  
+  docker pull mysql
+  docker pull docker.io/library/mysql:latest
+  
+  ##########
+  docker rmi
+  
+  root@iZgw8c1ercy5vvlhqtx2v7Z:~# docker rmi -f mysql:latest
+  # 根据容器删除
+  root@iZgw8c1ercy5vvlhqtx2v7Z:~# docker rmi -f c8562eaf9d81
+  # 根据镜像 ID 删除
+  root@iZgw8c1ercy5vvlhqtx2v7Z:~# docker rmi -f $(docker images -aq)
+  # 删除所有的镜像
+  ```
+
+- 容器命令
+
+- 操作命令
 
 ## Docker 镜像
 
