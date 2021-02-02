@@ -196,3 +196,96 @@ http.cors.allow-origin: "*"
     倒排索引数据查询会快很多，完全过滤掉无关的所有数据
 
 ## 5. IK 分词器
+
+分词：即把一段中文或者别的词划分成一个个的关键字，在搜索的时候把自己的信息进行分词，把数据库中或者索引库中的数据进行分词，然后进行匹配操作，默认的中文分词是将每个中文看作一个词，然后中文分词器 IK 可以解决这个问题
+
+IK 提供了两个分词算法：ik_smart 和 ik_max_word，其中 ik_smart 为最少切分，ik_max_word 为最细粒度切分
+
+[IK 分词器](https://github.com/medcl/elasticsearch-analysis-ik) 
+
+命令行检查
+
+```shell
+elasticsearch-plugin list
+```
+
+使用
+
+ik_max_word
+
+```json
+GET _analyze
+{
+  "analyzer": "ik_max_word",
+  "text": "生日快乐"
+}
+```
+
+结果
+
+```json
+{
+  "tokens" : [
+    {
+      "token" : "生日快乐",
+      "start_offset" : 0,
+      "end_offset" : 4,
+      "type" : "CN_WORD",
+      "position" : 0
+    },
+    {
+      "token" : "生日",
+      "start_offset" : 0,
+      "end_offset" : 2,
+      "type" : "CN_WORD",
+      "position" : 1
+    },
+    {
+      "token" : "快乐",
+      "start_offset" : 2,
+      "end_offset" : 4,
+      "type" : "CN_WORD",
+      "position" : 2
+    }
+  ]
+}
+```
+
+ik_smart
+
+```json
+GET _analyze
+{
+  "analyzer": "ik_smart",
+  "text": "生日快乐"
+}
+```
+
+结果
+
+```json
+{
+  "tokens" : [
+    {
+      "token" : "生日快乐",
+      "start_offset" : 0,
+      "end_offset" : 4,
+      "type" : "CN_WORD",
+      "position" : 0
+    }
+  ]
+}
+```
+
+自己需要的词需要自己加到分词器字典中
+
+```shell
+~\elasticsearch-7.10.2\plugins\elasticsearch-analysis-ik\config\IKAnalyser.cfg.xml
+```
+
+编写自己的 xxx.dic 文件并配置到配置文件中（UTF-8）
+
+```xml
+<entry key="ext_dict">xxx.dic</entry>
+```
+
