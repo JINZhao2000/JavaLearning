@@ -289,3 +289,356 @@ GET _analyze
 <entry key="ext_dict">xxx.dic</entry>
 ```
 
+## 6. REST 风格
+
+Rest (Representational state transfer) 是一种软件架构风格，提供了一组设计原则和约束条件，它主要用于客户端和服务器交互类的软件，基于这个风格设计的软件可以更简洁，更有层次，更易于实现缓存等机制
+
+基本 Rest 命令
+
+| method | url 地址                                         | 描述                    |
+| ------ | ------------------------------------------------ | ----------------------- |
+| PUT    | localhost:9200/索引名称/类型名称/文档 id         | 创建文档（指定文档 id） |
+| POST   | localhost:9200/索引名称/类型名称                 | 创建文档（随机文档 id） |
+| POST   | localhost:9200/索引名称/类型名称/文档 id/_update | 修改文档                |
+| DELETE | localhost:9200/索引名称/类型名称/文档 id         | 删除文档                |
+| GET    | localhost:9200/索引名称/类型名称/文档 id         | 查询文档通过文档 id     |
+| POST   | localhost:9200/索引名称/类型名称/_search         | 查询所有数据            |
+
+### 6.1 索引操作
+
+__创建索引__
+
+PUT /文档名/\~类型名~/文档 id
+
+{请求体}
+
+```json
+PUT /test1/type1/1
+{
+  "name": "name1",
+  "age": 18
+}
+# 结果
+{
+  "_index" : "test1",
+  "_type" : "type1",
+  "_id" : "1",
+  "_version" : 1,
+  "result" : "created",
+  "_shards" : {
+    "total" : 2,
+    "successful" : 1,
+    "failed" : 0
+  },
+  "_seq_no" : 0,
+  "_primary_term" : 1
+}
+```
+
+不指定类型时会映射的类型
+
+- 字符串类型
+
+  text，keyword
+
+- 数值类型
+
+  long，integer，short，byte，double，float，half_float，scaled_float
+
+- 日期类型
+
+  date
+
+- 布尔类型
+
+  boolean
+
+- 二进制类型
+
+  binary
+
+__指定字段类型__
+
+```json
+PUT /test2
+{
+  "mappings": {
+    "properties": {
+      "name":{
+        "type": "text"
+      },
+      "age":{
+        "type": "integer"
+      },
+      "birth":{
+        "type": "date"
+      }
+    }
+  }
+}
+```
+
+__获取信息__
+
+```json
+GET test2
+# 结果
+{
+  "test2" : {
+    "aliases" : { },
+    "mappings" : {
+      "properties" : {
+        "age" : {
+          "type" : "integer"
+        },
+        "birth" : {
+          "type" : "date"
+        },
+        "name" : {
+          "type" : "text"
+        }
+      }
+    },
+    "settings" : {
+      "index" : {
+        "routing" : {
+          "allocation" : {
+            "include" : {
+              "_tier_preference" : "data_content"
+            }
+          }
+        },
+        "number_of_shards" : "1",
+        "provided_name" : "test2",
+        "creation_date" : "1612385709947",
+        "number_of_replicas" : "1",
+        "uuid" : "MNe5X_BSTa-GaQgk27RALg",
+        "version" : {
+          "created" : "7100299"
+        }
+      }
+    }
+  }
+}
+```
+
+__查看默认信息__
+
+```json
+PUT /test3/_doc/1
+{
+  "name": "name2",
+  "age": 20,
+  "birth": "2000-01-01"
+}
+# 结果
+{
+  "_index" : "test3",
+  "_type" : "_doc",
+  "_id" : "1",
+  "_version" : 1,
+  "result" : "created",
+  "_shards" : {
+    "total" : 2,
+    "successful" : 1,
+    "failed" : 0
+  },
+  "_seq_no" : 0,
+  "_primary_term" : 1
+}
+###
+GET test3
+# 结果
+{
+  "test3" : {
+    "aliases" : { },
+    "mappings" : {
+      "properties" : {
+        "age" : {
+          "type" : "long"
+        },
+        "birth" : {
+          "type" : "date"
+        },
+        "name" : {
+          "type" : "text",
+          "fields" : {
+            "keyword" : {
+              "type" : "keyword",
+              "ignore_above" : 256
+            }
+          }
+        }
+      }
+    },
+    "settings" : {
+      "index" : {
+        "routing" : {
+          "allocation" : {
+            "include" : {
+              "_tier_preference" : "data_content"
+            }
+          }
+        },
+        "number_of_shards" : "1",
+        "provided_name" : "test3",
+        "creation_date" : "1612385935292",
+        "number_of_replicas" : "1",
+        "uuid" : "MwaIIm5fT1qyKIMHT8CUZw",
+        "version" : {
+          "created" : "7100299"
+        }
+      }
+    }
+  }
+}
+```
+
+扩展：
+
+通过命令 elasticsearch 索引情况
+
+```json
+# 命令
+GET _cat/health
+# 结果
+1612386147 21:02:27 elasticsearch yellow 1 1 9 9 0 0 3 0 - 75.0%
+
+# 命令
+GET _cat/indices?v
+# 结果
+health status index                           uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+yellow open   test2                           MNe5X_BSTa-GaQgk27RALg   1   1          0            0       208b           208b
+yellow open   test3                           MwaIIm5fT1qyKIMHT8CUZw   1   1          1            0      4.2kb          4.2kb
+green  open   .apm-custom-link                R68L5WZZQ5iJr9qjYqBZCA   1   0          0            0       208b           208b
+green  open   .kibana_task_manager_1          j9MEpfM2QrGYlNohyvla4w   1   0          5           64    211.4kb        211.4kb
+green  open   .apm-agent-configuration        rbRe84GzQm-Trsp44kPxiw   1   0          0            0       208b           208b
+yellow open   test1                           oDlAUv2XTvm6SkA1Emwj4A   1   1          1            0        4kb            4kb
+green  open   .kibana_1                       YldWiq36RverYoXTectA9A   1   0         38            1      4.2mb          4.2mb
+green  open   .kibana-event-log-7.10.2-000001 DJzm-j6AS5KBk3viGcY36g   1   0          5            0     27.2kb         27.2kb
+```
+
+__修改索引__
+
+```json
+# 用 PUT 覆盖
+PUT test3/_doc/1
+{
+  "name": "name_update",
+  "age": 14,
+  "birth": "1994-01-01"
+}
+
+# 结果
+# 修改后版本号增加
+{
+  "_index" : "test3",
+  "_type" : "_doc",
+  "_id" : "1",
+  "_version" : 2,
+  "result" : "updated",
+  "_shards" : {
+    "total" : 2,
+    "successful" : 1,
+    "failed" : 0
+  },
+  "_seq_no" : 1,
+  "_primary_term" : 1
+}
+
+# 用 POST - 推荐
+POST test3/_doc/1/_update
+{
+  "doc":{
+    "name": "name_post_update"
+  }
+}
+
+# 结果
+{
+  "_index" : "test3",
+  "_type" : "_doc",
+  "_id" : "1",
+  "_version" : 3,
+  "result" : "updated",
+  "_shards" : {
+    "total" : 2,
+    "successful" : 1,
+    "failed" : 0
+  },
+  "_seq_no" : 2,
+  "_primary_term" : 1
+}
+```
+
+__删除__
+
+根据请求来判断是删除索引还是文档记录
+
+```json
+DELETE test3
+
+# 结果
+{
+  "acknowledged" : true
+}
+```
+
+RESTFUL 是 ES 推荐的文档风格
+
+### 6.2 文档操作
+
+#### 基本操作
+
+__添加数据__
+
+```json
+PUT /ayy/user/1
+{
+  "name": "name1",
+  "age": 18,
+  "desc": "desc1",
+  "tags": ["tag1","tag2"]
+}
+# ...
+```
+
+__查询数据__
+
+```json
+GET /ayy/user/1
+```
+
+__更新数据__
+
+```json
+PUT /ayy/user/1
+{
+  "name": "name1++",
+  "age": 18,
+  "desc": "desc1",
+  "tags": ["tag1","tag2"]
+}
+# 不能忘了 _update 不传递值会覆盖
+POST /ayy/user/1/_update
+{
+  "doc":{
+    "name":"name1--"
+  }
+}
+```
+
+__搜索__
+
+根据默认规则产生基本查询
+
+```json
+# 通过 id 查询
+GET /ayy/user/1
+# 条件查询
+GET /ayy/user/_search?q=name:name2
+
+```
+
+#### 复杂操作（排序，分页，高亮，模糊查询，精准查询）
+
