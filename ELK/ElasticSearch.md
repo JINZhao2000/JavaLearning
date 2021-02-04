@@ -637,8 +637,291 @@ __搜索__
 GET /ayy/user/1
 # 条件查询
 GET /ayy/user/_search?q=name:name2
-
+# 结果
+#  hits hits _score匹配度越高，分数越高
+{
+  "took" : 11,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 1,
+      "relation" : "eq"
+    },
+    "max_score" : 1.2039728, 
+    "hits" : [
+      {
+        "_index" : "ayy",
+        "_type" : "user",
+        "_id" : "2",
+        "_score" : 1.2039728,
+        "_source" : {
+          "name" : "name2",
+          "age" : 20,
+          "desc" : "desc2",
+          "tags" : [
+            "tag2",
+            "tag3"
+          ]
+        }
+      }
+    ]
+  }
+}
 ```
 
 #### 复杂操作（排序，分页，高亮，模糊查询，精准查询）
+
+```json
+# 精确匹配
+GET /ayy/user/_search
+{
+  "query": {
+    "match": {
+      "name": "name2"
+    }
+  }
+}
+
+# 结果
+# hits 命中 value 命中个数
+{
+  "took" : 1,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : 
+    {
+    "total" : {
+      "value" : 1,
+      "relation" : "eq"
+    },
+    "max_score" : 1.2039728,
+    "hits" : [
+      {
+        "_index" : "ayy",
+        "_type" : "user",
+        "_id" : "2",
+        "_score" : 1.2039728,
+        "_source" : {
+          "name" : "name2",
+          "age" : 20,
+          "desc" : "desc2",
+          "tags" : [
+            "tag2",
+            "tag3"
+          ]
+        }
+      }
+    ]
+  }
+}
+
+# 限制查询 _source 结果过滤
+GET /ayy/user/_search
+{
+  "query": {
+    "match": {
+      "name": "name2"
+    }
+  },
+  "_source": ["name"]
+}
+
+# 排序
+GET /ayy/user/_search
+{
+  "query": {
+    "match": {
+      "name": "name"
+    }
+  },
+  "sort": [
+    {
+      "age": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+# 分页
+GET /ayy/user/_search
+{
+  "query": {
+    "match": {
+      "name": "name"
+    }
+  },
+  "from": 0,
+  "size": 20
+}
+
+# 布尔查询 多条件查询
+# must and, should or, not must_not
+GET /ayy/user/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "name": "name2"
+          }
+        },
+        {
+          "match": {
+            "age": 20
+          }
+        }
+      ]
+    }
+  },
+}
+
+# 过滤器
+# gt > gte >= lt < lte <=
+GET /ayy/user/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "name": "name2"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "age": {
+              "gte": 10,
+              "lte": 20
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+# 多条件查询
+GET /ayy/user/_search
+{
+  "query": {
+    "match": {
+      "tags": "tag2 tag3"
+    }
+  }
+}
+# 只要满足其 1 就可以查出，然后按分值排序
+
+# 精确查询 term 通过倒排索引
+# 分词 match 先分析文档再通过分析文档查询
+# test 可以被分析解析 keyword 不行
+
+# 高亮查询
+GET /ayy/user/_search
+{
+  "query": {
+    "match": {
+      "tags": "tag2"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "tags":{}
+    }
+  }
+}
+
+# 结果
+# 自动添加了 em 标签
+{
+  "took" : 118,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 2,
+      "relation" : "eq"
+    },
+    "max_score" : 0.6931471,
+    "hits" : [
+      {
+        "_index" : "ayy",
+        "_type" : "user",
+        "_id" : "2",
+        "_score" : 0.6931471,
+        "_source" : {
+          "name" : "name2",
+          "age" : 20,
+          "desc" : "desc2",
+          "tags" : [
+            "tag2",
+            "tag3"
+          ]
+        },
+        "highlight" : {
+          "tags" : [
+            "<em>tag2</em>"
+          ]
+        }
+      },
+      {
+        "_index" : "ayy",
+        "_type" : "user",
+        "_id" : "1",
+        "_score" : 0.6931471,
+        "_source" : {
+          "name" : "name1--",
+          "age" : 18,
+          "desc" : "desc1",
+          "tags" : [
+            "tag1",
+            "tag2"
+          ]
+        },
+        "highlight" : {
+          "tags" : [
+            "<em>tag2</em>"
+          ]
+        }
+      }
+    ]
+  }
+}
+
+# 自定义标签
+GET /ayy/user/_search
+{
+  "query": {
+    "match": {
+      "tags": "tag2"
+    }
+  },
+  "highlight": {
+    "pre_tags": "<p class='key' style='color:red'>", 
+    "post_tags": "</p>", 
+    "fields": {
+      "tags":{}
+    }
+  }
+}
+```
 
