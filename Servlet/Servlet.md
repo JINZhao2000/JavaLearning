@@ -400,3 +400,23 @@ response.setContentType("text/html;charset=UTF-8");
 
 ### 4.3 综合案例 Servlet + JDBC
 
+数据库
+
+```mysql
+CREATE TABLE admin(
+	uname VARCHAR(20) PRIMARY KEY,
+    pwd VARCHAR(20) NOT NULL,
+    tel VARCHAR(11) NOT NULL
+)
+```
+
+数据
+
+```mysql
+INSERT INTO admin(uname, pwd, tel) VALUES ('USER1', 'abc', '12345612341');
+INSERT INTO admin(uname, pwd, tel) VALUES ('USER2', 'bcd', '12345612342');
+INSERT INTO admin(uname, pwd, tel) VALUES ('USER3', 'cde', '12345612343');
+INSERT INTO admin(uname, pwd, tel) VALUES ('USER4', 'dfg', '12345612344');
+INSERT INTO admin(uname, pwd, tel) VALUES ('USER5', 'fgh', '12345612345');
+```
+
