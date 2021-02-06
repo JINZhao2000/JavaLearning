@@ -39,7 +39,7 @@ public class AdminDAOImpl implements AdminDAO {
         String sql = "select * from admin where uname = ?";
         Admin admin = null;
         try {
-            admin = runner.query(DBUtils.getConnection(),sql,new BeanHandler<Admin>(Admin.class),uname);
+            admin = runner.query(DBUtils.getConnection(),sql, new BeanHandler<>(Admin.class),uname);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }

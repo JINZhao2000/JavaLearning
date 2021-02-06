@@ -407,7 +407,7 @@ CREATE TABLE admin(
 	uname VARCHAR(20) PRIMARY KEY,
     pwd VARCHAR(20) NOT NULL,
     tel VARCHAR(11) NOT NULL
-)
+);
 ```
 
 数据

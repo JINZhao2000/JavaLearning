@@ -21,7 +21,7 @@ public class DBUtils {
 
     static {
         Properties properties = new Properties();
-        InputStream is = DBUtils.class.getClass().getClassLoader().getResourceAsStream("aliyun.properties");
+        InputStream is = DBUtils.class.getClassLoader().getResourceAsStream("aliyun.properties");
         try {
             properties.load(is);
             dataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(properties);
@@ -43,8 +43,6 @@ public class DBUtils {
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
-        }finally {
-            DBUtils.close(connection);
         }
         return connection;
     }
@@ -56,8 +54,6 @@ public class DBUtils {
             connection.setAutoCommit(false);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
-        }finally {
-            DBUtils.close(connection);
         }
     }
 
