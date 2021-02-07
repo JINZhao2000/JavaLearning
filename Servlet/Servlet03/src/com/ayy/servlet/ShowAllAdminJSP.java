@@ -1,8 +1,6 @@
 package com.ayy.servlet;
 
 import com.ayy.entities.Admin;
-import com.ayy.service.AdminService;
-import com.ayy.service.impl.AdminServiceImpl;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -16,18 +14,15 @@ import java.util.List;
 /**
  * @ Description
  * @ Author Zhao JIN
- * @ Date 06/02/2021
+ * @ Date 07/02/2021
  * @ Version 1.0
  */
-@WebServlet(value = "/show")
-public class ShowAllAdminServlet extends HttpServlet {
+@WebServlet(value = "/showAllJSP")
+public class ShowAllAdminJSP extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("text/html;charset=UTF-8");
-
-        AdminService service = new AdminServiceImpl();
-        List<Admin> admins = service.showAllAdmin();
-
+        List<Admin> admins = (List<Admin>) req.getAttribute("Admins");
         PrintWriter writer = resp.getWriter();
         writer.println("<html>");
         writer.println("<head>");
@@ -59,6 +54,6 @@ public class ShowAllAdminServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        doGet(req, resp);
+        doGet(req,resp);
     }
 }

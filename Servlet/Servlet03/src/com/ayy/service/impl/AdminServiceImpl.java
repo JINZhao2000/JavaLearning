@@ -19,6 +19,7 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public Admin login(String uname, String pwd) {
+        DBUtils.begin();
         Admin result = null;
         Admin admin = adminDAO.select(uname);
         if (admin != null) {
@@ -32,6 +33,7 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public List<Admin> showAllAdmin() {
+        DBUtils.begin();
         List<Admin> admins = null;
         admins = adminDAO.selectAll();
         DBUtils.commit();

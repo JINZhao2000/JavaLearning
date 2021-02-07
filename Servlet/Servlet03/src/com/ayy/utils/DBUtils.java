@@ -86,15 +86,13 @@ public class DBUtils {
             if(ac!=null){
                 try {
                     ac.close();
+                    if (ac instanceof Connection){
+                        CONNECTION_THREAD_LOCAL.remove();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-            if (ac instanceof Connection){
-                CONNECTION_THREAD_LOCAL.remove();
-            }
         }
     }
-
-
 }

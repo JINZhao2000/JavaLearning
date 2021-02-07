@@ -420,3 +420,108 @@ INSERT INTO admin(uname, pwd, tel) VALUES ('USER4', 'dfg', '12345612344');
 INSERT INTO admin(uname, pwd, tel) VALUES ('USER5', 'fgh', '12345612345');
 ```
 
+## 5. 转发与重定向
+
+### 5.1 现有问题
+
+业务逻辑与显示结果页面在一个 Servlet 里，不符合单一职能，各司其职的思想，不利于后续维护，应该将业务逻辑和显示结果分开
+
+将 XXXServlet 分成 XXXController 和 XXXJSP
+
+### 5.2 转发
+
+将请求发送给服务器上的其他资源，共同完成一次请求的处理
+
+- 页面跳转
+
+  ```java
+  request.getRequestDispatcher("/url-pattern"),forward(request,response);
+  ```
+
+  使用 forword 跳转时，是在服务器内部跳转，地址栏不会发生变化，属于同一次请求
+
+- 数据传递
+
+  forward 表示一个请求，是在服务内跳转，可以共享同一次 request 作用域中的数据
+
+  - request 作用域：拥有存储数据的空间，作用范围是一次请求有效（一次请求可以经过多次转发）
+    - 可以将数据存入 request 后，在一次请求过程中的任何位置进行获取
+    - 可以传递任何数据
+  - 存数据：`request.setAttribute(key, value);` 
+    - 以键值对形式存储在 request 作用域中，key 为 String 类型，value 为 Object 类型
+  - 取数据：`request.getAttribute(key);` 
+    - 通过 String 类型的 key 访问 Object 类型的 Value
+
+- 转发特点
+
+  - 转发是服务器行为
+  - 转发是浏览器只做了一次访问请求
+  - 转发浏览器地址不变
+  - 转发两次跳转之间传输信息不会丢失，所以可以通过 request 进行数据的传递
+  - 转发只能将请求转发给同一个 web 应用中的组件
+
+### 5.3 重定向
+
+重定向作用域客户端，将请求发送给服务器后，服务器响应给客户端一个新的请求地址，客户端允许重新发送新请求
+
+- 页面跳转
+
+  在调用业务逻辑的 Servlet 中，使用以下代码
+
+  ```java
+  response.sendRedirect("uri-pattern");
+  ```
+
+  - URI：Uniform Resource Identifier 统一资源标识符，用来表示服务器中的一个定位
+
+- 数据传递
+
+  sendRedirect 跳转时，地址栏改变，代表客户端重新发送的请求，属于两次请求
+
+  - response 没有作用域，两次 request 请求中的数据无法共享
+  - 传递数据：通过 URI 的拼接进行数据传递 `/WebProject/b?username=a;` 
+  - 获取数据：`String request,getParameter("username");` 
+
+- 重定向特点
+  - 重定向是客户行为
+  - 重定向是浏览器做了至少两次的访问请求
+  - 重定向浏览器地址改变
+  - 重定向两次跳转之间传输的信息会丢失（request 范围）
+  - 重定向可以指向任何的资源，包括当前应用程序中的其它资源，同一个站点上的其它应用程序中的资源，其它站点的资源
+
+### 5.4 转发，重定向总结
+
+当两个 Servlet 需要传递数据时，选择 forward 转发，不建议使用 sendRedirect 进行传递，明文传递是真的
+
+## 6. Servlet 生命周期
+
+### 6.1 生命周期四个阶段
+
+- 实例化
+
+  当用户第一次访问 Servlet 时，由容器调用 Servlet 的构造器创造具体的 Servlet 对象，也可以在容器启动之后立刻创建实例，使用如下代码可以设置 Servlet 是否在服务器启动时就创建
+
+  ```xml
+  <load-on-startup>1</load-on-startup>
+  ```
+
+  - 注意：只执行一次
+
+- 初始化
+
+  在初始化阶段，`init()` 方法被调用，这个方法在 `javax.servlet.Servlet` 接口中定义，其中，方法以一个 ServletConfig 类型的对象作为参数
+
+  - init 方法只被执行一次
+
+- 服务
+
+  当客户端有一个请求时，容器就会将请求 ServletRequest 与响应 ServletResponse 对象转给 Servlet，以参数的形式传给 service 方法
+
+  - 此方法能执行多次
+
+- 销毁
+
+  当 Servlet 容器停止或者重新启动都会引起销毁 Servlet 对象并调用 destroy 方法
+
+  - destroy 方法执行一次
+
