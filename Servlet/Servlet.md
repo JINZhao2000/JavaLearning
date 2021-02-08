@@ -525,3 +525,80 @@ INSERT INTO admin(uname, pwd, tel) VALUES ('USER5', 'fgh', '12345612345');
 
   - destroy 方法执行一次
 
+## 7. Servlet 线程安全问题
+
+Servlet 在访问后，会执行实例化操作，创建一个 Servlet 对象，而 Tomcat 容器可以同时多个线程并发访问同一个 Servlet，如果在方法中对成员变量做修改操作，就会有线程安全问题
+
+- 如何保证线程安全
+  - synchronized
+    - 将存在线程安全问题的代码放到同步代码块里
+  - 实现 SingleThreadModel 接口
+    - servlet 实现 SingleThreadModel 接口后，每个线程都会创建 servlet 实例，这样每个客户端请求就不存在共享资源的问题，但是 servlet 响应客户端请求的效率太低，已经淘汰
+  - 尽可能使用局部变量
+
+## 8. 状态管理
+
+- 现有问题
+
+  - HTTP 协议是无状态的，不能保存每次提交的信息
+
+  - 如果用户发来一个新的请求，服务器无法知道它是否与上次的请求有联系
+  - 对于那些需要多次提交请求才能完成的 Web 操作，比如登录来说，就成问题了
+
+- 概念
+
+  - 将浏览器与 web 之间多次交互当作一个整体来处理，并且将多次交互涉及的数据（状态）保存下来
+
+- 状态管理分类
+
+  - 客户端状态管理技术：将状态保存在客户端，Cookie 技术
+  - 服务端状态管理技术：将状态保存在服务端，Session 技术（服务器传递 SessionID 时需要使用 Cookie 的方式）和 Application
+
+## 9. Cookie 的使用
+
+- 什么是 Cookie
+  - Cookie 是在浏览器访问 Web 服务器的某个资源时，由 Web 服务器在 HTTP 响应消息头中附带传送给浏览器的一小段数据
+  - 一旦 Web 浏览器保存了某个 Cookie，那么它以后每次访问该 Web 服务器时，都应在 HTTP 请求头中将这个 Cookie 回传给 Web 服务器
+  - 一个 Cookie 主要由标识该信息的名称和值组成
+- Cookie 原理
+  - Client：访问登录 Servlet（首次请求）
+  - Server：创建 Cookie 对象（key-value），通过 response 将 Cookie 响应给 Client
+  - Client：接收 Servlet 响应的 Cookie，存储
+  - Client：访问 Servlet
+  - Server：从请求中查找 Cookie，存在就获取
+  - Client：访问显示 Servlet，携带 Cookie
+
+- 创建 Cookie
+
+  - 通过 `response.addCookie(cookie);` 进行响应
+
+  - `setMaxAge` 可以修改过期时间
+  - `setPath` 设置 Cookie 许可获取路径
+
+- 获取 Cookie
+
+  - 通过 `request.getCookies` 获取到一个 Cookie 的数组（可能为空）
+
+- 修改 Cookie
+
+  - 修改 request 中获得的 Cookie，不能修改名字和路径
+  - 如果有两个名字路径和路径对应相同的 Cookie 才会覆盖
+
+- Cookie 编码与解码
+
+  - Cookie 默认不支持中文，只能包含 ASCII 字符，所以 Cookie 需要对 Unicode 进行编码，否则会出现乱码
+    - 编码可以使用 `java.net.URLEncoder` 类的 `encode(String str, String encoding)` 方法
+    - 解码用 `java.net.URLDecoder` 类的 `decode(String str, String encoding` 方法
+
+- Cookie 的优点和缺点
+  - 优点
+    - 可以自定义到期规则
+    - 简单性：基于文本的轻量结构，包含简单的键值对
+    - 数据持久性：默认在过期前是可以一直存在客户端浏览器上的
+  - 缺点
+    - 大小受到限制：4k，8k 字节限制
+    - 用户配置为禁用
+    - 潜在安全风险：可能被篡改
+
+## 10. Session 对象
+
