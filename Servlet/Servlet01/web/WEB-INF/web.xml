@@ -6,7 +6,7 @@
          version="4.0">
     <servlet>
         <servlet-name>my</servlet-name>
-        <servlet-class>com.ayy.cookies.MyServlet</servlet-class>
+        <servlet-class>com.ayy.servlet.MyServlet</servlet-class>
         <load-on-startup>1</load-on-startup>
     </servlet>
     <servlet-mapping>
@@ -15,7 +15,7 @@
     </servlet-mapping>
     <servlet>
         <servlet-name>myGen</servlet-name>
-        <servlet-class>com.ayy.cookies.MyGenericServlet</servlet-class>
+        <servlet-class>com.ayy.servlet.MyGenericServlet</servlet-class>
         <load-on-startup>0</load-on-startup>
     </servlet>
     <servlet-mapping>
@@ -24,7 +24,7 @@
     </servlet-mapping>
     <servlet>
         <servlet-name>myHttp</servlet-name>
-        <servlet-class>com.ayy.cookies.MyHttpServlet</servlet-class>
+        <servlet-class>com.ayy.servlet.MyHttpServlet</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>myHttp</servlet-name>
