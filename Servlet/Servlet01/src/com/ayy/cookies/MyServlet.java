@@ -1,4 +1,4 @@
-package com.ayy.servlet;
+package com.ayy.cookies;
 
 import javax.servlet.*;
 import java.io.IOException;

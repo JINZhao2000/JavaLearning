@@ -32,22 +32,22 @@
 
 ### Servlet 开发步骤
 
-将 CATALINA_HOME/lib/com.ayy.servlet-api.jar 目录放到环境变量的 classpath 中
+将 CATALINA_HOME/lib/com.ayy.cookies-api.jar 目录放到环境变量的 classpath 中
 
-编写 com.ayy.servlet
+编写 com.ayy.cookies
 
-​	实现 javax.com.ayy.servlet.Servlet
+​	实现 javax.com.ayy.cookies.Servlet
 
 ​	重写5个方法
 
 ​	在核心的 service() 方法中编写输出语句，打印访问结果
 
 ```java
-import javax.com.ayy.servlet.Servlet;
-import javax.com.ayy.servlet.ServletConfig;
-import javax.com.ayy.servlet.ServletRequest;
-import javax.com.ayy.servlet.ServletResponse;
-import javax.com.ayy.servlet.ServletException;
+import javax.com.ayy.cookies.Servlet;
+import javax.com.ayy.cookies.ServletConfig;
+import javax.com.ayy.cookies.ServletRequest;
+import javax.com.ayy.cookies.ServletResponse;
+import javax.com.ayy.cookies.ServletException;
 import java.io.IOException;
 
 public class MyServlet implements Servlet{
@@ -84,14 +84,14 @@ javac MyServlet.java
                       http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
   version="4.0"
   metadata-complete="true">
-    <com.ayy.servlet>
-        <com.ayy.servlet-name>my</com.ayy.servlet-name><!--类代替名-->
-        <com.ayy.servlet-class>MyServlet</com.ayy.servlet-class><!--类名-->
-    </com.ayy.servlet>
-    <com.ayy.servlet-mapping>
-        <com.ayy.servlet-name>my</com.ayy.servlet-name><!--映射的类代替名-->
+    <com.ayy.cookies>
+        <com.ayy.cookies-name>my</com.ayy.cookies-name><!--类代替名-->
+        <com.ayy.cookies-class>MyServlet</com.ayy.cookies-class><!--类名-->
+    </com.ayy.cookies>
+    <com.ayy.cookies-mapping>
+        <com.ayy.cookies-name>my</com.ayy.cookies-name><!--映射的类代替名-->
         <url-pattern>/myservlet</url-pattern><!--对应的访问位置 <项目名/访问位置>-->
-    </com.ayy.servlet-mapping>
+    </com.ayy.cookies-mapping>
 </web-app>
 ```
 
@@ -211,7 +211,7 @@ Content-length:49
 
 ​	必须重写以下方法之一
 
-​	doGet，如果 com.ayy.servlet 支持 HTTP GET 请求
+​	doGet，如果 com.ayy.cookies 支持 HTTP GET 请求
 
 ​	doPost，用于 HTTP POST 请求
 
@@ -235,9 +235,9 @@ __web.xml__
 
 url-pattern 4种方式（优先级）
 
-​	精确匹配	/具体名称	只有 url 路径是具体的名称的时候才会触发 com.ayy.servlet
+​	精确匹配	/具体名称	只有 url 路径是具体的名称的时候才会触发 com.ayy.cookies
 
-​	后缀匹配	*.xxx	只要是以 .xxx 结尾的就匹配触发 com.ayy.servlet
+​	后缀匹配	*.xxx	只要是以 .xxx 结尾的就匹配触发 com.ayy.cookies
 
 ​	通配符匹配	/*	匹配所有请求，包含服务器所有资源
 
@@ -245,22 +245,22 @@ url-pattern 4种方式（优先级）
 
 load-on-startup
 
-1. 元素标记容器是否应该在 web 应用程序启动的时候加载这个 com.ayy.servlet
-2. 它的值必须是一个整数，表示 com.ayy.servlet 被加载的先后顺序
-3. 如果该元素的值为负数或者没有设置，则容器会当 com.ayy.servlet 被请求时再加载
-4. 如果值为正整数或者0时，表示容器在应用启动的时候就加载初始化这个 com.ayy.servlet，值越小，com.ayy.servlet 的优先级越高，就越优先被加载。值相同时，容器会自己选择顺序来加载
+1. 元素标记容器是否应该在 web 应用程序启动的时候加载这个 com.ayy.cookies
+2. 它的值必须是一个整数，表示 com.ayy.cookies 被加载的先后顺序
+3. 如果该元素的值为负数或者没有设置，则容器会当 com.ayy.cookies 被请求时再加载
+4. 如果值为正整数或者0时，表示容器在应用启动的时候就加载初始化这个 com.ayy.cookies，值越小，com.ayy.cookies 的优先级越高，就越优先被加载。值相同时，容器会自己选择顺序来加载
 
-__注解 (com.ayy.servlet 3.0+)__
+__注解 (com.ayy.cookies 3.0+)__
 
 @WebServlet
 
-​	name：com.ayy.servlet 名字 （可选）
+​	name：com.ayy.cookies 名字 （可选）
 
 ​	value：配置 url 路径，可以配置多个
 
 ​	urlPatterns：配置 url 路径，不能和 value 同时使用
 
-​	loadOnStartup：配置 com.ayy.servlet 创建时机，如果是0或者正数，启动程序时创建，如果是负数，则访问时创建，数字越小优先级越高
+​	loadOnStartup：配置 com.ayy.cookies 创建时机，如果是0或者正数，启动程序时创建，如果是负数，则访问时创建，数字越小优先级越高
 
 与 web.xml 不冲突
 
@@ -602,3 +602,80 @@ Servlet 在访问后，会执行实例化操作，创建一个 Servlet 对象，
 
 ## 10. Session 对象
 
+- Session 概述
+  - Session 用于记录用户的状态，Session  指的是在一段时间内，单个客户端与 Web 服务器的一连串相关的交互过程
+  - 在一个 Session 中，客户可能会多次请求访问同一个资源，也有可能请求访问各种不同的服务器资源
+  
+- Session 原理
+  - 服务器会为每一次会话分配一个 Session 对象
+  - 同一个浏览器发起的多次请求，属于同一次会话 Session
+  - 首次使用到 Session，服务器会自动创建 Session，并创建 Cookie 存储 SessionId 发送回客户端
+  
+- Session 使用
+  - Session 作用域：拥有存储数据的空间，作用范围是一次会话有效
+    - 一次会话是使用同一浏览器发送的多次请求，一旦浏览器关闭，则会话结束
+    - 可以将数据存入 Session 中，在一次会话的任意位置进行获取
+    - 可传递任何数据
+  
+- Session 保存数据
+
+  ```java
+  session.setAttribute("key","value");
+  ```
+
+- Session 获取数据
+
+  ```java
+  session.getAttribute("key");
+  ```
+
+- Session 移除数据
+
+  ```java
+  session.removeAttribute("key");
+  ```
+
+- Session 与 Request 区别
+
+  - Request 是一次请求有效，请求改变，则 request 改变
+  - Session 是一次会话有效，浏览器改变，则 session 改变
+
+- Session 的生命周期
+
+  - 开始：第一次用到 Session 的请求产生，则创建 Session
+
+  - 结束：
+
+    - 浏览器关闭
+
+    - Session 超时
+
+      `session.setMaxInactiveInterval(seconds);` 最大有效时间
+
+    - 手工销毁
+
+      `session.invalidate();` 登出，注销
+
+- 浏览器禁用 Cookie 解决方案
+
+  - 浏览器禁用 Cookie 后果
+
+    服务器在默认情况下，会使用 Cookie 的方式将 SessionID 发送给浏览器，如果用户禁止 Cookie，则 SessionID 不会被浏览器保存，此时，服务器可以使用如 URL 重写这样的方式来发送 SessionID
+
+  - URL 重写
+
+    浏览器在访问服务器上的某个地址时，不再使用原来的那个地址，而是使用经过修改的地址（即原来的地址后面加上 SessionID）
+
+  - 实现 URL 重写
+
+    `response.encodeRedirectURL(String url)` 生成重写的 URL
+
+    ```java
+    HttpSession session = request.getSession();
+    session.setAttribute("uname","USER1");
+    String url = response.encodeRedirectURL("/project/servletpage");
+    // /project/servletpage;jsessionid=xxxxx
+    response.sendRedirect(url);
+    ```
+
+    

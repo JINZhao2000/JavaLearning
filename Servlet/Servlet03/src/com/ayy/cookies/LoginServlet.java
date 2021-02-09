@@ -1,4 +1,4 @@
-package com.ayy.servlet;
+package com.ayy.cookies;
 
 import com.ayy.entities.Admin;
 import com.ayy.service.AdminService;
