@@ -678,4 +678,23 @@ Servlet 在访问后，会执行实例化操作，创建一个 Servlet 对象，
     response.sendRedirect(url);
     ```
 
-    
+## 11. ServletContext 对象
+
+- ServletContext 概述
+
+  - 全局对象，也拥有作用域，对应一个 Tomcat 中的 Web 应用
+  - 当 Web 服务器启动时，会为每一个 Web 应用程序创建一块共享的存储区域（ServletContext）
+  - ServletContext 在 Web 服务器启动的时候创建，服务器关闭时销毁
+
+- 获取 ServletContext 对象
+
+  - GenericServlet 提供了 `getServletContext()` 方法（`this.getServletContext();`）
+  - HttpServletRequest 提供了 `getServletContext()` 方法
+  - HttpSession 提供了 `getServletContext()` 方法
+
+- ServletContext 作用
+
+  - 获取项目真实路径
+
+    获取项目在服务器发布的真实路径
+
