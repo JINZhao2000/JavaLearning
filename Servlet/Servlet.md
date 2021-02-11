@@ -686,7 +686,7 @@ Servlet 在访问后，会执行实例化操作，创建一个 Servlet 对象，
   - 当 Web 服务器启动时，会为每一个 Web 应用程序创建一块共享的存储区域（ServletContext）
   - ServletContext 在 Web 服务器启动的时候创建，服务器关闭时销毁
 
-- 获取 ServletContext 对象
+- 获取 ServletContext 对象（这三个对象是同一个）
 
   - GenericServlet 提供了 `getServletContext()` 方法（`this.getServletContext();`）
   - HttpServletRequest 提供了 `getServletContext()` 方法
@@ -694,7 +694,93 @@ Servlet 在访问后，会执行实例化操作，创建一个 Servlet 对象，
 
 - ServletContext 作用
 
-  - 获取项目真实路径
+  - 获取项目真实路径（磁盘路径）
 
-    获取项目在服务器发布的真实路径
+    ```java
+    String realPath = servletContext.getRealPath("/");
+    // '/' 当前项目
+    ```
 
+  - 获取项目上下文路径
+
+    ```java
+    servletContext.getContextPath();
+    request.getContextPath();
+    ```
+
+  - 全局容器
+
+    ServletContext 拥有作用域，可以存储数据到全局容器中
+
+    - 存储数据：`servletContext.setAttribute("name",value);` 
+    - 获取数据：`servletContext.getAttribute("name");` 
+    - 移除数据：`servletContext.removeAttribute("name");` 
+
+- ServletContext 特点
+
+  - 唯一性：一个应用对应一个 servlet 上下文
+  - 生命周期：只要容器不关闭或者应用不卸载，servlet 上下文就一直存在
+
+- ServletContext 应用场景
+
+  ServletContext 统计当前项目访问次数
+
+- 作用域总结
+
+  - HttpServletRequest：一次请求，请求响应之前有效
+  - HttpSession：一次会话开始，浏览器不关闭或不超时之前有效
+  - ServletContext：服务器启动开始，服务器停止之前有效
+
+## 12. 过滤器 Filter
+
+- 现有问题
+
+  在以往的 Servlet 中，有没有冗余的代码，多个 Servlet 都要进行编写
+
+- 概念
+
+  过滤器是处于客户端与服务器目标资源之间的一道过滤技术
+
+  Client -> 过滤器 -> 目标资源 -> 过滤器 -> Client
+
+- 过滤器作用
+
+  - 执行地位在 Servlet 之前，客户端发送请求时，会经过 Filter， 再达到目标 Servlet 中，响应时，会根据执行流程再次反向执行 Filter
+  - 可以解决多个 Servlet 共性代码的冗余问题（乱码处理，登陆验证）
+
+- 编写过滤器
+
+  Servlet API 中提供了一个 Filter 接口，只要实现了这个接口即可
+
+- 过滤器配置
+
+  - 注解配置
+
+    ```java
+    @WebFilter(value = "/target")
+    ```
+
+  - xml 配置
+
+    在 web.xml 中进行过滤器配置
+
+    ```xml
+    <filter>
+        <filter-name>target</filter-name>
+        <filter-class>com.ayy.filter.MyFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>target</filter-name>
+        <url-pattern>/target</url-pattern>
+    </filter-mapping>
+    ```
+
+- 过滤器链和优先级
+
+  - 过滤器链
+
+    客户端对服务器请求之后，服务器调用 Servlet 之前会执行一组过滤器（多个多滤器），那么这组过滤器就称为一条过滤器
+
+    每个过滤器实现某个特定的功能，当第一个 Filter 的 doFilter 方法被调用时，Web 服务器会创建一个代表 Filter 链的 FilterChain 对象传递给该方法，在 doFilter 方法中，开发人员如果调用了 FilterChain 对象的 doFilter 方法，则 Web 服务器会检查 FilterChain 对象中是否还有 Filter，如果有，则调用第二个 Filter，如果没有，则调用目标资源
+
+  - 过滤器优先级
