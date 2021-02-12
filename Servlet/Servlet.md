@@ -775,6 +775,20 @@ Servlet 在访问后，会执行实例化操作，创建一个 Servlet 对象，
     </filter-mapping>
     ```
 
+  - 关于拦截路径
+
+    - 精确拦截匹配
+
+      `/index.jsp`，`/myservlet` 
+
+    - 后缀拦截匹配
+
+      `*.jsp`，`*.html`，`*.jpg` 
+
+    - 通配符拦截匹配
+
+      `/*` 
+
 - 过滤器链和优先级
 
   - 过滤器链
@@ -784,3 +798,194 @@ Servlet 在访问后，会执行实例化操作，创建一个 Servlet 对象，
     每个过滤器实现某个特定的功能，当第一个 Filter 的 doFilter 方法被调用时，Web 服务器会创建一个代表 Filter 链的 FilterChain 对象传递给该方法，在 doFilter 方法中，开发人员如果调用了 FilterChain 对象的 doFilter 方法，则 Web 服务器会检查 FilterChain 对象中是否还有 Filter，如果有，则调用第二个 Filter，如果没有，则调用目标资源
 
   - 过滤器优先级
+
+    在一个 Web 应用中，可以写多个 Filter，这些 Filter 组合起来称之为一个 Filter 链
+
+    优先级：
+
+    - 如果是注解，则按照类全限定名的字符串决定作用顺序
+    - 如果是 web.xml，按照 filter-mapping 注册顺序，从上往下
+    - web.xml 配置高于注解方式
+    - 如果注解和 web.xml 同时配置，会创建多个过滤器对象，造成多次过滤
+
+- 过滤器典型应用
+
+  - 过滤器解决编码
+
+    ```java
+    servletRequest.setCharacterEncoding("GBK");
+    servletResponse.setContentType("text/html;charset=utf-8");
+    filterChain.doFilter(servletRequest, servletResponse);
+    ```
+
+  - 权限应用
+
+    ```java
+    HttpServletRequest req = (HttpServletRequest) servletRequest;
+    HttpServletResponse resp = (HttpServletResponse) servletResponse;
+    HttpSession session = req.getSession();
+    Object obj = session.getAttribute("obj");
+    if(obj!=null){
+        filterChain.doFilter(req, resp);
+    }else {
+        resp.sendRedirect(req.getContextPath()+"/login.html");
+    }
+    ```
+
+## 13. 综合案例（EMS）
+
+- 创建数据表
+
+  ```mysql
+  CREATE TABLE emp(
+    eid INT PRIMARY KEY AUTO_INCREMENT,
+    ename VARCHAR(20) NOT NULL,
+    salary DOUBLE NOT NULL,
+    age INT NOT NULL
+  );
+  
+  CREATE TABLE empmanager(
+    uname VARCHAR(20) NOT NULL,
+    pwd VARCHAR(20) NOT NULL
+  );
+  ```
+
+  准备数据
+
+  ```mysql
+  INSERT INTO emp(ename,salary,age) VALUES('emp1',3000,20);
+  INSERT INTO emp(ename,salary,age) VALUES('emp2',4000,22);
+  INSERT INTO emp(ename,salary,age) VALUES('emp3',5000,24);
+  
+  INSERT INTO empmanager(uname,pwd) VALUES('mgr','123456')
+  ```
+
+- 工具类
+
+  ```java
+  public class DBUtils {
+      private static DruidDataSource dataSource;
+      private static final ThreadLocal<Connection> THREAD_LOCAL = new ThreadLocal<>();
+  
+      static {
+          Properties prop = new Properties();
+          InputStream is = DBUtils.class.getClassLoader().getResourceAsStream("aliyun.properties");
+          try {
+              prop.load(is);
+              dataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(prop);
+          } catch (Exception e) {
+              e.printStackTrace();
+          }
+      }
+  
+      public static Connection getConnection() {
+          Connection connection = null;
+          connection = THREAD_LOCAL.get();
+          try {
+              if (connection == null) {
+                  connection = dataSource.getConnection();
+                  THREAD_LOCAL.set(connection);
+              }
+          } catch (SQLException throwables) {
+              throwables.printStackTrace();
+          }
+          return connection;
+      }
+  
+      public static void beginTX(){
+          Connection connection = null;
+          try {
+              connection = DBUtils.getConnection();
+              connection.setAutoCommit(false);
+          } catch (SQLException throwables) {
+              throwables.printStackTrace();
+          }
+      }
+  
+      public static void commit(){
+          Connection connection = null;
+          try {
+              connection = getConnection();
+              connection.commit();
+          } catch (SQLException throwables) {
+              throwables.printStackTrace();
+          }finally {
+              DBUtils.close(connection);
+          }
+      }
+  
+      public static void rollback(){
+          Connection connection = null;
+          try {
+              connection = getConnection();
+              connection.commit();
+          } catch (SQLException throwables) {
+              throwables.printStackTrace();
+          }finally {
+              DBUtils.close(connection);
+          }
+      }
+  
+      public static void close(Connection connection, AutoCloseable... clos){
+          if(connection!=null) {
+              try {
+                  connection.close();
+                  THREAD_LOCAL.remove();
+              } catch (SQLException throwables) {
+                  throwables.printStackTrace();
+              }
+          }
+          for (AutoCloseable clo : clos) {
+              if(clo!=null){
+                  try {
+                      clo.close();
+                  } catch (Exception e) {
+                      e.printStackTrace();
+                  }
+              }
+          }
+      }
+  }
+  ```
+
+- 实体类
+
+  ```java
+  public class EmpManager {
+      private String uname;
+      private String pwd;
+  
+      public EmpManager() {}
+  
+      public EmpManager(String uname, String pwd) {
+          this.uname = uname;
+          this.pwd = pwd;
+      }
+  
+      public String getUname() {
+          return uname;
+      }
+  
+      public void setUname(String uname) {
+          this.uname = uname;
+      }
+  
+      public String getPwd() {
+          return pwd;
+      }
+  
+      public void setPwd(String pwd) {
+          this.pwd = pwd;
+      }
+  
+      @Override
+      public String toString() {
+          return "EmpManager{" +
+                  "uname='" + uname + '\'' +
+                  ", pwd='" + pwd + '\'' +
+                  '}';
+      }
+  }
+  ```
+
+- DAO
