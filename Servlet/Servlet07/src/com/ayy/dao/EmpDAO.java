@@ -13,4 +13,10 @@ import java.util.List;
 
 public interface EmpDAO {
     List<Emp> selectAll();
+
+    int delete(int eid);
+
+    int update(Emp emp);
+
+    Emp select(int eid);
 }

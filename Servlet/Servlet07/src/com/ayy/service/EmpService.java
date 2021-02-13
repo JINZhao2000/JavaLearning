@@ -13,4 +13,10 @@ import java.util.List;
 
 public interface EmpService {
     List<Emp> showAllEmp();
+
+    int removeEmp(int eid);
+
+    int modifyEmp(Emp emp);
+
+    Emp showEmp(int eid);
 }

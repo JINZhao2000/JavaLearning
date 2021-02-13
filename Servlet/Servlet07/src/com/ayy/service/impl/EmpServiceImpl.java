@@ -32,4 +32,43 @@ public class EmpServiceImpl implements EmpService {
         }
         return empList;
     }
+
+    @Override
+    public int removeEmp(int eid) {
+        int result = 0;
+        try {
+            DBUtils.beginTX();
+            result = empDAO.delete(eid);
+            DBUtils.commit();
+        }catch (Exception e){
+            DBUtils.rollback();
+        }
+        return result;
+    }
+
+    @Override
+    public int modifyEmp(Emp emp) {
+        int result = 0;
+        try {
+            DBUtils.beginTX();
+            result = empDAO.update(emp);
+            DBUtils.commit();
+        }catch (Exception e){
+            DBUtils.rollback();
+        }
+        return result;
+    }
+
+    @Override
+    public Emp showEmp(int eid) {
+        Emp emp = null;
+        try {
+            DBUtils.beginTX();
+            emp = empDAO.select(eid);
+            DBUtils.commit();
+        }catch (Exception e){
+            DBUtils.rollback();
+        }
+        return emp;
+    }
 }

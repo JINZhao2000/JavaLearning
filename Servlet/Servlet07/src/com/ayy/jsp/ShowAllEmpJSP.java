@@ -33,7 +33,7 @@ public class ShowAllEmpJSP extends HttpServlet {
         writer.println("<title>AllEmp</title></head>");
         writer.println("<body>");
         writer.println("<table border='1'>");
-        writer.println("<tr><td>ID</td><td>Name</td><td>Salary</td><td>Age</td><td>Operations</td><td></td></tr>");
+        writer.println("<tr><td>ID</td><td>Name</td><td>Salary</td><td>Age</td><td colspan='2'>Operations</td></tr>");
         for (Emp emp : emps) {
             writer.println("<tr><td>");
             writer.println(emp.getEid());
@@ -43,7 +43,8 @@ public class ShowAllEmpJSP extends HttpServlet {
             writer.println(emp.getSalary());
             writer.println("</td><td>");
             writer.println(emp.getAge());
-            writer.println("</td><td>Modify</td><td>Delete</td><tr>");
+            writer.println("</td><td><a href='"+req.getContextPath()+"/manager/safe/showEmpController?eid="+emp.getEid()+"'>Modify</a></td>");
+            writer.println("<td><a href='"+req.getContextPath()+"/manager/safe/removeEmpController?eid="+emp.getEid()+"'>Delete</a></td><tr>");
         }
         writer.println("</table>");
         writer.println("</body></html>");
