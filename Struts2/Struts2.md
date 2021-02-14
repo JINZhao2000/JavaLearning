@@ -178,7 +178,7 @@ Browser --1-> Server --2,3-> StrutsPrepareAndExecuteFilter --4-> ActionMapping -
 
 ------
 
-![Struts2-Architecture](./Struts2-Architecture.png)
+![Struts2-Architecture](./images/Struts2-Architecture.png)
 
 ## 5. 数据处理
 
@@ -1073,4 +1073,38 @@ web.xml 配置
   ```
 
 ## 13. 数据校验
+
+前端数据校验：js（可以禁用 js 来规避数据校验）-> 后端数据校验
+
+如果使用 Struts2 的数据校验功能，action 需要继承 ActionSupport 类，该类的方法中提供了一个 Validate 方法，可以将验证规则写在方法中，只有方法执行通过后，才会执行业务方法
+
+步骤
+
+- 业务处理类继承 ActionSupport
+- 重写 validate 方法
+- 配置 input 结果集
+- web.xml 配置 struts-tags.tld 和 filter
+- 添加标签 `<s:fielderror fieldName=""/> ` 
+
+问题：一个业务类中有多个业务方法，每个业务校验规则可能不一样，但是所有业务方法都会通过 validate，导致功能不能实现
+
+需要每个业务方法加上自己的验证方法，验证方法的命名规则为 validate+业务方法名（大写）
+
+执行顺序为 validateXxxx -> validate -> xxxx
+
+validate 方法中填写的是公共的校验规则
+
+----
+
+使用 Struts2 提供的校验框架进行校验
+
+步骤
+
+- 创建 jsp 页面，配置 struts-tag
+- 创建 action 类
+- 在包下添加校验规则文件，命名为 XxxAction-validation.xml
+- 在 xwork-validator-1.0.dtd 中获取约束
+- （type 在 `com/opensymphony/xwork2/validator/validators/default.xml`）
+
+
 
