@@ -1081,9 +1081,61 @@ web.xml 配置
 步骤
 
 - 业务处理类继承 ActionSupport
+
+  ```java
+  public class UserAction extends ActionSupport {
+      private User user;
+  
+      public String execute(){
+          System.out.println(user);
+          return Action.SUCCESS;
+      }
+  
+      @Override
+      public void validate() {
+          if (user.getUsername().length()<4 || user.getUsername().length()>10) {
+              this.addFieldError("user.username","Error of username");
+          }
+          if (user.getAge() <= 0) {
+              this.addFieldError("user.age","Error of age");
+          }
+      }
+  
+      public User getUser() {
+          return user;
+      }
+  
+      public void setUser(User user) {
+          this.user = user;
+      }
+  }
+  ```
+
 - 重写 validate 方法
+
 - 配置 input 结果集
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8" ?>
+  <!DOCTYPE struts PUBLIC
+          "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+          "http://struts.apache.org/dtds/struts-2.5.dtd">
+  <struts>
+      <package name="ayy" namespace="/" extends="struts-default">
+          <action name="save" class="com.ayy.action.UserAction">
+              <result name="input">/save.jsp</result>
+              <result>/success.jsp</result>
+          </action>
+          <action name="save" class="com.ayy.action.UserFormAction" method="save">
+              <result name="input">/save.jsp</result>
+              <result>/success.jsp</result>
+          </action>
+      </package>
+  </struts>
+  ```
+
 - web.xml 配置 struts-tags.tld 和 filter
+
 - 添加标签 `<s:fielderror fieldName=""/> ` 
 
 问题：一个业务类中有多个业务方法，每个业务校验规则可能不一样，但是所有业务方法都会通过 validate，导致功能不能实现
@@ -1101,9 +1153,103 @@ validate 方法中填写的是公共的校验规则
 步骤
 
 - 创建 jsp 页面，配置 struts-tag
+
+  ```jsp
+  <%@ taglib prefix="s" uri="/struts-tags" %>
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+  <head>
+      <title>Data Process</title>
+  </head>
+  <body>
+  <form action="save.action" method="post">
+      username:<input type="text" name="user.username"/><s:fielderror fieldName="user.username"/><br>
+      sex:<input type="text" name="user.sex"/><br>
+      age:<input type="number" name="user.age"/><br>
+      <input type="submit" value="save"/>
+  </form>
+  </body>
+  </html>
+  ```
+
+  web.xml
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8" ?>
+  <web-app version="2.5"
+           xmlns="http://java.sun.com/xml/ns/javaee"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+                               http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+      <display-name/>
+      <filter>
+          <filter-name>struts2</filter-name>
+          <filter-class>org.apache.struts2.dispatcher.filter.StrutsPrepareAndExecuteFilter</filter-class>
+      </filter>
+      <filter-mapping>
+          <filter-name>struts2</filter-name>
+          <url-pattern>*.action</url-pattern>
+      </filter-mapping>
+      <filter-mapping>
+          <filter-name>struts2</filter-name>
+          <url-pattern>*.jsp</url-pattern>
+      </filter-mapping>
+      <jsp-config>
+          <taglib>
+              <taglib-uri>/struts-tags</taglib-uri>
+              <taglib-location>/WEB-INF/struts-tags.tld</taglib-location>
+          </taglib>
+      </jsp-config>
+      <welcome-file-list>
+          <welcome-file>save.jsp</welcome-file>
+      </welcome-file-list>
+  </web-app>
+  ```
+
 - 创建 action 类
+
+  ```java
+  public class UserFormAction extends ActionSupport {
+      private User user;
+  
+      public String save(){
+          System.out.println(user);
+          return Action.SUCCESS;
+      }
+  
+      public User getUser() {
+          return user;
+      }
+  
+      public void setUser(User user) {
+          this.user = user;
+      }
+  }
+  ```
+
 - 在包下添加校验规则文件，命名为 XxxAction-validation.xml
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8" ?>
+  <!DOCTYPE validators PUBLIC
+          "-//Apache Struts//XWork Validator 1.0//EN"
+          "http://struts.apache.org/dtds/xwork-validator-1.0.dtd">
+  <validators>
+      <field name="user.username">
+          <field-validator type="requiredstring">
+              <message>Named required</message>
+          </field-validator>
+          <field-validator type="stringlength">
+              <param name="maxLength">10</param>
+              <param name="minLength">4</param>
+              <message>Name length should between ${minLength} and ${maxLength}</message>
+          </field-validator>
+      </field>
+  </validators>
+  ```
+
 - 在 xwork-validator-1.0.dtd 中获取约束
+
 - （type 在 `com/opensymphony/xwork2/validator/validators/default.xml`）
 
 
