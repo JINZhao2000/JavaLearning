@@ -19,6 +19,7 @@
         <module>ServletAPI</module>
         <module>CastOfType</module>
         <module>DataValidate</module>
+        <module>Interceptor</module>
     </modules>
 
     <packaging>pom</packaging>

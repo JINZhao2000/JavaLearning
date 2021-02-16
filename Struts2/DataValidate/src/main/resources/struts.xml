@@ -4,10 +4,10 @@
         "http://struts.apache.org/dtds/struts-2.5.dtd">
 <struts>
     <package name="ayy" namespace="/" extends="struts-default">
-        <action name="save" class="com.ayy.action.UserAction">
-            <result name="input">/save.jsp</result>
-            <result>/success.jsp</result>
-        </action>
+<!--        <action name="save" class="com.ayy.action.UserAction">-->
+<!--            <result name="input">/save.jsp</result>-->
+<!--            <result>/success.jsp</result>-->
+<!--        </action>-->
         <action name="save" class="com.ayy.action.UserFormAction" method="save">
             <result name="input">/save.jsp</result>
             <result>/success.jsp</result>

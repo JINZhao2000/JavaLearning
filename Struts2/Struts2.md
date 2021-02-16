@@ -1248,9 +1248,66 @@ validate 方法中填写的是公共的校验规则
   </validators>
   ```
 
+- 并且 pom.xml 里再加入下面的代码
+
+  ```java
+  <build>
+      <resources>
+      	<resource>
+  		    <directory>src/main/resources</directory>
+  	    </resource>
+      	<resource>
+      		<directory>src/main/java</directory>
+      			<includes>
+      				<include>**\\*.xml</include>
+                  </includes>
+  			<filtering>false</filtering>
+  		</resource>
+  	</resources>
+  </build>
+  ```
+
 - 在 xwork-validator-1.0.dtd 中获取约束
 
 - （type 在 `com/opensymphony/xwork2/validator/validators/default.xml`）
 
+## 14. 拦截器
 
+Struts2 的所有功能都是由拦截器来实现的，拦截器和过滤器相似，拦截器只过滤所有 action，并且在 Struts2 中，所有功能都是可插拔的，还可以自定义拦截器来实现一些 Struts2 没有提供的功能
 
+拦截器是通过代理来实现的（AOP），拦截器是单例的，所有 action 共享相同的拦截器，所以拦截器中定义常量时要注意线程安全问题
+
+| 拦截器名称        | 作用                                                         |
+| ----------------- | ------------------------------------------------------------ |
+| alias             | 对于 HTTP 请求包含的参数设置别名                             |
+| autowiring        | 将某些 JavaBean 实例自动绑定到其它 Bean 对应的属性中         |
+| chain             | 让前一个 Action 的参数可以在现有的 Action 中使用             |
+| conversionError   | 从 ActionContext 中将转化类型时候发生的错误添加到 Action 中的值域错误中，在校验时经常被使用到来显示类型转换错误的信息 |
+| cookie            | @Since Struts-2.0.7 可以把 Cookie 注入 Action 中可以设置的名字或值中 |
+| createSession     | 自动创建一个 HTTP 的 Session，尤其是对需要 HTTP 的 Session 拦截器特别有用 |
+| debugging         | 用来对在视图间传递的数据进行测试                             |
+| execAndWait       | 不显式执行 Aciton，在视图上显示给用户的是一个正在等待的页面，但是 Action 在后台执行着，用于进度条开发 |
+| exception         | 将异常和 Action 返回的 result 相映射                         |
+| fileUpload        | 支持文件上传功能的拦截器                                     |
+| i18n              | 支持国际化拦截器                                             |
+| logger            | 拥有日志功能的拦截器                                         |
+| modelDriven       | Action 执行该拦截器的时候，可以将 getModel() 方法得到的 result 值放入值栈中 |
+| scopedModelDriven | 执行该拦截器的时候，可以从一个 scope 范围检索和存储 model 值，通过调用 setModel() 方法去设置 model 值 |
+| params            | 将 HTTP 请求中包含的参数值设置到 Action 中                   |
+| prepare           | 假如 Action 继承了 Preparable 接口，则会调用 prepare() 方法  |
+| staticParams      | 对于在 struts.xml 文件中 Action 中的设置的参数设置到对应的 Action 中 |
+| scope             | 在 session 或者 application 范围中设置 Action 状态           |
+| servletCofig      | 该拦截对象提供访问包含 HttpServletRequest 和 HttpServletResponse 对象的 Map 方法 |
+| timer             | 输出 Action 的执行时间                                       |
+| token             | 避免重复提交的校验拦截器                                     |
+| tokenSession      | 和 token 拦截器类似，它还能存储提交的数据到 session 里       |
+| validation        | 运行在 action-validation.xml 文件中定义的校验规则            |
+| workflow          | 在 Action 中调用 validate 校验方法，如果 Action 有错误，则返回到 input 视图 |
+| store             | 执行校验功能时，该拦截器提供存储和检索 Action 的所有错误和正确信息的功能 |
+| checkbox          | 视图中如果有 checkbox 存在的情况，该拦截器自动将 unchecked 的 checkbox 当作一个参数记为 false 记录下来，可以用一个隐藏的菜单来记录所有未提交的 checkbox，而且缺省 unchecked  的 checkbox 是布尔型的，如果视图中 checkbox 设置的不是布尔类型，它就会被覆盖成布尔类型的值 |
+| profiling         | 通过参数来激活或不激活分析检测功能，前提是 web 项目是在开发模式下 |
+| roles             | 进行权限配置的拦截器，如果登录用户拥有相应权限才能去执行某一个特定的 Action |
+
+默认定义在 struts-default.xml 下
+
+- timer 使用
