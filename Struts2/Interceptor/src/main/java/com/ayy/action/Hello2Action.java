@@ -8,7 +8,7 @@ import com.opensymphony.xwork2.Action;
  * @ Date 16/02/2021
  * @ Version 1.0
  */
-public class HelloAction {
+public class Hello2Action {
     public String hello(){
         System.out.println("Called");
         return Action.SUCCESS;

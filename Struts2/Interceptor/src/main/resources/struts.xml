@@ -4,9 +4,17 @@
         "http://struts.apache.org/dtds/struts-2.5.dtd">
 <struts>
     <package name="ayy" namespace="/" extends="struts-default">
-        <action name="hello" class="com.ayy.action.HelloAction" method="hello">
+        <action name="hello" class="com.ayy.action.Hello2Action" method="hello">
             <result>/index.jsp</result>
-            <interceptor-ref name="timer"></interceptor-ref>
+            <interceptor-ref name="timer"/>
+        </action>
+        <action name="save" class="com.ayy.action.UserIAction" method="save">
+            <result>/temp.jsp</result>
+            <result name="invalid.token">/temps.jsp</result>
+            <interceptor-ref name="token"/>
+        </action>
+        <action name="toSave" class="com.ayy.action.UserIAction" method="toSave">
+            <result>/save.jsp</result>
         </action>
     </package>
 </struts>

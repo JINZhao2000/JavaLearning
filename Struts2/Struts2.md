@@ -1311,3 +1311,66 @@ Struts2 的所有功能都是由拦截器来实现的，拦截器和过滤器相
 默认定义在 struts-default.xml 下
 
 - timer 使用
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8" ?>
+  <!DOCTYPE struts PUBLIC
+          "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+          "http://struts.apache.org/dtds/struts-2.5.dtd">
+  <struts>
+      <package name="ayy" namespace="/" extends="struts-default">
+          <action name="hello" class="com.ayy.action.HelloAction" method="hello">
+              <result>/index.jsp</result>
+              <interceptor-ref name="timer"/>
+          </action>
+      </package>
+  </struts>
+  ```
+
+- token 使用
+
+  ```jsp
+  <%@ taglib prefix="s" uri="/struts-tags" %>
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+  <head>
+      <title>Save</title>
+  </head>
+  <body>
+  <form action="./temps.jsp" method="post">
+      <s:token></s:token>
+      Username: <input type="text" name="userI.uname"><br/>
+      Age: <input type="number" name="userI.age"><br/>
+      <input type="submit" value="submit">
+  </form>
+  </body>
+  </html>
+  ```
+
+  配置 struts.xml
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8" ?>
+  <!DOCTYPE struts PUBLIC
+          "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+          "http://struts.apache.org/dtds/struts-2.5.dtd">
+  <struts>
+      <package name="ayy" namespace="/" extends="struts-default">
+          <action name="hello" class="com.ayy.action.Hello2Action" method="hello">
+              <result>/index.jsp</result>
+              <interceptor-ref name="timer"/>
+          </action>
+          <action name="save" class="com.ayy.action.UserIAction" method="save">
+              <result>/temp.jsp</result>
+              <result name="invalid.token">/temps.jsp</result>
+              <interceptor-ref name="token"/>
+          </action>
+          <action name="toSave" class="com.ayy.action.UserIAction" method="toSave">
+              <result>/save.jsp</result>
+          </action>
+      </package>
+  </struts>
+  ```
+
+  
+
