@@ -9,10 +9,10 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html>
 <head>
-    <title>Save</title>
+    <title>Login</title>
 </head>
 <body>
-<form action="save.action" method="post">
+<form action="login.action" method="post">
     <s:token></s:token>
     Username: <input type="text" name="user.uname"><br/>
     Password: <input type="password" name="user.pwd"><br/>

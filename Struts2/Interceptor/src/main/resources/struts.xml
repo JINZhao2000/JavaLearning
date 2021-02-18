@@ -4,16 +4,41 @@
         "http://struts.apache.org/dtds/struts-2.5.dtd">
 <struts>
     <package name="ayy" namespace="/" extends="struts-default">
+        <interceptors>
+            <interceptor name="myInterceptor" class="com.ayy.interceptor.MyInterceptor"/>
+            <interceptor name="loginInterceptor" class="com.ayy.interceptor.LoginInterceptor"/>
+        </interceptors>
+
+        <global-results>
+            <result name="login">/login.jsp</result>
+        </global-results>
+
         <action name="hello" class="com.ayy.action.Hello2Action" method="hello">
-            <result>/index.jsp</result>
             <interceptor-ref name="timer"/>
+            <interceptor-ref name="loginInterceptor"/>
+            <result>/index.jsp</result>
         </action>
-        <action name="save" class="com.ayy.action.UserIAction" method="save">
-            <result>/temp.jsp</result>
-            <result name="invalid.token">/temps.jsp</result>
+        <action name="login" class="com.ayy.action.UserAction" method="login">
             <interceptor-ref name="token"/>
+            <interceptor-ref name="loginInterceptor"/>
+            <interceptor-ref name="defaultStack"/>
+            <result>/temps.jsp</result>
+            <result name="invalid.token">/index.jsp</result>
         </action>
-        <action name="toSave" class="com.ayy.action.UserIAction" method="toSave">
+        <action name="toLogin" class="com.ayy.action.UserAction" method="toLogin">
+            <interceptor-ref name="myInterceptor"/>
+            <result>/login.jsp</result>
+        </action>
+        <action name="save" class="com.ayy.action.UserAction" method="save">
+            <interceptor-ref name="token"/>
+            <interceptor-ref name="loginInterceptor"/>
+            <interceptor-ref name="defaultStack"/>
+            <result>/temps.jsp</result>
+            <result name="invalid.token">/index.jsp</result>
+        </action>
+        <action name="toSave" class="com.ayy.action.UserAction" method="toSave">
+            <interceptor-ref name="myInterceptor"/>
+            <interceptor-ref name="loginInterceptor"/>
             <result>/save.jsp</result>
         </action>
     </package>

@@ -11,6 +11,6 @@
     <title>Title</title>
 </head>
 <body>
-Success: ${userI.uname}
+Success: ${user.uname}
 </body>
 </html>

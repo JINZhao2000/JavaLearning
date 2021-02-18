@@ -6,16 +6,11 @@ package com.ayy.vo;
  * @ Date 17/02/2021
  * @ Version 1.0
  */
-public class UserI {
+public class User {
     private String uname;
-    private int age;
+    private String pwd;
 
-    public UserI() {}
-
-    public UserI(String uname, int age) {
-        this.uname = uname;
-        this.age = age;
-    }
+    public User() {}
 
     public String getUname() {
         return uname;
@@ -25,19 +20,19 @@ public class UserI {
         this.uname = uname;
     }
 
-    public int getAge() {
-        return age;
+    public String getPwd() {
+        return pwd;
     }
 
-    public void setAge(int age) {
-        this.age = age;
+    public void setPwd(String pwd) {
+        this.pwd = pwd;
     }
 
     @Override
     public String toString() {
-        return "UserI{" +
+        return "User{" +
                 "uname='" + uname + '\'' +
-                ", age=" + age +
+                ", pwd='" + pwd + '\'' +
                 '}';
     }
 }

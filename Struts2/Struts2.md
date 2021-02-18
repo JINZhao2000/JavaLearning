@@ -1320,8 +1320,9 @@ Struts2 的所有功能都是由拦截器来实现的，拦截器和过滤器相
   <struts>
       <package name="ayy" namespace="/" extends="struts-default">
           <action name="hello" class="com.ayy.action.HelloAction" method="hello">
-              <result>/index.jsp</result>
               <interceptor-ref name="timer"/>
+              <interceptor-ref name="defaultStack"/>
+              <result>/index.jsp</result>
           </action>
       </package>
   </struts>
@@ -1349,6 +1350,8 @@ Struts2 的所有功能都是由拦截器来实现的，拦截器和过滤器相
 
   配置 struts.xml
 
+  __必须配置 `<interceptor-ref name="defaultStack"/>`，否则后端获取不到前端数据__
+
   ```xml
   <?xml version="1.0" encoding="UTF-8" ?>
   <!DOCTYPE struts PUBLIC
@@ -1357,13 +1360,15 @@ Struts2 的所有功能都是由拦截器来实现的，拦截器和过滤器相
   <struts>
       <package name="ayy" namespace="/" extends="struts-default">
           <action name="hello" class="com.ayy.action.Hello2Action" method="hello">
-              <result>/index.jsp</result>
               <interceptor-ref name="timer"/>
+              <interceptor-ref name="defaultStack"/>
+              <result>/index.jsp</result>
           </action>
           <action name="save" class="com.ayy.action.UserIAction" method="save">
+              <interceptor-ref name="token"/>
+              <interceptor-ref name="defaultStack"/>
               <result>/temp.jsp</result>
               <result name="invalid.token">/temps.jsp</result>
-              <interceptor-ref name="token"/>
           </action>
           <action name="toSave" class="com.ayy.action.UserIAction" method="toSave">
               <result>/save.jsp</result>
@@ -1372,5 +1377,64 @@ Struts2 的所有功能都是由拦截器来实现的，拦截器和过滤器相
   </struts>
   ```
 
-  
+### 14.1 自定义拦截器
+
+实现方式
+
+- 实现 Interceptor 接口
+- 继承 AbstractInterceptor 类（其实这个类实现了 Interceptor 接口）
+
+当拦截器方法被调用后，需要通过 `invocation.invoke()` 调用下一个拦截器，如果没有拦截器，那么执行 action 中的方法
+
+改返回值为拦截器的值或者结果集
+
+登录拦截器配置
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+        "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+        "http://struts.apache.org/dtds/struts-2.5.dtd">
+<struts>
+    <package name="ayy" namespace="/" extends="struts-default">
+        <interceptors>
+            <interceptor name="myInterceptor" class="com.ayy.interceptor.MyInterceptor"/>
+            <interceptor name="loginInterceptor" class="com.ayy.interceptor.LoginInterceptor"/>
+        </interceptors>
+
+        <global-results>
+            <result name="login">/login.jsp</result>
+        </global-results>
+
+        <action name="hello" class="com.ayy.action.Hello2Action" method="hello">
+            <interceptor-ref name="timer"/>
+            <interceptor-ref name="loginInterceptor"/>
+            <result>/index.jsp</result>
+        </action>
+        <action name="login" class="com.ayy.action.UserAction" method="login">
+            <interceptor-ref name="token"/>
+            <interceptor-ref name="loginInterceptor"/>
+            <interceptor-ref name="defaultStack"/>
+            <result>/temps.jsp</result>
+            <result name="invalid.token">/index.jsp</result>
+        </action>
+        <action name="toLogin" class="com.ayy.action.UserAction" method="toLogin">
+            <interceptor-ref name="myInterceptor"/>
+            <result>/login.jsp</result>
+        </action>
+        <action name="save" class="com.ayy.action.UserAction" method="save">
+            <interceptor-ref name="token"/>
+            <interceptor-ref name="loginInterceptor"/>
+            <interceptor-ref name="defaultStack"/>
+            <result>/temps.jsp</result>
+            <result name="invalid.token">/index.jsp</result>
+        </action>
+        <action name="toSave" class="com.ayy.action.UserAction" method="toSave">
+            <interceptor-ref name="myInterceptor"/>
+            <interceptor-ref name="loginInterceptor"/>
+            <result>/save.jsp</result>
+        </action>
+    </package>
+</struts>
+```
 
