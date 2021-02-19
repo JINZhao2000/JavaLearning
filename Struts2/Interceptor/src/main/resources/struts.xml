@@ -7,38 +7,40 @@
         <interceptors>
             <interceptor name="myInterceptor" class="com.ayy.interceptor.MyInterceptor"/>
             <interceptor name="loginInterceptor" class="com.ayy.interceptor.LoginInterceptor"/>
+            <interceptor name="methodInterceptor" class="com.ayy.interceptor.MethodInterceptor"/>
+            <interceptor-stack name="myStack">
+                <interceptor-ref name="timer"/>
+                <interceptor-ref name="myInterceptor"/>
+                <interceptor-ref name="loginInterceptor"/>
+                <interceptor-ref name="methodInterceptor">
+                    <param name="includeMethods">hello,toSave</param>
+                    <param name="excludeMethods"/>
+                </interceptor-ref>
+            </interceptor-stack>
         </interceptors>
+        <default-interceptor-ref name="myStack"/>
 
         <global-results>
             <result name="login">/login.jsp</result>
         </global-results>
 
         <action name="hello" class="com.ayy.action.Hello2Action" method="hello">
-            <interceptor-ref name="timer"/>
-            <interceptor-ref name="loginInterceptor"/>
             <result>/index.jsp</result>
         </action>
         <action name="login" class="com.ayy.action.UserAction" method="login">
             <interceptor-ref name="token"/>
-            <interceptor-ref name="loginInterceptor"/>
             <interceptor-ref name="defaultStack"/>
             <result>/temps.jsp</result>
             <result name="invalid.token">/index.jsp</result>
         </action>
         <action name="toLogin" class="com.ayy.action.UserAction" method="toLogin">
-            <interceptor-ref name="myInterceptor"/>
             <result>/login.jsp</result>
         </action>
         <action name="save" class="com.ayy.action.UserAction" method="save">
-            <interceptor-ref name="token"/>
-            <interceptor-ref name="loginInterceptor"/>
-            <interceptor-ref name="defaultStack"/>
             <result>/temps.jsp</result>
             <result name="invalid.token">/index.jsp</result>
         </action>
         <action name="toSave" class="com.ayy.action.UserAction" method="toSave">
-            <interceptor-ref name="myInterceptor"/>
-            <interceptor-ref name="loginInterceptor"/>
             <result>/save.jsp</result>
         </action>
     </package>

@@ -1438,3 +1438,58 @@ Struts2 的所有功能都是由拦截器来实现的，拦截器和过滤器相
 </struts>
 ```
 
+### 14.2 拦截器栈和方法拦截器
+
+拦截器栈
+
+```xml
+<interceptors>
+    <interceptor name="myInterceptor" class="com.ayy.interceptor.MyInterceptor"/>
+    <interceptor name="loginInterceptor" class="com.ayy.interceptor.LoginInterceptor"/>
+    <interceptor-stack name="myStack">
+        <interceptor-ref name="timer"/>
+        <interceptor-ref name="myInterceptor"/>
+        <interceptor-ref name="loginInterceptor"/>
+    </interceptor-stack>
+</interceptors>
+```
+
+设定默认拦截器
+
+```xml
+<default-interceptor-ref name="myStack"/>
+```
+
+方法拦截器：继承 `MethodFilterInterceptor` 
+
+```xml
+<interceptor-ref name="methodInterceptor">
+    <param name="includeMethods">hello,toSave</param>
+    <param name="excludeMethods"/>
+</interceptor-ref>
+```
+
+### 14.3 内置拦截器的执行方式
+
+ModelDriven 模型驱动内部实现
+
+```java
+@Override
+public String intercept(ActionInvocation invocation) throws Exception {
+    Object action = invocation.getAction();
+	// 判断类是否实现了 ModelDriven 的接口
+    if (action instanceof ModelDriven) {
+        ModelDriven modelDriven = (ModelDriven) action;
+        ValueStack stack = invocation.getStack();
+        Object model = modelDriven.getModel();
+        if (model !=  null) {
+            stack.push(model);
+        }
+        if (refreshModelBeforeResult) {
+            invocation.addPreResultListener(new RefreshModelBeforeResult(modelDriven, model));
+        }
+    }
+    return invocation.invoke();
+}
+```
+
