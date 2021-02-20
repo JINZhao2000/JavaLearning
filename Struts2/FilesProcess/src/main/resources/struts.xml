@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+        "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+        "http://struts.apache.org/dtds/struts-2.5.dtd">
+<struts>
+    <constant name="struts.multipart.maxSize" value="67288165"/>
+    <package name="ayy" namespace="/" extends="struts-default">
+        <action name="upload" class="com.ayy.action.FileUploadAction" method="upload">
+            <interceptor-ref name="fileUpload">
+                <param name="maximumSize">67288165</param>
+            </interceptor-ref>
+            <interceptor-ref name="basicStack"/>
+            <result>/success.jsp</result>
+            <result name="error">/error.jsp</result>
+        </action>
+        <action name="toUpload" class="com.ayy.action.FileUploadAction" method="toUpload">
+            <result>/fileupload.jsp</result>
+        </action>
+    </package>
+</struts>

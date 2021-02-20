@@ -20,6 +20,7 @@
         <module>CastOfType</module>
         <module>DataValidate</module>
         <module>Interceptor</module>
+        <module>FilesProcess</module>
     </modules>
 
     <packaging>pom</packaging>

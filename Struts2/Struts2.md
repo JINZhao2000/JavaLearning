@@ -1493,3 +1493,39 @@ public String intercept(ActionInvocation invocation) throws Exception {
 }
 ```
 
+### 14.4 文件上传
+
+- JSP 页面表单必须是 post 提交，并且设置 `enctype="multipart/form-data"` 
+
+- Action 中属性声明为
+
+  - 文件：类型为 File，名称与 form 表单中的名称相匹配
+  - 文件名：类型为 String，名称为__表单属性名__+`FileName` 
+  - 文件类型：类型为 String，名称为__表单属性名__+`ContentType` 
+
+- 可以在 `server.xml` 配置路径
+
+  ```xml
+  <Context path="/fileupload" docBase=".../WEB-INF" reloadable="true"/>
+  ```
+
+- 上传大文件
+
+  ```xml
+  <constant name="struts.multipart.maxSize" value="67288165"/>
+  <package name="ayy" namespace="/" extends="struts-default">
+      <action>
+          <interceptor-ref name="fileUpload">
+              <param name="maximumSize">67288165</param>
+          </interceptor-ref>
+      </action>
+  </package>    
+  ```
+
+- 配置临时目录
+
+  ```xml
+  <constant name="struts.multipart.saveDir" value="c:\"/>
+  ```
+
+  
