@@ -9,12 +9,30 @@
             <interceptor-ref name="fileUpload">
                 <param name="maximumSize">67288165</param>
             </interceptor-ref>
-            <interceptor-ref name="basicStack"/>
+            <interceptor-ref name="defaultStack"/>
             <result>/success.jsp</result>
             <result name="error">/error.jsp</result>
         </action>
         <action name="toUpload" class="com.ayy.action.FileUploadAction" method="toUpload">
             <result>/fileupload.jsp</result>
+        </action>
+
+        <action name="multiUpload" class="com.ayy.action.MultiFileUploadAction" method="upload">
+            <interceptor-ref name="fileUpload">
+                <param name="maximumSize">67288165</param>
+            </interceptor-ref>
+            <interceptor-ref name="defaultStack"/>
+            <result>/success.jsp</result>
+            <result name="error">/error.jsp</result>
+        </action>
+        <action name="toMultiUpload" class="com.ayy.action.MultiFileUploadAction" method="toUpload">
+            <result>/multifileupload.jsp</result>
+        </action>
+
+        <action name="download" class="com.ayy.action.DownloadAction">
+            <result type="stream">
+                <param name="contentDisposition">attachment;fileName=${fileName}</param>
+            </result>
         </action>
     </package>
 </struts>

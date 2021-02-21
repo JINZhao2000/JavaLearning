@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+        "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+        "http://struts.apache.org/dtds/struts-2.5.dtd">
+<struts>
+    <package name="ayy" namespace="/" extends="json-default">
+        <action name="checkName" class="com.ayy.action.AjaxAction" method="checkName"/>
+        <action name="list" class="com.ayy.action.JsonAction" method="list">
+            <result type="json">
+                <param name="root">userList</param>
+            </result>
+        </action>
+    </package>
+</struts>

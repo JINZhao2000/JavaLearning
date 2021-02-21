@@ -1500,8 +1500,15 @@ public String intercept(ActionInvocation invocation) throws Exception {
 - Action 中属性声明为
 
   - 文件：类型为 File，名称与 form 表单中的名称相匹配
+
   - 文件名：类型为 String，名称为__表单属性名__+`FileName` 
+
   - 文件类型：类型为 String，名称为__表单属性名__+`ContentType` 
+
+    ```java
+    String contentTypeName = inputName + "ContentType";
+    String fileNameName = inputName + "FileName";
+    ```
 
 - 可以在 `server.xml` 配置路径
 
@@ -1528,4 +1535,281 @@ public String intercept(ActionInvocation invocation) throws Exception {
   <constant name="struts.multipart.saveDir" value="c:\"/>
   ```
 
+- 多文件上传将 Action 中接收的文件对象改成数组对象
+
+### 14.5 文件下载
+
+不安全的方式，无权限控制，会直接打开可以打开的文件
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Download</title>
+</head>
+<body>
+<a href="./download/codeassist.txt">Download</a><br/>
+</body>
+</html>
+```
+
+安全方式：
+
+Servlet 中
+
+- 设置类型为 `application/octet-stream` 或 `application/x-msdownload` 
+
+- 设置 Header `resp.setHeader("Content-Disposition","attachment;filename=\"filename\"");` 
+
+  ```java
+  @Override
+  protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletExceptionm IOException {
+      String path = req.getRealPath("/download");
+      File file = new File(path,"filename.txt");
+      resp.setContentType("application/octet-stream");
+      resp.setHeader("Content-Disposition","attachment;filename=\"filename.txt\"");
+      resp.setContentLength((int)file.length());
+      
+      InputStream is = new FileInputStream(file);
+      byte[] buffer = new byte[400];
+      int len = -1;
+      while((len = is.read(buffer))!=-1) {
+          resp.getOutputStream().write(buffer, 0, len);
+      }
+      is.close();
+      resp.getOutputStream().close();
+  }
+  ```
+
+Struts 中：
+
+- 配置 DownloadAction 
+
+  ```java
+  public class DownloadAction {
+      private String fileName;
   
+      public String execute(){
+          return Action.SUCCESS;
+      }
+  
+      public InputStream getInputStream(){
+          String path = ServletActionContext.getServletContext().getRealPath("/download");
+          try {
+              return new FileInputStream(new File(path,fileName));
+          } catch (FileNotFoundException e) {
+              e.printStackTrace();
+          }
+          return null;
+      }
+  
+      public String getFileName() {
+          return fileName;
+      }
+  
+      public void setFileName(String fileName) {
+          this.fileName = fileName;
+      }
+  }
+  ```
+
+- 配置 struts.xml 
+
+  ```xml
+  <action name="download" class="com.ayy.action.DownloadAction">
+      <result type="stream">
+      	<param name="contentDisposition">attachment;fileName=${fileName}</param>
+          <param name="inputName">xxx</param>
+      </result>
+  </action>
+  ```
+
+- 配置 jsp
+
+  ```jsp
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+  <head>
+      <title>Download</title>
+  </head>
+  <body>
+  <a href="download.action?fileName=codeassist.txt">Download</a><br/>
+  </body>
+  </html>
+  ```
+
+## 15. Ajax
+
+__Struts2 中可以使用 Servlet 的 Ajax__ 
+
+JSP 页面
+
+```jsp
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <title>Register</title>
+    <script type="text/javascript" src="js/jquery-3.5.1.js"></script>
+    <script type="text/javascript">
+        $(function (){
+           $("#uname").blur(function (){
+               $.post("checkName.action",{"username":$(this).val()},function (data) {
+                   if("true"==data){
+                       $("#uname").css("border","1px solid red");
+                   }else {
+                       $("#uname").css("border","1px solid green");
+                   }
+               });
+           });
+        });
+    </script>
+</head>
+```
+
+Action 类
+
+```java
+public class AjaxAction {
+    private String username;
+
+    public String checkName() throws IOException {
+        HttpServletResponse resp = ServletActionContext.getResponse();
+        if("USR1".equals(username)){
+            resp.getWriter().print("true");
+        }else {
+            resp.getWriter().print("false");
+        }
+        return null;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+}
+```
+
+struts.xml
+
+```xml
+<action name="checkName" class="com.ayy.action.AjaxAction" method="checkName"/>
+```
+
+__Struts2 自己使用__ 
+
+- jar 包
+
+  ```xml
+  <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.12.1</version>
+  </dependency>
+  <dependency>
+      <groupId>com.hynnet</groupId>
+      <artifactId>json-lib</artifactId>
+      <version>2.4</version>
+  </dependency>
+  <dependency>
+      <groupId>org.apache.struts</groupId>
+      <artifactId>struts2-json-plugin</artifactId>
+      <version>2.5.26</version>
+  </dependency>
+  ```
+
+- JSP
+
+  ```jsp
+  <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+  <html>
+  <head>
+      <title>User List Ajax</title>
+      <script type="text/javascript" src="js/jquery-3.5.1.js"></script>
+      <script type="text/javascript">
+          $(function () {
+              $("#btn").click(function (){
+                  $.post("list.action",function (data) {
+                      let html="";
+                      for (let i=0; i<data.length; i++){
+                          html+="<tr>";
+                          html+="<td>";
+                          html+=data[i].uid;
+                          html+="</td>";
+                          html+="<td>";
+                          html+=data[i].uname;
+                          html+="</td>";
+                          html+="<td>";
+                          html+=data[i].age;
+                          html+="</td>";
+                          html+="</tr>"
+                      }
+                      $("#content").html(html);
+                  },"json");
+              });
+          });
+      </script>
+  </head>
+  <body>
+  <button id="btn">Get List</button>
+  <table width="80%" align="center">
+      <thead>
+      <tr>
+          <td>UID</td>
+          <td>UNAME</td>
+          <td>AGE</td>
+      </tr>
+      </thead>
+      <tbody id="content"></tbody>
+  </table>
+  </body>
+  </html>
+  ```
+
+- Action 类
+
+  ```java
+  public class JsonAction {
+      private List<User> userList;
+  
+      public String list(){
+          userList = new ArrayList<>();
+          userList.add(new User(1,"USR1",21));
+          userList.add(new User(2,"USR2",22));
+          userList.add(new User(3,"USR3",23));
+          userList.add(new User(4,"USR4",24));
+          return Action.SUCCESS;
+      }
+  
+      public List<User> getUserList() {
+          return userList;
+      }
+  
+      public void setUserList(List<User> userList) {
+          this.userList = userList;
+      }
+  }
+  ```
+
+- struts.xml
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8" ?>
+  <!DOCTYPE struts PUBLIC
+          "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+          "http://struts.apache.org/dtds/struts-2.5.dtd">
+  <struts>
+      <package name="ayy" namespace="/" extends="json-default">
+          <action name="list" class="com.ayy.action.JsonAction" method="list">
+              <result type="json">
+                  <param name="root">userList</param>
+              </result>
+          </action>
+      </package>
+  </struts>
+  ```
+
+## 16. 异常
+
