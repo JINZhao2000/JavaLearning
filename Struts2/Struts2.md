@@ -1811,5 +1811,27 @@ __Struts2 自己使用__
   </struts>
   ```
 
-## 16. 异常
+## 16. 异常处理
 
+struts.xml 配置
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+        "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+        "http://struts.apache.org/dtds/struts-2.5.dtd">
+<struts>
+    <package name="ayy" namespace="/" extends="struts-default">
+        <global-exception-mappings>
+            <exception-mapping exception="com.ayy.exception.UserException" result="userexcep"/>
+        </global-exception-mappings>
+        <action name="delete" class="com.ayy.action.UserAction" method="delete">
+            <!--            <exception-mapping exception="com.ayy.exception.UserException" result="userexcep"/>-->
+            <result>/success.jsp</result>
+            <result name="userexcep">/error.jsp</result>
+        </action>
+    </package>
+</struts>
+```
+
+在 Action 中只要抛出对应异常即可

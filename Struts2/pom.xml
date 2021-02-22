@@ -22,6 +22,7 @@
         <module>Interceptor</module>
         <module>FilesProcess</module>
         <module>Ajax</module>
+        <module>Exceptions</module>
     </modules>
 
     <packaging>pom</packaging>
