@@ -7,17 +7,24 @@
     <groupId>com.ayy</groupId>
     <artifactId>SSH</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <modules>
+        <module>SSHWithHCfg</module>
+        <module>SSHNoCfg</module>
+        <module>SSHSpringAction</module>
+        <module>SSHStrutsAction</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>1.11</maven.compiler.source>
         <maven.compiler.target>1.11</maven.compiler.target>
         <junit>4.12</junit>
         <struts2>2.5.25</struts2>
-        <asm>3.3</asm>
+        <asm>7.3.1</asm>
         <spring>5.2.6.RELEASE</spring>
         <mysql>8.0.22</mysql>
         <c3p0>0.9.5.5</c3p0>
         <hibernate>5.4.23.Final</hibernate>
+        <log4j>2.12.1</log4j>
     </properties>
 
     <packaging>pom</packaging>
@@ -30,6 +37,11 @@
                 <version>${junit}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j}</version>
+            </dependency>
             <!-- struts2 -->
             <dependency>
                 <groupId>org.apache.struts</groupId>
@@ -37,8 +49,8 @@
                 <version>${struts2}</version>
             </dependency>
             <dependency>
-                <groupId>asm</groupId>
-                <artifactId>asm-commons</artifactId>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm</artifactId>
                 <version>${asm}</version>
             </dependency>
             <dependency>
@@ -89,6 +101,12 @@
                 <version>${spring}</version>
             </dependency>
             <dependency>
+                <groupId>org.aspectj</groupId>
+                <artifactId>aspectjweaver</artifactId>
+                <version>1.9.6</version>
+            </dependency>
+            <!-- DB -->
+            <dependency>
                 <groupId>mysql</groupId>
                 <artifactId>mysql-connector-java</artifactId>
                 <version>${mysql}</version>
@@ -109,20 +127,11 @@
                 <artifactId>hibernate-ehcache</artifactId>
                 <version>${hibernate}</version>
             </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-c3p0</artifactId>
+                <version>${hibernate}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <repositories>
-        <repository>
-            <id>alimaven</id>
-            <name>aliyun maven</name>
-            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 </project>
