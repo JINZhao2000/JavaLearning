@@ -7,7 +7,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -81,24 +80,5 @@ public class UserMapperTest {
         } catch (Exception e){
             sqlSession.rollback();
         }
-    }
-
-    @Test
-    public void testAddUserByMap(){
-        try {
-            HashMap<String, Object> map = new HashMap<>();
-            map.put("namexxxxxxx","USER2222");
-            map.put("pwdxxxxx","123456");
-            mapper.addUserByMap(map);
-            sqlSession.commit();
-        } catch (Exception e){
-            sqlSession.rollback();
-        }
-    }
-
-    @Test
-    public void testGetUserLike(){
-        List<User> users = mapper.getUserLike("%USER2%");
-        users.forEach(System.out::println);
     }
 }

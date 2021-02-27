@@ -9,6 +9,7 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>MyBatis01</module>
+        <module>MyBatis02</module>
     </modules>
 
     <properties>

@@ -3,7 +3,6 @@ package com.ayy.dao;
 import com.ayy.bean.User;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @ Description
@@ -15,11 +14,7 @@ import java.util.Map;
 public interface UserMapper {
     List<User> getAllUser();
 
-    List<User> getUserLike(String value);
-
     User getUserById(int id);
-
-    void addUserByMap(Map<String,Object> map);
 
     void addUser(User user);
 
