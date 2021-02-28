@@ -7,47 +7,47 @@ package com.ayy.bean;
  * @ Version 1.0
  */
 public class User {
-    private int uid;
-    private String uname;
-    private String pwd;
+    private int id;
+    private String name;
+    private String password;
 
     public User() {}
 
-    public User(String uname, String pwd) {
-        this.uname = uname;
-        this.pwd = pwd;
+    public User(String name, String password) {
+        this.name = name;
+        this.password = password;
     }
 
     @Override
     public String toString() {
         return "User{" +
-                "uid=" + uid +
-                ", uname='" + uname + '\'' +
-                ", pwd='" + pwd + '\'' +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", password='" + password + '\'' +
                 '}';
     }
 
-    public int getUid() {
-        return uid;
+    public int getId() {
+        return id;
     }
 
-    public void setUid(int uid) {
-        this.uid = uid;
+    public void setId(int id) {
+        this.id = id;
     }
 
-    public String getUname() {
-        return uname;
+    public String getName() {
+        return name;
     }
 
-    public void setUname(String uname) {
-        this.uname = uname;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getPwd() {
-        return pwd;
+    public String getPassword() {
+        return password;
     }
 
-    public void setPwd(String pwd) {
-        this.pwd = pwd;
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

@@ -285,8 +285,6 @@
 
 ## 4. 配置解析
 
-### 4.1 核心配置文件
-
 - mybatis-config.xml
 
   ```xml
@@ -486,5 +484,136 @@
       <package name="org.mybatis.builder"/>
       ```
 
-      
+## 5. 作用域和生命周期
+
+SqlSessionFactoryBuilder
+
+- 一旦创建就不用了
+- 局部变量
+
+SqlSessionFactory
+
+- 一旦创建运行期间一直存在
+- 一般为单例或者静态单例模式
+
+SqlSession
+
+- 每个线程都有自己的一个 SqlSession
+- 不是线程安全
+
+## 6. 解决属性名和字段名不一致的问题
+
+- 数据库字段
+
+  ```text
+  mb_user
+    uid
+    uname
+    pwd
+  ```
+
+- Bean 字段
+
+  ```java
+  public class User{
+      private int id;
+      private String name;
+      private String password;
+  }
+  ```
+
+- 第一种解决方式：select xxx as xxx
+
+- 第二种解决方式：ResultMap 结果集映射
+
+  ```xml
+  <resultMap id="UserMap" type="User">
+      <result column="uid" property="id"/>
+      <result column="uname" property="name"/>
+      <result column="pwd" property="password"/>
+  </resultMap>
+  ```
+
+## 7. 日志
+
+### 7.1 日志工厂
+
+settings -> logimpl
+
+- SLF4J *
+- LOG4J
+- LOG4J2
+- JDK_LOGGING
+- COMMONS_LOGGING
+- STDOUT_LOGGING *
+- NO_LOGGING
+
+STDOUT_LOGGING 标准日志输出
+
+```xml
+<setting name="logImpl" value="STDOUT_LOGGING"/>
+```
+
+LOG4J - Log for Java
+
+- 导入 log4j
+
+  ```xml
+  <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>${log4j}</version>
+  </dependency>
+  ```
+
+- log4j.properties
+
+  ```properties
+  log4j.rootLogger=DEBUG,console
+  log4j.additivity.org.apache=true
+  # console
+  log4j.appender.console=org.apache.log4j.ConsoleAppender
+  log4j.appender.console.Threshold=DEBUG
+  log4j.appender.console.ImmediateFlush=true
+  log4j.appender.console.Target=System.err
+  log4j.appender.console.layout=org.apache.log4j.PatternLayout
+  log4j.appender.console.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+  
+  log4j.logger.org.mybatis=DEBUG
+  log4j.logger.java.sql=DEBUG
+  log4j.logger.java.sql.Statement=DEBUG
+  log4j.logger.java.sql.ResultSet=DEBUG
+  log4j.logger.java.sql.PreparedStatement=DEBUG
+  ```
+
+- 配置实现
+
+  ```xml
+  <setting name="logImpl" value="LOG4J"/>
+  ```
+
+## 8. 分页
+
+- limit 分页
+
+  ```mysql
+  select * from t_user limit startIndex, pageSize;
+  select * from t_user limit endIndex;
+  ```
+
+- RowBounds 分页（不推荐）
+
+  ```java
+  @Test
+  public void testGetUserByRowBounds(){
+      List<User> users = sqlSession.selectList(
+          "com.ayy.dao.UserMapper.getUserByRowBounds",
+          null, new RowBounds(1,3));
+      users.forEach(System.out::println);
+  }
+  ```
+
+- [分页插件](https://pagehelper.github.io/docs/howtouse/) 
+
+## 9. 注解开发
 

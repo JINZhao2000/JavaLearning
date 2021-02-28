@@ -4,6 +4,9 @@
         "http://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
     <properties resource="aliyun.properties"/>
+    <settings>
+        <setting name="logImpl" value="LOG4J"/>
+    </settings>
     <typeAliases>
         <package name="com.ayy.bean"/>
     </typeAliases>

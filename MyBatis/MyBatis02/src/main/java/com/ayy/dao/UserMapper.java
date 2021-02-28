@@ -3,6 +3,7 @@ package com.ayy.dao;
 import com.ayy.bean.User;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @ Description
@@ -21,4 +22,8 @@ public interface UserMapper {
     void updateUser(User user);
 
     void deleteUser(int id);
+
+    List<User> getUserByLimit(Map<String,Object> map);
+
+    List<User> getUserByRowBounds();
 }
