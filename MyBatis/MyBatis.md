@@ -617,3 +617,140 @@ LOG4J - Log for Java
 
 ## 9. 注解开发
 
+- 方法上注解
+
+  ```java
+  @Select("select * from mb_user")
+  List<User> getAllUser();
+  ```
+
+- 绑定接口
+
+  ```xml
+  <mapper class="com.ayy.dao.UserMapper"/>
+  ```
+
+- 本质是利用反射来获取 sql 语句，入参，出参和动态代理
+
+- MyBatis 执行流程
+
+  1. 通过 Resources 获取加载全局配置文件
+  2. 实例化 SqlSessionFactoryBuilder 构造器
+  3. 解析文件流 XMLConfigBuilder
+  4. 返回一个 Configuration 对象
+  5. 实例化 SqlSessionFactory 对象
+  6. transactional 事务管理器
+  7. Executor 执行器
+  8. 创建 sqlSession
+  9. 实现 CRUD
+  10. 查看是否执行成功 -- 失败 --> 回滚至 6
+  11. 提交事务 （设置 `openSession(true)`）可以自动提交
+  12. 关闭 sqlSession
+
+- 增删改查
+
+  ```java
+  public interface UserMapper {
+      @Select("select * from mb_user")
+      List<User> getAllUser();
+  
+      @Select("select * from mb_user where uid = #{id}")
+      User getUserById(@Param("id") int id);
+  
+      @Insert("insert into mb_user(uid,uname,pwd) values(${id},${name},#{password})")
+      void addUser(User user);
+  
+      @Update("update mb_user set uname=#{name}, pwd=#{password} where uid=#{id}")
+      void updateUser(User user);
+  
+      @Delete("delete from mb_user where uid=#{id}")
+      void deleteUser(@Param("id") int id);
+  }
+  ```
+
+## 10. Lombok
+
+- 一个可以自动写 getter 和 equals 方法的 Java 库插件
+
+- IDEA 安装 Lombok 插件
+
+- 导入 jar 包
+
+  ```xml
+  <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.18</version>
+      <scope>provided</scope>
+  </dependency>
+  ```
+
+- 注解
+
+  ```java
+  @Getter
+  @Setter
+  @FieldNameConstants
+  @EqualsAndHashCode
+  @AllArgsConstructor
+  @RequiredArgsConstructor
+  @NoArgsConstructor
+  @Log
+  @Log4j
+  @slf4j
+  @xslf4j
+  @CommonsLog
+  @JBossLog
+  @Flogger
+  @Data
+  @Builder
+  @Singular
+  @Delegate
+  @Value
+  @Accessors
+  @Wither
+  @SneakyThrows
+  ```
+
+- 示例
+
+  ```java
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public class User {
+      private int id;
+      private String name;
+      private String password;
+  }
+  ```
+
+## 10. 多对一处理
+
+- 准备表
+
+  ```mysql
+  CREATE TABLE prof(
+    pid INT PRIMARY KEY AUTO_INCREMENT,
+    pname VARCHAR(30) DEFAULT NULL
+  );
+  
+  CREATE TABLE etu(
+    eid INT PRIMARY KEY AUTO_INCREMENT,
+    ename VARCHAR(30) DEFAULT NULL,
+    pid INT REFERENCES prof(pid)
+  );
+  ```
+
+- 准备数据
+
+  ```mysql
+  INSERT INTO prof(pname) VALUES('prof1');
+  INSERT INTO etu(ename,pid) VALUES('etu1',1);
+  INSERT INTO etu(ename,pid) VALUES('etu2',1);
+  INSERT INTO etu(ename,pid) VALUES('etu3',1);
+  INSERT INTO etu(ename,pid) VALUES('etu4',1);
+  INSERT INTO etu(ename,pid) VALUES('etu5',1);
+  ```
+
+  

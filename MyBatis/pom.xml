@@ -10,6 +10,8 @@
     <modules>
         <module>MyBatis01</module>
         <module>MyBatis02</module>
+        <module>MyBatis03</module>
+        <module>MyBatis04</module>
     </modules>
 
     <properties>
@@ -20,6 +22,7 @@
         <mysql>8.0.22</mysql>
         <junit4>4.12</junit4>
         <log4j>1.2.17</log4j>
+        <lombok>1.18.18</lombok>
     </properties>
 
     <packaging>pom</packaging>
@@ -46,6 +49,11 @@
                 <groupId>log4j</groupId>
                 <artifactId>log4j</artifactId>
                 <version>${log4j}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
