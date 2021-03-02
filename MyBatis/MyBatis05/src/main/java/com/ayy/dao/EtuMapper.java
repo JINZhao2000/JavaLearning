@@ -1,9 +1,5 @@
 package com.ayy.dao;
 
-import com.ayy.bean.Etu;
-
-import java.util.List;
-
 /**
  * @ Description
  * @ Author Zhao JIN
@@ -11,7 +7,5 @@ import java.util.List;
  * @ Version 1.0
  */
 public interface EtuMapper {
-    List<Etu> getEtus();
 
-    List<Etu> getEtus2();
 }

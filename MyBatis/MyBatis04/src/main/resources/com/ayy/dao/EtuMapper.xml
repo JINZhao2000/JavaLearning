@@ -3,5 +3,29 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ayy.dao.EtuMapper">
+    <select id="getEtus" resultMap="EtuProf">
+        select * from etu;
+    </select>
+    <resultMap id="EtuProf" type="com.ayy.bean.Etu">
+        <result property="eid" column="eid"/>
+        <result property="ename" column="ename"/>
+        <association property="prof" column="pid" javaType="com.ayy.bean.Prof" select="getProfs"/>
+    </resultMap>
 
+    <select id="getProfs" resultType="com.ayy.bean.Prof">
+        select * from prof where pid = #{pid}
+    </select>
+
+    <select id="getEtus2" resultMap="EtuProf2">
+        select e.eid eid, e.ename ename, p.pname pname
+        from etu e, prof p
+        where e.pid = p.pid;
+    </select>
+    <resultMap id="EtuProf2" type="com.ayy.bean.Etu">
+        <result property="eid" column="eid"/>
+        <result property="ename" column="ename"/>
+        <association property="prof" javaType="com.ayy.bean.Prof">
+            <result property="pname" column="pname"/>
+        </association>
+    </resultMap>
 </mapper>

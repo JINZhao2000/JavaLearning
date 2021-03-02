@@ -725,7 +725,7 @@ LOG4J - Log for Java
   }
   ```
 
-## 10. 多对一处理
+## 11. 多对一处理
 
 - 准备表
 
@@ -753,4 +753,189 @@ LOG4J - Log for Java
   INSERT INTO etu(ename,pid) VALUES('etu5',1);
   ```
 
+- 方法一：子查询
+
+  ```xml
+  <select id="getEtus" resultMap="EtuProf">
+      select * from etu;
+  </select>
+  <resultMap id="EtuProf" type="com.ayy.bean.Etu">
+      <result property="eid" column="eid"/>
+      <result property="ename" column="ename"/>
+      <association property="prof" column="pid" javaType="com.ayy.bean.Prof" select="getProfs"/>
+  </resultMap>
   
+  <select id="getProfs" resultType="com.ayy.bean.Prof">
+      select * from prof where pid = #{pid}
+  </select>
+  ```
+
+- 方法二：结果嵌套
+
+  ```xml
+  <select id="getEtus2" resultMap="EtuProf2">
+      select e.eid eid, e.ename ename, p.pname pname
+      from etu e, prof p
+      where e.pid = p.pid;
+  </select>
+  <resultMap id="EtuProf2" type="com.ayy.bean.Etu">
+      <result property="eid" column="eid"/>
+      <result property="ename" column="ename"/>
+      <association property="prof" javaType="com.ayy.bean.Prof">
+          <result property="pname" column="pname"/>
+      </association>
+  </resultMap>
+  ```
+
+## 12. 一对多处理
+
+- 类
+
+  ```java
+  @Data
+  public class Prof {
+      private int pid;
+      private String pname;
+      private List<Etu> etus;
+  }
+  ```
+
+  ```java
+  @Data
+  public class Etu {
+      private int eid;
+      private String ename;
+      private int pid;
+  }
+  ```
+
+- 结果嵌套
+
+  ```xml
+  <select id="getProf" resultMap="ProfEtu">
+      select e.eid eid, e.ename ename, p.pname pname, p.pid pid
+      from etu e, prof p
+      where e.pid = p.pid and p.pid = #{pid}
+  </select>
+  <resultMap id="ProfEtu" type="com.ayy.bean.Prof">
+      <result property="pid" column="pid"/>
+      <result property="pname" column="pname"/>
+      <collection property="etus" ofType="com.ayy.bean.Etu">
+          <result property="eid" column="eid"/>
+          <result property="ename" column="ename"/>
+          <result property="pid" column="pid"/>
+      </collection>
+  </resultMap>
+  ```
+
+- 子查询
+
+  ```xml
+  <select id="getProf2" resultMap="ProfEtu2">
+      select * from prof where pid = #{pid};
+  </select>
+  <resultMap id="ProfEtu2" type="com.ayy.bean.Prof">
+      <collection property="etus" javaType="java.util.ArrayList" ofType="com.ayy.bean.Etu" select="getEtu" column="pid"/>
+  </resultMap>
+  <select id="getEtu" resultType="com.ayy.bean.Etu">
+      select * from etu where pid = #{pid}
+  </select>
+  ```
+
+## 13. 动态 SQL
+
+动态 SQL 指根据不同条件生成不同的 sql 语句
+
+- 环境
+
+  ```mysql
+  CREATE TABLE blog(
+    bid varchar(30) NOT NULL PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    author VARCHAR(50) NOT NULL,
+    create_time DATETIME NOT NULL,
+    views INT NOT NULL
+  );
+  ```
+
+- IF
+
+  ```xml
+  <select id="queryBlogIF" parameterType="map" resultType="com.ayy.bean.Blog">
+      select * from blog where 1=1
+      <if test="title != null">
+          and title = #{title}
+      </if>
+      <if test="author != null">
+          and author = #{author}
+      </if>
+  </select>
+  ```
+
+- CHOOSE WHEN OTHERWISE
+
+  ```xml
+  <select id="queryBlogCHOOSE" parameterType="map" resultType="com.ayy.bean.Blog">
+      select * from blog
+      <where>
+          <choose>
+              <when test="title != null">
+                  title = #{title}
+              </when>
+              <when test="author != null">
+                  and author = #{author}
+              </when>
+              <otherwise>
+                  and views = #{views}
+              </otherwise>
+          </choose>
+      </where>
+  </select>
+  ```
+
+- TRIM（WHERE, SET）
+
+  WHERE
+
+  ```xml
+  <select id="queryBlogIF" parameterType="map" resultType="com.ayy.bean.Blog">
+      select * from blog
+      <where>
+          <if test="title != null">
+              and title = #{title}
+          </if>
+          <if test="author != null">
+              and author = #{author}
+          </if>
+      </where>
+  </select>
+  ```
+
+  SET
+
+  ```xml
+  <update id="updateBlog" parameterType="map">
+      update blog
+      <set>
+          <if test="title != null">
+              title = #{title},
+          </if>
+          <if test="author != null">
+              author = #{author},
+          </if>
+      </set>
+      where bid = ${bid}
+  </update>
+  ```
+
+  TRIM
+
+  ```xml
+  <trim prefix="WHERE" prefixOverrides="AND |OR " suffix=""/>
+  <trim prefix="SET" prefixOverrides="," suffix=""/>
+  ```
+
+- FOREACH
+
+## 14. 缓存
+
