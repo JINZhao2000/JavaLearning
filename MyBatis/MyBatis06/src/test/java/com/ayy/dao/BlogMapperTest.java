@@ -8,10 +8,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @ Description
@@ -103,5 +100,15 @@ public class BlogMapperTest {
         map.put("title","Title3");
         mapper.updateBlog(map);
         System.out.println("----------------");
+    }
+
+    @Test
+    public void testQueryBlogForEach(){
+        Map<String,Object> map = new HashMap<>();
+        List<String> ids = new ArrayList<>();
+        ids.add("5654d8b19fd54b1db6296ade40aa4341");
+        map.put("ids",ids);
+        List<Blog> blogs = mapper.queryBlogForEach(map);
+        blogs.forEach(System.out::println);
     }
 }

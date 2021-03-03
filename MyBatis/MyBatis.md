@@ -935,7 +935,205 @@ LOG4J - Log for Java
   <trim prefix="SET" prefixOverrides="," suffix=""/>
   ```
 
+- SQL 片段
+
+  将一句 SQL 的公共部分方便复用（尽量不要存在 where 标签）
+
+  ```xml
+  <sql id="if-title-author">
+      <if test="title != null">
+          and title = #{title}
+      </if>
+      <if test="author != null">
+          and author = #{author}
+      </if>
+  </sql>
+  ```
+
+  引用
+
+  ```xml
+  <include refid="if-title-author"/>
+  ```
+
 - FOREACH
 
+  ```xml
+  <select id="queryBlogForEach" parameterType="map" resultType="com.ayy.bean.Blog">
+      select * from blog
+      <where>
+          <foreach collection="ids" item="id" open="and (" close=")" separator=" or ">
+              bid=#{id}
+          </foreach>
+      </where>
+  </select>
+  ```
+
+  Java 代码
+
+  ```java
+  @Test
+  public void testQueryBlogForEach(){
+      Map<String,Object> map = new HashMap<>();
+      List<String> ids = new ArrayList<>();
+      ids.add("5654d8b19fd54b1db6296ade40aa4341");
+      map.put("ids",ids);
+      List<Blog> blogs = mapper.queryBlogForEach(map);
+      blogs.forEach(System.out::println);
+  }
+  ```
+
 ## 14. 缓存
+
+### 14.1 简介
+
+- 什么是缓存
+  - 存在内存中的临时数据
+  - 将用户经常查询的数据存放在缓存（内存）中，用户去查询数据就不用从磁盘上查询，从缓存中查询，提高查询效率
+- 为什么使用缓存
+  - 减少和数据库交互的次数，减少系统开销，提高系统效率
+- 什么样的数据能使用缓存
+  - 经常查询并且不经常改变数据
+
+### 14.2 MyBatis 缓存
+
+- MyBatis 默认定义了两级缓存：一级缓存和二级缓存
+  - 默认情况下，只有一级缓存开启（SqlSession 级别的缓存，也称为本地缓存）
+  - 二级缓存需要手动开启和配置，基于 namespace 级别的缓存
+  - 为了提高扩展，MyBatis 定义了缓存接口 Cache，可以通过实现 Cache 接口来定义缓存
+- `<cache/>` 中定义缓存
+  - 清除策略：
+    - LRU：最近最少使用：移除最长时间不被用的对象（默认）
+    - FIFO：先进先出：按对象进入缓存的顺序来移除他们
+    - SOFT：软引用：基于垃圾回收器状态和软引用规则移除对象
+    - WEAK：虚引用：更积极地基于垃圾收集器状态和弱引用规则移除对象
+  - flushInterva：刷新间隔（ms）
+  - size：引用数目（默认：1024）
+  - readOnly：只读（默认：false）
+  - 二级缓存是事务性的
+
+### 14.3 一级缓存
+
+一级缓存也叫做本地缓存
+
+- 与数据库同一次会话期间查到的数据会放在本地缓存中
+- 如果以后需要获取相同的数据，直接从缓存中拿
+
+测试步骤：
+
+- 开启日志
+
+缓存失效的情况：
+
+- 查询不同的东西
+
+- 增删改操作，可能改变原来的操作，必定刷新缓存
+
+- 查询不同的 Mapper.xml
+
+- 手动清理缓存
+
+  ```java
+  sqlSession.clearCache();
+  ```
+
+### 14.4 二级缓存
+
+- 二级缓存即全局缓存，为了提高缓存的作用域
+- 基于 namespace 级别的缓存，对应一个二级缓存
+- 工作机制：
+  - 一个会话查询一条数据，这个数据就会被放在一级缓存中
+  - 如果当前会话关闭了，一级缓存中的数据被保存到二级缓存中
+  - 新的会话查询信息就可以从二级缓存中获取内容
+  - 不同的 mapper 查出的数据会放在自己对应的缓存（map）中
+
+步骤：
+
+- 开启全局缓存
+
+  ```xml
+  <setting name="cacheEnabled" value="true"/>
+  ```
+
+- 在要使用二级缓存的 Mapper 中开启
+
+  ```xml
+  <cache
+      eviction="FIFO"
+      flushInterval="60000"
+      size="512"
+      readOnly="true"/>
+  ```
+
+- 测试
+
+  - 仅 `<cache/>` 标签要将实体类序列化
+  - 当一级缓存会话提交或者关闭才会放到二级缓存中
+
+### 14.5 自定义缓存 - ehcache
+
+- 包
+
+  ```xml
+  <dependency>
+      <groupId>org.mybatis.caches</groupId>
+      <artifactId>mybatis-ehcache</artifactId>
+      <version>1.2.1</version>
+  </dependency>
+  ```
+
+- ehcache.xml
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8" ?>
+  <ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd"
+           updateCheck="false">
+      <diskStore path="./tmpdir/Tmp_EhCache"/>
+      <defaultCache
+          eternal="false"
+          maxElementsInMemory="10000"
+          overflowToDisk="false"
+          diskPersistent="false"
+          timeToIdleSeconds="1800"
+          timeToLiveSeconds="259200"
+          memoryStoreEvictionPolicy="LRU"/>
+      
+      <cache
+          name="cloud_user"
+          eternal="false"
+          maxElementsInMemory="5000"
+          overflowToDisk="false"
+          diskPersistent="false"
+          timeToIdleSeconds="1800"
+          timeToLiveSeconds="1800"
+          memoryStoreEvictionPolicy="LRU"/>
+  </ehcache>
+  ```
+
+- defaultCache：默认缓存策略，只能定义一个
+
+- name：缓存名称
+
+- maxElementsInMemory：缓存最大数目
+
+- maxElementsOnDisk：硬盘最大缓存个数
+
+- eternal：是否永久有效（设置后 timeout 失效）
+
+- overflowToDisk：是否保存到硬盘
+
+- timeToIdleSeconds：对象失效前允许的闲置时间
+
+- timeToLiveSeconds：失效前允许存活时间
+
+- diskPersistence：是否缓存虚拟机重启期数据
+
+- diskSpoolBufferSizeMB：磁盘缓存大小（默认 30）
+
+- diskExpiryThreadIntervalSeconds：磁盘失效线程运行时间间隔（默认 120 s）
+
+- memoryStoreEvictionPolicy：清理缓存策略
+
+- clearOnFlush：内存数量最大时是否清除
 
