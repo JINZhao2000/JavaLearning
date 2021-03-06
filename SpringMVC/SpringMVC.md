@@ -160,5 +160,133 @@
 
 ## 4. 结果跳转方式
 
+- Servlet API 中的跳转方式
 
+  ```java
+  resp.sendRedirect("...");
+  resp.getRequestDispatcher("...").forward(req, resp);
+  ```
+
+- Spring 的默认是转发
+
+  ```java
+  return "forward:xxx";
+  return "redirect:/xxx.jsp";
+  ```
+
+- 接收 url 参数
+
+  ```java
+  @Controller
+  @RequestMapping("/user1")
+  public class UserController {
+      @RequestMapping("/test1")
+      public String test1(@RequestParam("uname") String name, Model model){
+          System.out.println(name);
+          model.addAttribute("msg",name);
+          return "hello";
+      }
+  
+      @RequestMapping("/test2")
+      public String test2(User user){
+          System.out.println(user);
+          return "hello";
+      }
+  }
+  ```
+
+- 乱码解决
+
+  ```xml
+  <filter>
+      <filter-name>encoding</filter-name>
+      <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+      <init-param>
+          <param-name>encoding</param-name>
+          <param-value>utf-8</param-value>
+      </init-param>
+  </filter>
+  <filter-mapping>
+      <filter-name>encoding</filter-name>
+      <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  ```
+
+## 5. JSON
+
+- js 对象转 json
+
+  ```javascript
+  let user = {
+              name:"user",
+              age:18,
+              sex:"N"
+          };
+  let userJson = JSON.stringify(user);
+  ```
+
+- js json 转对象
+
+  ```javascript
+  let obj = JSON.parse(userJson);
+  ```
+
+- java 与 json
+
+  - 导入 jackson 包
+
+    ```xml
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.12.2</version>
+    </dependency>
+    ```
+
+  - jackson 乱码问题
+
+    方案一：produces
+
+    ```java
+    @RequestMapping(value = "/json1",produces = "application/json;charset=utf-8")
+    ```
+
+    方案二：spring 配置 jackson
+
+    ```xml
+    <mvc:annotation-driven>
+        <mvc:message-converters>
+            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                <constructor-arg value="UTF-8"/>
+            </bean>
+            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                <property name="objectMapper">
+                    <bean class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean">
+                        <property name="failOnEmptyBeans" value="false"/>
+                    </bean>
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+    ```
+
+  - controller
+
+    ```java
+    @RestController
+    public class Xxx{
+        
+    }
+    
+    @Controller
+    public class Xxx{
+        @RequestMapping("...")
+        @RequestBody
+        public String xxx(){
+            
+        }
+    }
+    ```
+
+    
 

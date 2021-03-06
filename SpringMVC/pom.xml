@@ -10,6 +10,7 @@
     <modules>
         <module>SpringMVC01</module>
         <module>SpringMVC02</module>
+        <module>SpringMVC03</module>
     </modules>
 
     <properties>
@@ -52,6 +53,16 @@
                 <groupId>javax.servlet.jsp.jstl</groupId>
                 <artifactId>jstl</artifactId>
                 <version>${jstl}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.18</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.12.2</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
