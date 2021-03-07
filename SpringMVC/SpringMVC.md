@@ -231,7 +231,7 @@
   let obj = JSON.parse(userJson);
   ```
 
-- java 与 json
+- java 与 json（Jackson）
 
   - 导入 jackson 包
 
@@ -286,6 +286,69 @@
             
         }
     }
+    ```
+
+  - 转换为 json
+
+    ```java
+    @RequestMapping("/json1")
+    public String json1() throws JsonProcessingException {
+        User user = new User("user1", 18, "n");
+        ObjectMapper mapper = new ObjectMapper();
+        String userJson = mapper.writeValueAsString(user);
+        return userJson;
+    }
+    
+    @RequestMapping("/json2")
+    public String json2() throws JsonProcessingException {
+        User user1 = new User("user1", 18, "n");
+        User user2 = new User("user2", 18, "n");
+        User user3 = new User("user3", 18, "n");
+        User user4 = new User("user4", 18, "n");
+        List<User> users = new ArrayList<>();
+        users.add(user1);
+        users.add(user2);
+        users.add(user3);
+        users.add(user4);
+    
+        return new ObjectMapper().writeValueAsString(users);
+    }
+    
+    @RequestMapping("/json3")
+    public String json3() throws JsonProcessingException {
+        Date date = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return new ObjectMapper().writeValueAsString(sdf.format(date));
+    }
+    
+    @RequestMapping("/json4")
+    public String json4() throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,false);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        mapper.setDateFormat(sdf);
+        Date date = new Date();
+        return mapper.writeValueAsString(date);
+    }
+    ```
+
+- Fastjson
+
+
+  - 导入 jar
+
+    ```xml
+    <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>fastjson</artifactId>
+        <version>1.2.75</version>
+    </dependency>
+    ```
+
+  - 使用
+
+    ```java
+    JSON.toJSONString(users);
     ```
 
     
