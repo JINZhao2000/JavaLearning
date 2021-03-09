@@ -351,5 +351,67 @@
     JSON.toJSONString(users);
     ```
 
-    
+
+## 6. Ajax
+
+- Ajax 本质是 XMLHttpRequest
+
+  ```javascript
+  jQuery.ajax({
+      url:"请求地址",
+      data:{"后端数据名":"前端数据"},
+      type: POST/GET,
+      success:callback,
+      error:callback
+  })
+  ```
+  
+## 7. 拦截器
+
+拦截器和过滤器区别：拦截器是 AOP 思想的体现
+
+过滤器
+
+- servlet 规范的一部分，任何 java web 工程都可以使用
+- 在 url-pattern 中配置了 /* 以后，可以对所有要访问的资源进行拦截
+
+蓝机器
+
+- 拦截器是 Spring MVC 框架自己的，只有 Spring 工程才能用
+- 拦截器只会拦截访问控制器的方法
+
+自定义拦截器要实现 `HandlerInterceptor` 接口
+
+配置
+
+```xml
+<mvc:interceptors>
+    <mvc:interceptor>
+        <mvc:mapping path="/**"/>
+        <bean class="com.ayy.interceptor.LoginInterceptor"/>
+    </mvc:interceptor>
+</mvc:interceptors>
+```
+
+## 8. 文件上传
+
+- 依赖
+
+  ```xml
+  <dependency>
+      <groupId>commons-fileupload</groupId>
+      <artifactId>commons-fileupload</artifactId>
+      <version>1.4</version>
+  </dependency>
+  ```
+
+- 处理 bean
+
+  ```xml
+  <bean class="org.springframework.web.multipart.commons.CommonsMultipartResolver" id="multipartResolver">
+      <property name="defaultEncoding" value="utf-8"/>
+  </bean>
+  ```
+
+  
 

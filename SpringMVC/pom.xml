@@ -11,6 +11,9 @@
         <module>SpringMVC01</module>
         <module>SpringMVC02</module>
         <module>SpringMVC03</module>
+        <module>SpringMVC04</module>
+        <module>SpringMVC05</module>
+        <module>SpringMVC06</module>
     </modules>
 
     <properties>
@@ -68,6 +71,11 @@
                 <groupId>com.alibaba</groupId>
                 <artifactId>fastjson</artifactId>
                 <version>1.2.75</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-fileupload</groupId>
+                <artifactId>commons-fileupload</artifactId>
+                <version>1.4</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
