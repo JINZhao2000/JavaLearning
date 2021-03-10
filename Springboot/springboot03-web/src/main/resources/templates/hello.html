@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Index</title>
+    <link rel="stylesheet" type="text/css" media="all"
+          href="../../css/gtvg.css" th:href="@{/css/gtvg.css}"/>
+</head>
+<body>
+<div th:text="${msg}"></div>
+<hr>
+<div th:utext="${msg}"></div>
+<hr>
+<h3 th:each="user:${users}" th:text="${user}"></h3>
+<hr>
+<h3 th:each="user:${users}">[[ ${user} ]]</h3>
+<hr>
+</body>
+</html>

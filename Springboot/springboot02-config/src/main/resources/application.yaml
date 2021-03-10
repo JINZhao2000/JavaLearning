@@ -1,0 +1,39 @@
+debug: true
+person:
+  name: person1
+  age: 18
+  sex: false
+  birth: 2000/01/01
+  map: {k1: v1, k2: v2}
+  list:
+    - l1
+    - l2
+    - l3
+  couple:
+    name: couple
+    age: 20
+
+couple:
+  name: couple1
+  age: 18
+
+server:
+  port: 8080
+spring:
+  profiles:
+    active: dev
+
+---
+server:
+  port: 8081
+spring:
+  config:
+    activate:
+      on-profile: dev
+---
+server:
+  port: 8082
+spring:
+  config:
+    activate:
+      on-profile: test
