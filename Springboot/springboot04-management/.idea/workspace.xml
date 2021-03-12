@@ -55,9 +55,8 @@
   <component name="MavenImportPreferences">
     <option name="generalSettings">
       <MavenGeneralSettings>
-        <option name="localRepository" value="E:\maven_repository" />
-        <option name="mavenHome" value="C:\Users\HP\.m2\wrapper\dists\apache-maven-3.6.3-bin\1iopthnavndlasol9gbrbg6bf2\apache-maven-3.6.3" />
-        <option name="userSettingsFile" value="E:\apache-maven-3.6.3\conf\settings.xml" />
+        <option name="mavenHome" value="E:\env\apache-maven-3.6.3" />
+        <option name="userSettingsFile" value="E:\env\apache-maven-3.6.3\conf\settings.xml" />
       </MavenGeneralSettings>
     </option>
     <option name="importingSettings">
@@ -82,10 +81,11 @@
     <property name="RequestMappingsPanelWidth0" value="75" />
     <property name="RequestMappingsPanelWidth1" value="75" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="android.sdk.path" value="$USER_HOME$/AppData/Local/Android/Sdk" />
     <property name="aspect.path.notification.shown" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/main/resources/static/images" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/main/resources/static/css" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
@@ -96,20 +96,20 @@
     <property name="project.structure.last.edited" value="Problems" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
-    <property name="settings.editor.selected.configurable" value="preferences.general" />
+    <property name="settings.editor.selected.configurable" value="MavenSettings" />
     <property name="vue.rearranger.settings.migration" value="true" />
   </component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="E:\Code\Java\Springboot\springboot04-management\src\main\resources\static\css" />
+      <recent name="E:\Code\Java\Springboot\springboot04-management\src\main\resources\templates" />
+      <recent name="E:\Code\Java\Springboot\springboot04-management\src\main\resources\static\js" />
+      <recent name="E:\Java\Springboot\springboot04-management\src\main\resources\static\images" />
+      <recent name="E:\Java\Springboot\springboot04-management\src\main\resources\templates" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="E:\Java\Springboot\springboot04-management\src\main\resources\static" />
       <recent name="E:\Java\Springboot\springboot04-management\src\main\resources\static\css" />
-    </key>
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="E:\Java\Springboot\springboot04-management\src\main\resources\static\images" />
-      <recent name="E:\Java\Springboot\springboot04-management\src\main\resources\templates" />
-      <recent name="E:\Java\Springboot\springboot04-management\src\main\resources\static\disable" />
-      <recent name="E:\Java\Springboot\springboot04-management\src\main\resources\static\css" />
-      <recent name="E:\Java\Springboot\springboot04-management\src\main\resources\static" />
     </key>
   </component>
   <component name="RunAnythingCache">
@@ -118,6 +118,19 @@
     </option>
   </component>
   <component name="RunManager">
+    <configuration default="true" type="ArquillianTestNG" factoryName="" nameIsGenerated="true">
+      <option name="arquillianRunConfiguration">
+        <value>
+          <option name="containerStateName" value="" />
+        </value>
+      </option>
+      <option name="TEST_OBJECT" value="CLASS" />
+      <properties />
+      <listeners />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Springboot04ManagementApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
       <module name="springboot04-management" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="com.ayy.Application" />
@@ -136,6 +149,8 @@
       <updated>1615378482107</updated>
       <workItem from="1615378483799" duration="10904000" />
       <workItem from="1615408673392" duration="6155000" />
+      <workItem from="1615479255565" duration="8507000" />
+      <workItem from="1615562940493" duration="9008000" />
     </task>
     <servers />
   </component>
@@ -158,79 +173,5 @@
     <ignored-roots>
       <path value="$PROJECT_DIR$/../.." />
     </ignored-roots>
-  </component>
-  <component name="WindowStateProjectService">
-    <state x="2685" y="230" key="#com.intellij.ide.util.MemberChooser" timestamp="1615385970477">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state x="2685" y="230" key="#com.intellij.ide.util.MemberChooser/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615385970477" />
-    <state width="1877" height="342" key="GridCell.Tab.0.bottom" timestamp="1615390092969">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.0.bottom/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092969" />
-    <state width="1877" height="342" key="GridCell.Tab.0.center" timestamp="1615390092969">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.0.center/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092969" />
-    <state width="1877" height="342" key="GridCell.Tab.0.left" timestamp="1615390092969">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.0.left/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092969" />
-    <state width="1877" height="342" key="GridCell.Tab.0.right" timestamp="1615390092969">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.0.right/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092969" />
-    <state width="1877" height="342" key="GridCell.Tab.1.bottom" timestamp="1615390092971">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.1.bottom/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092971" />
-    <state width="1877" height="342" key="GridCell.Tab.1.center" timestamp="1615390092969">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.1.center/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092969" />
-    <state width="1877" height="342" key="GridCell.Tab.1.left" timestamp="1615390092969">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.1.left/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092969" />
-    <state width="1877" height="342" key="GridCell.Tab.1.right" timestamp="1615390092970">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.1.right/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092970" />
-    <state width="1877" height="342" key="GridCell.Tab.2.bottom" timestamp="1615390092972">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.2.bottom/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092972" />
-    <state width="1877" height="342" key="GridCell.Tab.2.center" timestamp="1615390092971">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.2.center/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092971" />
-    <state width="1877" height="342" key="GridCell.Tab.2.left" timestamp="1615390092971">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.2.left/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092971" />
-    <state width="1877" height="342" key="GridCell.Tab.2.right" timestamp="1615390092971">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state width="1877" height="342" key="GridCell.Tab.2.right/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615390092971" />
-    <state x="2381" y="169" key="SettingsEditor" timestamp="1615466321576">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state x="2381" y="169" key="SettingsEditor/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615384953686" />
-    <state x="2381" y="169" key="SettingsEditor/0.0.1920.1050/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615466321576" />
-    <state x="2536" y="243" width="672" height="677" key="run.anything.popup" timestamp="1615383746604">
-      <screen x="1920" y="0" width="1920" height="1050" />
-    </state>
-    <state x="2536" y="243" width="672" height="677" key="run.anything.popup/0.0.1920.1048/1920.0.1920.1050@1920.0.1920.1050" timestamp="1615383746604" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/com/ayy/config/MyLocaleResolver.java</url>
-          <line>20</line>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>
