@@ -3,8 +3,8 @@ package com.ayy.dao;
 import com.ayy.bean.Department;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -25,8 +25,8 @@ public class DepartmentDao {
         departments.put(4,new Department(4,"Mecanique"));
     }
 
-    public List<Department> getDepartments(){
-        return (List<Department>) departments.values();
+    public Collection<Department> getDepartments(){
+        return departments.values();
     }
 
     public Department getDepartmentById(int id){
