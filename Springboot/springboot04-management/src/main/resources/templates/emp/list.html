@@ -46,8 +46,8 @@
                 <td th:text="${emp.getDepartment().getDepartmentName()}"></td>
                 <td th:text="${#dates.format(emp.getBirth(),'yyyy-MM-dd')}"></td>
                 <td>
-                  <button class="btn btn-sm btn-primary">Modify</button>
-                  <button class="btn btn-sm btn-danger">Delete</button>
+                  <a class="btn btn-sm btn-primary" th:href="@{/emp/}+${emp.id}">Modify</a>
+                  <a class="btn btn-sm btn-danger">Delete</a>
                 </td>
               </tr>
               </tbody>

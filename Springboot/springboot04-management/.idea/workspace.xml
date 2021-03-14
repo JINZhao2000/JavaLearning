@@ -130,17 +130,6 @@
     </option>
   </component>
   <component name="RunManager">
-    <configuration default="true" type="ArquillianJUnit" factoryName="" nameIsGenerated="true">
-      <option name="arquillianRunConfiguration">
-        <value>
-          <option name="containerStateName" value="" />
-        </value>
-      </option>
-      <option name="TEST_OBJECT" value="class" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="Springboot04ManagementApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
       <module name="springboot04-management" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="com.ayy.Application" />
@@ -162,6 +151,7 @@
       <workItem from="1615479255565" duration="8507000" />
       <workItem from="1615562940493" duration="9008000" />
       <workItem from="1615668675236" duration="5928000" />
+      <workItem from="1615754302289" duration="2206000" />
     </task>
     <servers />
   </component>
