@@ -28,4 +28,10 @@ public class LoginController {
         model.addAttribute("msg","Invalid password");
         return "index";
     }
+
+    @RequestMapping("/user/logout")
+    public String logout(HttpSession session){
+        session.invalidate();
+        return "redirect:/index.html";
+    }
 }
