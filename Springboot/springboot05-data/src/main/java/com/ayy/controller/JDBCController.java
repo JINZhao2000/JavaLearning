@@ -17,8 +17,12 @@ import java.util.Map;
  */
 @RestController
 public class JDBCController {
+    private JdbcTemplate jdbcTemplate;
+
     @Autowired
-    JdbcTemplate jdbcTemplate;
+    public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @GetMapping("/userList")
     public List<Map<String,Object>> userList(){
@@ -33,6 +37,7 @@ public class JDBCController {
         return "add - ok";
     }
 
+    @SuppressWarnings("all")
     @GetMapping("/update/{id}")
     public String updateUser(@PathVariable("id") int id){
         String sql = "update mb_user set uname = 'USER7' where uid = ?";
