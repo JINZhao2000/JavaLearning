@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Index</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div></div>
+    </div>
+    <div class="row center">
+        <div class="col-md-6 column">
+            <a th:href="@{/}">Index</a>
+        </div>
+        <div class="col-md-4 column" sec:authorize="!isAuthenticated()">
+            <a th:href="@{/toLogin}" class="btn btn-primary">Sign in</a>
+        </div>
+        <div class="col-md-4 column" sec:authorize="isAuthenticated()">
+            <a class="btn btn-primary">
+                Username: <span sec:authentication="name"></span><br>
+                Role: <span sec:authentication="authorities"></span>
+            </a>
+        </div>
+        <div class="col-md-2 column" sec:authorize="isAuthenticated()">
+            <a th:href="@{/logout}" class="btn btn-primary">Log out</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 column" sec:authorize="hasRole('vip1')">
+            <div class="page-header">
+                <label>Level 1</label>
+            </div>
+            <div>
+                <a th:href="@{/level/1/1}" class="btn btn-primary">Level1-1</a>
+            </div>
+            <div>
+                <a th:href="@{/level/1/2}" class="btn btn-primary">Level1-2</a>
+            </div>
+            <div>
+                <a th:href="@{/level/1/3}" class="btn btn-primary">Level1-3</a>
+            </div>
+        </div>
+        <div class="col-md-4 column" sec:authorize="hasRole('vip2')">
+            <div class="page-header">
+                <label>Level 2</label>
+            </div>
+            <div>
+                <a th:href="@{/level/2/1}" class="btn btn-primary">Level2-1</a>
+            </div>
+            <div>
+                <a th:href="@{/level/2/2}" class="btn btn-primary">Level2-2</a>
+            </div>
+            <div>
+                <a th:href="@{/level/2/3}" class="btn btn-primary">Level2-3</a>
+            </div>
+        </div>
+        <div class="col-md-4 column" sec:authorize="hasRole('vip3')">
+            <div class="page-header">
+                <label>Level 3</label>
+            </div>
+            <div>
+                <a th:href="@{/level/3/1}" class="btn btn-primary">Level3-1</a>
+            </div>
+            <div>
+                <a th:href="@{/level/3/2}" class="btn btn-primary">Level3-2</a>
+            </div>
+            <div>
+                <a th:href="@{/level/3/3}" class="btn btn-primary">Level3-3</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
