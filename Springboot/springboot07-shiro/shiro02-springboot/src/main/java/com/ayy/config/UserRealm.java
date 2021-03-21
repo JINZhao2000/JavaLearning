@@ -1,8 +1,6 @@
 package com.ayy.config;
 
-import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.authc.AuthenticationInfo;
-import org.apache.shiro.authc.AuthenticationToken;
+import org.apache.shiro.authc.*;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
@@ -24,6 +22,14 @@ public class UserRealm extends AuthorizingRealm {
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {
         System.out.println("doGetAuthorizationInfo --- token");
-        return null;
+        String name = "user1";
+        String password = "123456";
+        UsernamePasswordToken usernamePasswordToken = (UsernamePasswordToken) token;
+
+        if(!usernamePasswordToken.getUsername().equals(name)){
+            return null;
+        }
+
+        return new SimpleAuthenticationInfo("",password,"");
     }
 }

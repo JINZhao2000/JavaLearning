@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * @ Description
  * @ Author Zhao JIN
@@ -29,6 +32,17 @@ public class ShiroConfig {
     @Bean(name = "shiroFilterFactoryBean")
     public ShiroFilterFactoryBean getShiroFilterFactoryBean(@Qualifier("defaultWebSecurityManager") DefaultWebSecurityManager securityManager){
         ShiroFilterFactoryBean bean = new ShiroFilterFactoryBean();
+        /* anon
+           authc
+           user
+           perms
+           role
+        */
+        Map<String, String> filterMap = new LinkedHashMap<>();
+        filterMap.put("/user/*","authc");
+
+        bean.setFilterChainDefinitionMap(filterMap);
+        bean.setLoginUrl("/toLogin");
         bean.setSecurityManager(securityManager);
         return bean;
     }
