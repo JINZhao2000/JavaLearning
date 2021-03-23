@@ -33,6 +33,5 @@ public class HelloServer {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
         }
-
     }
 }
