@@ -1,4 +1,4 @@
-package com.ayy.handler;
+package com.ayy.server.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -24,10 +24,10 @@ public class HelloHttpServerHandler extends SimpleChannelInboundHandler<HttpObje
             System.out.println();
             System.out.println(ctx.channel().remoteAddress());
             Thread.sleep(3000);
-            // System.out.println(msg.getClass());
-            // System.out.println(((HttpRequest) msg).method().name());
+            System.out.println(msg.getClass());
+            System.out.println(((HttpRequest) msg).method().name());
             if("/favicon.ico".equals(uri.getPath())){
-                // System.out.println("/favicon.ico");
+                System.out.println("/favicon.ico");
                 return;
             }
             ByteBuf content = Unpooled.copiedBuffer("Hello World !", CharsetUtil.UTF_8);
@@ -40,38 +40,38 @@ public class HelloHttpServerHandler extends SimpleChannelInboundHandler<HttpObje
 
             ctx.writeAndFlush(response);
             System.out.println("-- content --");
-            // ctx.close();
+            ctx.close();
         }
     }
 
-//    @Override
-//    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-//        System.out.println("Channel Active");
-//        super.channelActive(ctx);
-//    }
-//
-//    @Override
-//    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-//        System.out.println("Channel Registered");
-//        super.channelRegistered(ctx);
-//    }
-//
-//    @Override
-//    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-//        System.out.println();
-//        System.out.println("Handler Added");
-//        super.handlerAdded(ctx);
-//    }
-//
-//    @Override
-//    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-//        System.out.println("Channel Inactive");
-//        super.channelInactive(ctx);
-//    }
-//
-//    @Override
-//    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-//        System.out.println("Channel Unregistered");
-//        super.channelUnregistered(ctx);
-//    }
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("Channel Active");
+        super.channelActive(ctx);
+    }
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("Channel Registered");
+        super.channelRegistered(ctx);
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        System.out.println();
+        System.out.println("Handler Added");
+        super.handlerAdded(ctx);
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("Channel Inactive");
+        super.channelInactive(ctx);
+    }
+
+    @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("Channel Unregistered");
+        super.channelUnregistered(ctx);
+    }
 }

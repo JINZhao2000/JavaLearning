@@ -1,6 +1,6 @@
-package com.ayy.initializer;
+package com.ayy.server.initializer;
 
-import com.ayy.handler.HelloHttpServerHandler;
+import com.ayy.server.handler.HelloHttpServerHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
