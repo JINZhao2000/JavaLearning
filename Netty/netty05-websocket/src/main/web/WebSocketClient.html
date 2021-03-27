@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocketClient</title>
+</head>
+<body>
+<form onsubmit="return false">
+    <label for="message">Message</label><br>
+    <textarea id="message" name="message" style="width: 400px; height: 200px"></textarea><br>
+    <input type="button" value="Send" onclick="send(this.form.message.value);document.getElementById('message').value=''"><br>
+    <label for="response">Response</label><br>
+    <textarea id="response" name="response" style="width: 400px; height: 200px" readonly></textarea><br>
+    <input type="button" onclick="document.getElementById('response').value=''" value="Clear"><br>
+</form>
+</body>
+<script type="text/javascript">
+    let socket;
+    if(window.WebSocket) {
+        socket = new WebSocket("ws://localhost:9000/ws");
+        socket.onmessage = function (event){
+            let message = document.getElementById('response');
+            message.value += '\n'+event.data;
+        }
+        socket.onopen = function (event) {
+            let message = document.getElementById('response');
+            message.value = 'WebSocket connected';
+        }
+        socket.onclose = function (event) {
+            let message = document.getElementById('response');
+            message.value += '\nWebSocket disconnected';
+        }
+    }else {
+        alert("WebSocket can't be supported");
+    }
+
+    function send(message){
+        if(!window.WebSocket){
+            return;
+        }
+        if(socket.readyState == WebSocket.OPEN){
+            socket.send(message);
+        }else {
+            alert("WebSocket not connected");
+        }
+    }
+</script>
+</html>
