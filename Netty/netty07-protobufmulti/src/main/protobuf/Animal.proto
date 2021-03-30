@@ -1,0 +1,32 @@
+syntax = 'proto2';
+
+package com.ayy.protobuf;
+
+option optimize_for = SPEED;
+option java_package = "com.ayy.protobuf";
+option java_outer_classname = "MyDataInfo";
+
+message MyMessage {
+  enum AnimalType{
+    CAT = 1;
+    DOG = 2;
+  }
+
+  required AnimalType animal_type = 1;
+
+  oneof oneOfAnimal{
+    Cat cat = 2;
+    Dog dog = 3;
+  }
+}
+
+message Cat {
+  optional string name = 1;
+  optional int32 age = 2;
+}
+
+message Dog {
+  optional string name = 1;
+  optional int32 age = 2;
+  optional string race = 3;
+}
