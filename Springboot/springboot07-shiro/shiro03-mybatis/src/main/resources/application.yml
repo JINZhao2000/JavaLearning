@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://rm-4xo63l909kdrexz8kio.mysql.germany.rds.aliyuncs.com:3306/jdbc_test?rewriteBatchedStatements=true
+    username: jdbc
+    password: JDBCjdbc000
+    driver-class-name: com.mysql.cj.jdbc.Driver
+mybatis:
+  type-aliases-package: com.ayy.bean
+  mapper-locations: classpath:mapper/*.xml
