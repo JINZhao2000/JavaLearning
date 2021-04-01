@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="https://www.thymeleaf.org">
+<html lang="en" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro"
+      xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Index</title>
@@ -7,8 +8,15 @@
 <body>
 <h1>Index</h1>
 <h2 th:text="${msg}"></h2>
+<div shiro:notAuthenticated="true">
+    <a th:href="@{/toLogin}">Login</a>
+</div>
 <hr>
-<a th:href="@{/user/add}">Add</a>
-<a th:href="@{/user/update}">Update</a>
+<div shiro:hasPermission="user:add">
+    <a th:href="@{/user/add}">Add</a>
+</div>
+<div shiro:hasPermission="user:update">
+    <a th:href="@{/user/update}">Update</a>
+</div>
 </body>
 </html>

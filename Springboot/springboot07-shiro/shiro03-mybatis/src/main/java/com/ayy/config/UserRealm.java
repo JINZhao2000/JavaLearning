@@ -33,7 +33,10 @@ public class UserRealm extends AuthorizingRealm {
         User current = (User) subject.getPrincipal();
         // add perms into table and bean of user
         // info.addStringPermission(current.getAuth());
-        return info;
+        if(current.getUname().equals("root")){
+            info.addStringPermission("user:add");
+
+        }        return info;
     }
 
     @Override
@@ -43,6 +46,8 @@ public class UserRealm extends AuthorizingRealm {
         if(null==user){
             return null;
         }
+        Subject subject = SecurityUtils.getSubject();
+        subject.getSession().setAttribute("currUser",user);
         return new SimpleAuthenticationInfo(user,user.getPwd(),"");
     }
 }
