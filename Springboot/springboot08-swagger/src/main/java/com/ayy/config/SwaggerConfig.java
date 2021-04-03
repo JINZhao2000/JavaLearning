@@ -2,6 +2,7 @@ package com.ayy.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.service.Contact;
 import springfox.documentation.spi.DocumentationType;
@@ -20,8 +21,28 @@ public class SwaggerConfig {
 
     @Bean
     public Docket docket(){
-        return new Docket(DocumentationType.OAS_30).apiInfo(myInfo());
+        return new Docket(DocumentationType.OAS_30)
+                .apiInfo(myInfo())
+                .groupName("AYY")
+                // .enable(false)
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.ayy.controller").or(RequestHandlerSelectors.basePackage("com.ayy.bean")))
+                // .apis(RequestHandlerSelectors.any())
+                // .apis(RequestHandlerSelectors.any())
+                // .apis(RequestHandlerSelectors.withClassAnnotation(Controller.class))
+                // .apis(RequestHandlerSelectors.withMethodAnnotation(RequestMapping.class))
+                // .paths(PathSelectors.ant("/hello/**"))
+                 .build();
     }
+
+//    @Bean
+//    public Docket docket(Environment environment){
+//        Profiles profiles = Profiles.of("dev","test");
+//        boolean env = environment.acceptsProfiles(profiles);
+//        return new Docket(DocumentationType.OAS_30)
+//                .apiInfo(myInfo())
+//                .enable(env);
+//    }
 
     private ApiInfo myInfo(){
         return new ApiInfo(
