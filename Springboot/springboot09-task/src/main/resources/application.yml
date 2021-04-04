@@ -1,0 +1,15 @@
+spring:
+  mail:
+    username: jinzhaofr@outlook.com
+    password: 20000111sr
+    host: smtp.office365.com
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable: true
+            required: true
+          auth: true
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+    port: 587
