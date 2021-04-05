@@ -1,0 +1,8 @@
+server:
+  port: 8002
+dubbo:
+  application:
+    name: consumer-server
+  registry:
+    timeout: 20000
+    address: zookeeper://47.254.177.216:2181

@@ -1,0 +1,10 @@
+server:
+  port: 8001
+dubbo:
+  application:
+    name: provider-server
+  registry:
+    address: zookeeper://47.254.177.216:2181
+    timeout: 20000
+  scan:
+    base-packages: com.ayy.service
