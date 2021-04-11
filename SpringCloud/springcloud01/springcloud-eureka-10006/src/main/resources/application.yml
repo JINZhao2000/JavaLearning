@@ -1,0 +1,10 @@
+server:
+  port: 10006
+eureka:
+  instance:
+    hostname: eureka3
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://eureka1:10003/eureka/,http://eureka2:10005/eureka/
