@@ -84,3 +84,28 @@ SpringCloud Alibaba - 最新一站式解决方案
 | 数据流操作开发包 | SpringCloud Stream（封装与 Redis，Rabbit，Kafka 等发下哦那个接受消息） |
 | 事件消息总线     | SpringCloud Bus                                              |
 
+## Eureka
+
+CAP 原则（Eureka 是 AP 原则）
+
+- C Consistency 强一致性
+- A Availability 可用性
+- P Partition tolerance 分区容错性
+
+基于 REST 服务
+
+用于定位服务，实现云端中间层服务发现和故障转移
+
+__Eureka 自我保护机制__ 
+
+在某一时刻微服务突然不可用时，eureka 不会立即清理，依旧会对该微服务的信息进行保存
+
+- 默认情况下。如果 EurekaServer 在一定时间内没有接收到某个微服务实例的心跳，EurekaServer 将会注销该实例（默认 90 s），但是当网络分区故障发生时，微服务与 Eureka 之间无法正常通信，此时不应该注销该服务，因为微服务是健康的。Eureka 通过自我保护机制来解决这个问题：当 EurekaServer 节点在短时间丢失过多客户端时，那么这个节点就会进入自我保护模式，一旦进入该模式，EurekaServer 就会保护服务注册表中的数据（不会注销微服务），当网络故障恢复后，该 EurekaServer 节点会自动退出保护模式
+- 在自我保护模式中，EurekaServer 会保护服务注册表中的信息，不在注销任何服务实例，当它收到的心跳数重新恢复到阈值以上时，该 EurekaServer 节点就会自动退出保护模式，它的设计哲学就是宁可保留错误的服务注册信息，也不盲目注销任何可能健康的服务实例
+- `eureka.server.enable-self-preservation` 自我保护机制的 property
+
+__与 Zookeeper 区别__ 
+
+- Zookeeper 保证的是 CP 而 Eureka 保证的是 AP
+
+- Zookeeper 当 master 节点失去联系时，然后子节点会选举一个节点作为 master，选举时间比较长，期间不能注册服务
