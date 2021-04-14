@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ayy.springcloud.mapper.DeptMapper">
+    <insert id="addDept" parameterType="Dept">
+        insert into dept (name_dept, db_source)
+        value (#{nDept},DATABASE())
+    </insert>
+    <select id="queryDeptById" resultType="Dept">
+        select * from dept where n_dept = #{nDept}
+    </select>
+    <select id="queryAll" resultType="Dept">
+        select * from dept
+    </select>
+</mapper>
