@@ -20,7 +20,7 @@ spring:
 
 eureka:
   instance:
-    instance-id: springcloud-provider-eureka-dept
+    instance-id: springcloud-provider-eureka-dept-10004
   client:
     service-url:
       defaultZone: http://eureka1:10003/eureka/,http://eureka2:10005/eureka/,http://eureka3:10006/eureka/

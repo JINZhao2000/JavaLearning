@@ -1,0 +1,9 @@
+server:
+  port: 10010
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka1:10003/eureka/,http://eureka2:10005/eureka/,http://eureka3:10006/eureka/
+    register-with-eureka: false
+    fetch-registry: true
