@@ -16,7 +16,7 @@ import java.util.List;
  * @ Version 1.0
  */
 @Service
-@FeignClient(value = "SPRINGCLOUD-PROVIDER-DEPT")
+@FeignClient(value = "SPRINGCLOUD-PROVIDER-DEPT", fallbackFactory = DeptClientServiceFallbackFactory.class)
 public interface DeptClientService {
     @GetMapping("/dept/get/{nDept}")
     Dept queryById(@PathVariable("nDept") int nDept);
