@@ -20,6 +20,7 @@
         <module>springcloud-provider-eureka-dept-10009</module>
         <module>springcloud-consumer-feign-10010</module>
         <module>springcloud-provider-hystrix-dept-10011</module>
+        <module>springcloud-consumer-hystrix-dashboard-10012</module>
     </modules>
 
     <properties>
