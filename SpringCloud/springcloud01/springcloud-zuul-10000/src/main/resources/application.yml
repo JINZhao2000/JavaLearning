@@ -1,0 +1,44 @@
+server:
+  port: 10000
+
+spring:
+  application:
+    name: springcloud-zuul
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka1:10003/eureka/,http://eureka2:10005/eureka/,http://eureka3:10006/eureka/
+  instance:
+    instance-id: zuul
+    prefer-ip-address: true
+
+info:
+  app.name: springcloud
+  company.name: com.ayy
+
+zuul:
+  host:
+    socket-timeout-millis: 12000
+    connect-timeout-millis: 12000
+  routes:
+    dept:
+      path: /**
+      serviceId: springcloud-provider-dept
+  ignored-services: springcloud-provider-dept
+  # prefix:
+
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 12000
+
+ribbon:
+  ReadTimeout: 12000
+  ConnectTimeout: 12000
+  eureka:
+    enabled: true
+
