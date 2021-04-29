@@ -3,10 +3,8 @@ package com.ayy.rabbitmq.simple;
 import com.ayy.rabbitmq.util.RabbitMQUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
 
 import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 /**
  * @ Description
@@ -17,13 +15,10 @@ import java.util.concurrent.TimeoutException;
 
 public class Producer {
     public static void main(String[] args) {
-        ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.load(RabbitMQUtils.getProperties());
-
         Connection connection = null;
         Channel channel = null;
         try {
-            connection = connectionFactory.newConnection();
+            connection = RabbitMQUtils.getConnection();
             channel = connection.createChannel();
             String queueName = "Queue1";
             /*
@@ -35,9 +30,15 @@ public class Producer {
              */
             channel.queueDeclare(queueName,false,false,false,null);
             String message = "Hello World";
+            /*
+             * @params1 exchange
+             * @params2 routing key
+             * @params3 status
+             * @params4 message
+             */
             channel.basicPublish("", queueName, null, message.getBytes());
             System.out.println("Message success");
-        } catch (IOException | TimeoutException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         } finally {
             RabbitMQUtils.close(channel, connection);

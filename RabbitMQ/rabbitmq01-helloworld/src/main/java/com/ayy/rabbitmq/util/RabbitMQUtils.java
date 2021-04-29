@@ -1,7 +1,12 @@
 package com.ayy.rabbitmq.util;
 
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @ Description
@@ -11,22 +16,31 @@ import java.util.Properties;
  */
 
 public class RabbitMQUtils {
-    private static final Properties properties = new Properties();
+    private static final ThreadLocal<Connection> thConnection = new ThreadLocal<>();
 
-    static {
-        InputStream is = null;
-        try {
-            is = RabbitMQUtils.class.getClassLoader().getResourceAsStream("rabbitmq.properties");
-            properties.load(is);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            close(is);
+    public static Connection getConnection() {
+        Connection connection = RabbitMQUtils.thConnection.get();
+        if(connection == null){
+            InputStream is = null;
+            Properties properties = new Properties();
+            try {
+                is = RabbitMQUtils.class.getClassLoader().getResourceAsStream("rabbitmq.properties");
+                properties.load(is);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                close(is);
+            }
+            ConnectionFactory connectionFactory = new ConnectionFactory();
+            connectionFactory.load(properties);
+            try {
+                connection = connectionFactory.newConnection();
+                thConnection.set(connection);
+            } catch (IOException | TimeoutException e) {
+                e.printStackTrace();
+            }
         }
-    }
-
-    public static Properties getProperties() {
-        return properties;
+        return connection;
     }
 
     public static void close(AutoCloseable... clos){
@@ -34,6 +48,9 @@ public class RabbitMQUtils {
             if(clo!=null){
                 try {
                     clo.close();
+                    if(clo instanceof Connection){
+                        thConnection.remove();
+                    }
                 } catch (Exception e) {
                     // nothing
                 }

@@ -1,4 +1,4 @@
-package com.ayy.rabbitmq.simple;
+package com.ayy.rabbitmq.fanout;
 
 import com.ayy.rabbitmq.util.RabbitMQUtils;
 import com.rabbitmq.client.*;
@@ -9,33 +9,43 @@ import java.nio.charset.StandardCharsets;
 /**
  * @ Description
  * @ Author Zhao JIN
- * @ Date 27/04/2021
+ * @ Date 29/04/2021
  * @ Version 1.0
  */
 
-public class Consumer {
+public class Consumer implements Runnable {
+    private final String queueName;
+
     public static void main(String[] args) {
+        new Thread(new Consumer("queue1")).start();
+        new Thread(new Consumer("queue2")).start();
+        new Thread(new Consumer("queue3")).start();
+    }
+
+    public Consumer(String queueName){
+        this.queueName = queueName;
+    }
+
+    @Override
+    public void run() {
         Connection connection = null;
         Channel channel = null;
         try {
             connection = RabbitMQUtils.getConnection();
             channel = connection.createChannel();
-            String queueName = "Queue1";
 
             channel.basicConsume(queueName, true, new DeliverCallback() {
                 @Override
                 public void handle(String consumerTag, Delivery message) throws IOException {
-                    System.out.println("Message is :" + new String(message.getBody(), StandardCharsets.UTF_8));
+                    System.out.println(queueName+" Message : "+new String(message.getBody(), StandardCharsets.UTF_8));
                 }
             }, new CancelCallback() {
                 @Override
                 public void handle(String consumerTag) throws IOException {
-                    System.out.println("Message failed");
+                    System.out.println(queueName+" Message failed");
                 }
             });
-            System.out.println("Begin");
-            System.in.read(); // block
-        } catch (IOException e) {
+        } catch (IOException e){
             e.printStackTrace();
         } finally {
             RabbitMQUtils.close(channel, connection);
