@@ -28,7 +28,7 @@ public class Producer {
              * @params4 auto delete
              * @params5 args
              */
-            channel.queueDeclare(queueName,false,false,false,null);
+            channel.queueDeclare(queueName,false,false,true,null);
             String message = "Hello World";
             /*
              * @params1 exchange

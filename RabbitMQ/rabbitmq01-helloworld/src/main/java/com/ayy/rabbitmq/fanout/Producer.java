@@ -22,15 +22,15 @@ public class Producer {
             channel = connection.createChannel();
 
             String message = "hello fanout";
-            String exchange = "my exchange";
+            String exchange = "fanout exchange";
             String routingKey = "";
 
 
             channel.exchangeDeclare(exchange, "fanout");
 
-            channel.queueDeclare("queue1", false, false, false, null);
-            channel.queueDeclare("queue2",false,false,false,null);
-            channel.queueDeclare("queue3",false,false,false,null);
+            channel.queueDeclare("queue1", false, false, true, null);
+            channel.queueDeclare("queue2",false,false,true,null);
+            channel.queueDeclare("queue3",false,false,true,null);
 
 
             channel.queueBind("queue1", exchange, routingKey);
