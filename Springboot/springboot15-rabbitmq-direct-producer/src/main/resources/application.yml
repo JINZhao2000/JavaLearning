@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+spring:
+  rabbitmq:
+    host: 47.254.177.216
+    virtual-host: /
+    username: jinzhao
+    port: 5672
+    password: 
