@@ -20,4 +20,9 @@ public class RabbitMQProducerApplicationTest {
     public void testTTLQueue(){
         orderService.makeOrderTTL("user", "product", 10);
     }
+
+    @Test
+    public void testTTLMessageQueue(){
+        orderService.makeOrderTTLMessage("user", "product", 10);
+    }
 }

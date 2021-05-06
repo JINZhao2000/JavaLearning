@@ -35,4 +35,14 @@ public class TTLRabbitMQConfig {
     public Binding ttlBinding(@Autowired DirectExchange ttlDirectExchange, @Autowired Queue ttlQueue){
         return BindingBuilder.bind(ttlQueue).to(ttlDirectExchange).with(RabbitMQConstant.TTL_ROUTING_KEY);
     }
+
+    @Bean
+    public Queue ttlMessageQueue(){
+        return new Queue(RabbitMQConstant.TTL_MESSAGE_QUEUE, true, false, false, null);
+    }
+
+    @Bean
+    public Binding ttlMessageBinding(@Autowired DirectExchange ttlDirectExchange, @Autowired Queue ttlMessageQueue){
+        return BindingBuilder.bind(ttlMessageQueue).to(ttlDirectExchange).with(RabbitMQConstant.TTL_MESSAGE_ROUTING_KEY);
+    }
 }

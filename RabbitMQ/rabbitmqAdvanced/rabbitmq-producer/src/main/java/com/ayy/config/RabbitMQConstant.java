@@ -14,4 +14,7 @@ public interface RabbitMQConstant {
 
     final String TTL_ROUTING_KEY = "ttl";
 
+    final String TTL_MESSAGE_QUEUE = "ttl.message.direct.queue";
+
+    final String TTL_MESSAGE_ROUTING_KEY = "ttl.message";
 }
