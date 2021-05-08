@@ -6,5 +6,5 @@ spring:
     host: 47.254.177.216
     virtual-host: /
     username: jinzhao
-    password:
+    password: 
     port: 5672

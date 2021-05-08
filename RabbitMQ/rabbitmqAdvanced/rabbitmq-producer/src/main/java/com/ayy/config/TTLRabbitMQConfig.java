@@ -28,6 +28,8 @@ public class TTLRabbitMQConfig {
     public Queue ttlQueue(){
         Map<String, Object> args = new HashMap<>();
         args.put("x-message-ttl", 10000);
+        args.put("x-dead-letter-exchange",RabbitMQConstant.DEAD_LETTER_EXCHANGE);
+        args.put("x-dead-letter-routing-key",RabbitMQConstant.DEAD_LETTER_ROUTING_KEY);
         return new Queue(RabbitMQConstant.TTL_QUEUE, true, false, false, args);
     }
 
