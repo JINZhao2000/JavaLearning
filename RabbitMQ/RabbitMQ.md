@@ -206,7 +206,65 @@ Broker (Server) 接收客户端连接，实现 AMQP 实体服务
 
 - simple 简单模式
 - work 工作模式
-- publish / subscribe 发布订阅模式
-- routing 路由模式
+- publish / subscribe (fanout) 发布订阅模式
+- routing key (direct) 路由模式
 - topic 主题模式
 - 参数模式
+
+## 9. RabbitMQ 的使用场景
+
+解耦，削峰，异步
+
+## 10. RabbitMQ 的应用
+
+## 11. RabbitMQ 内存磁盘监控
+
+### 11.1 内存警告
+
+当内存使用超过配置的阈值或者磁盘空间剩余空间时，RabbitMQ 会暂时阻塞客户端的连接（blocking，bloked），并且阻止接收从客户端发送的消息，以此避免服务器的崩溃，客户端与服务端的心跳检测机制也会失效
+
+默认内存是最大内存的 0.4
+
+### 11.2 内存调整
+
+- 命令
+
+    ```shell
+    rabbitmqctl set_vm_memory_high_watermark <fraction> # 建议 0.4 - 0.6
+    rabbitmqctl set_vm_memory_high_watermark absolute xxxMB
+    ```
+
+- 配置文件（/etc/rabbitmq/rabbitmq.conf）
+
+    ```conf
+    vm_memory_high_watermark.relative = 
+    vm_memory_high_watermark.absolute = 
+    ```
+
+### 11.3 内存换页
+
+在某个 Broker 节点及内存阻塞生产者之前，它会尝试将消息队列中的消息换页到磁盘以释放内存空间，持久化和非持久化的消息都会写到磁盘中，其中持久化的消息本身在磁盘中有个副本，所以在转移的过程中，持久化的消息会先从内存中清除掉（默认为 50%*允许内存）
+
+```conf
+vm_memory_high_watermark_paging_ratio = 0.7
+```
+
+### 11.4 磁盘预警
+
+当磁盘剩余空间低于确定的阈值时，RabbitMQ 同样会阻塞生产者，避免因非持久化的消息持续换页而耗尽磁盘空间导致服务崩溃（默认为 50 MB）
+
+- 命令方式
+
+    ```shell
+    rabbitmqctl set_disk_free_limit <disk_limit>
+    rabbitmqctl set_disk_free_limit memory_limit <fraction> # 相对于内存的百分比
+    ```
+
+- 配置文件
+
+    ```conf
+    disk_free_limit.relative = 
+    disk_free_limit.absolute = 
+    ```
+
+    
