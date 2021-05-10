@@ -267,4 +267,71 @@ vm_memory_high_watermark_paging_ratio = 0.7
     disk_free_limit.absolute = 
     ```
 
+
+## 12. RabbitMQ 集群搭建
+
+默认启动
+
+```shell
+sudo RABBITMQ_NODE_PORT=5672 RABBITMQ_NODENAME=rabbit-1 rabbitmq-server start &
+```
+
+指定端口启动
+
+```shell
+sudo RABBITMQ_NODE_PORT=5673 RABBITMQ_SERVER_START_ARGS="-rabbitmq_management listener [{port,15673}]" RABBITMQ_NODENAME=rabbit-2 rabbitmq-server start &
+```
+
+操作集群
+
+```shell
+sudo rabbitmqctl -n rabbit-1 stop_app
+sudo rabbitmqctl -n rabbit-1 reset
+sudo rabbitmqctl -n rabbit-1 start_app
+
+sudo rabbitmqctl -n rabbit-2 stop_app
+sudo rabbitmqctl -n rabbit-2 reset
+sudo rabbitmqctl -n rabbit-2 join_cluster rabbit-1@'machine_name'
+sudo rabbitmqctl -n rabbit-2 start_app
+```
+
+验证集群
+
+```shell
+sudo rabbitmqctl cluster_status -n rabbit-1
+```
+
+Web 监控
+
+- 启动
+
+    ```shell
+    rabbitmq-plugins enable rabbitmq-management
+    ```
+
+- 用户设置
+
+    ```shell
+    rabbitmqctl -n rabbit-1 add_user admin admin
+    rabbitmqctl -n rabbit-1 set_user_tags admin administrator
+    rabbitmqctl -n rabbit-1 set_permissions -p / admin ".*" ".*" ".*"
     
+    // 我自己的版本只需要主节点添加用户就行了
+    rabbitmqctl -n rabbit-2 add_user jinzhao AY20000111sr
+    rabbitmqctl -n rabbit-2 set_user_tags jinzhao administrator
+    rabbitmqctl -n rabbit-2 set_permissions -p / jinzhao ".*" ".*" ".*"
+    ```
+
+## 13. RabbitMQ 分布式事务
+
+### 13.1 分布式事务的实现方式
+
+- 两阶段提交（2PC）需要数据库产商的支持，java 组件有 atomikos 等
+
+    问题：同步阻塞
+
+- 补偿事务（TCC）
+
+- 本地消息表（异步确保）
+
+- MQ 事务消息，异步场景，通用性较强，扩展性较高
