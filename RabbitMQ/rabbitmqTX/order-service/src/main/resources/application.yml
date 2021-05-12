@@ -20,4 +20,5 @@ spring:
           enabled: true
           max-attempts: 10
           initial-interval: 2000ms
+    publisher-confirm-type: correlated
 

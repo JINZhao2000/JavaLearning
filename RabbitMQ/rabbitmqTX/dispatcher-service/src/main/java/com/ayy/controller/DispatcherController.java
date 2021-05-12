@@ -22,7 +22,6 @@ public class DispatcherController {
 
     @GetMapping("/order/{oid}")
     public String order(@PathVariable("oid") String oid) throws InterruptedException {
-        Thread.sleep(3000);
         dispatcherService.sendDispacher(new Dispatcher("did", oid, "1", "ocont", new Date(),"uid"));
         return "success";
     }

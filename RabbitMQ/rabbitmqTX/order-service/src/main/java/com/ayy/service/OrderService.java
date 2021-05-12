@@ -10,5 +10,5 @@ import com.ayy.bean.Order;
  */
 
 public interface OrderService {
-    void makeOrder(Order order);
+    void makeOrder(Order order, int status);
 }

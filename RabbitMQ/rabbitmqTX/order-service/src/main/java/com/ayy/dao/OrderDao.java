@@ -10,5 +10,5 @@ import com.ayy.bean.Order;
  */
 
 public interface OrderDao {
-    void insert(Order order);
+    void insert(Order order, int status);
 }
