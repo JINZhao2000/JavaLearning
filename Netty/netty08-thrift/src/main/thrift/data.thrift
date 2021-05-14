@@ -1,4 +1,5 @@
 namespace java com.ayy.thrift.generated
+namespace py com.ayy.thrift.py.generated
 
 typedef i16 short
 typedef i32 int

@@ -25,6 +25,6 @@ public class PersonServiceImpl implements PersonService.Iface {
 
     @Override
     public void savePerson(Person person) throws DataException, TException {
-        System.out.println("username : "+person.getUsername()+", age"+person.getAge()+", married : "+person.isMarried());
+        System.out.println("username : "+person.getUsername()+", age : "+person.getAge()+", married : "+person.isMarried());
     }
 }
