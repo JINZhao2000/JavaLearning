@@ -3,6 +3,7 @@ __author__ = "Zhao JIN"
 
 from com.ayy.thrift.py.generated.ttypes import Person
 
+
 class PersonServiceHandler:
     def getPersonByUsername(self, username):
         print("username : ", username)
@@ -13,4 +14,4 @@ class PersonServiceHandler:
         return person
 
     def savePerson(self, person):
-        print("username : ", person.username, ", age : "+person.age+", married : "+person.married)
+        print("username : ", person.username, ", age : ", person.age,", married : ",person.married)

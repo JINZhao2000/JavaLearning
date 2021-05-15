@@ -446,9 +446,168 @@ message Person {
 }
 ```
 
+多对象定义
 
+```protobuf
+syntax = 'proto2';
+
+package com.ayy.protobuf;
+
+option optimize_for = SPEED;
+option java_package = "com.ayy.protobuf";
+option java_outer_classname = "MyDataInfo";
+
+message MyMessage {
+  enum AnimalType{
+    CAT = 1;
+    DOG = 2;
+  }
+
+  required AnimalType animal_type = 1;
+
+  oneof oneOfAnimal{
+    Cat cat = 2;
+    Dog dog = 3;
+  }
+}
+
+message Cat {
+  optional string name = 1;
+  optional int32 age = 2;
+}
+
+message Dog {
+  optional string name = 1;
+  optional int32 age = 2;
+  optional string race = 3;
+}
+```
+
+protobuf 版本控制
+
+- git submodule
+- git subtree
 
 ## 7. Apache Thrift 使用方式与文件编写方式分析
+
+Thrift 文件
+
+```thrift
+namespace java com.ayy.thrift.generated
+
+typedef i16 short
+typedef i32 int
+typedef i64 long
+typedef bool boolean
+typedef string String
+
+struct Person {
+    1: optional String username,
+    2: optional int age,
+    3: optional boolean married
+}
+
+exception DataException {
+    1: optional String message,
+    2: optional String callStack,
+    3: optional String date
+}
+
+service PersonService {
+    Person getPersonByUsername(1: required String username) throws (1: DataException dataException),
+    void savePerson(1: required Person person) throws (1: DataException dataException)
+}
+```
+
+编译
+
+```shell
+thrift --gen java xxx.thrift
+```
+
+服务端
+
+```java
+TNonblockingServerSocket serverSocket = new TNonblockingServerSocket(10000);
+THsHaServer.Args arg = new THsHaServer.Args(serverSocket).minWorkerThreads(2).maxWorkerThreads(4);
+PersonService.Processor<PersonServiceImpl> processor = new PersonService.Processor<>(new PersonServiceImpl());
+arg.protocolFactory(new TCompactProtocol.Factory());
+arg.transportFactory(new TFramedTransport.Factory());
+arg.processorFactory(new TProcessorFactory(processor));
+TServer server = new THsHaServer(arg);
+server.serve();
+```
+
+客户端
+
+```java
+TTransport transport = new TFramedTransport(new TSocket("localhost", 10000));
+TProtocol protocol = new TCompactProtocol(transport);
+
+PersonService.Client client = new PersonService.Client(protocol);
+
+try {
+    transport.open();
+    Person person = client.getPersonByUsername("me");
+    client.savePerson(person1);
+} catch (Exception e){
+    throw new RuntimeException(e.getMessage(), e);
+} finally {
+    transport.close();
+}
+```
+
+ServiceImpl
+
+```java
+public class PersonServiceImpl implements PersonService.Iface{}
+```
+
+## 8. Thrift 原理与架构解析
+
+Thrift 架构
+
+​           Client                     Server
+
+​       Your Code               Your Code
+
+FooService.Client  FooService.Processor   Generated Code
+
+Foo.write()/read()     Foo.read()/write()       Generated Code
+
+​        TProtocol               TProtocol                 Generated Code
+
+​        TTransport            TTransport
+
+​        ..................................................
+
+  Underlying I/O          Underlying I/O
+
+Thrift 传输格式
+
+- TBInaryProtocol 二进制格式
+- TCompactProtocol 压缩格式
+- TJSONProtocol JSON 格式
+- TSimpleJSONProtocol 提供 JSON 只写协议，生成的文件很容易通过脚本语言解析
+- TDebugProtocol 使用易懂的可读文本格式，以便于 debug
+
+Thrift 数据传输方式
+
+- TSocket 阻塞式 Socket
+- TFramedTransport 以 frame 单位为基础，非阻塞式服务中使用
+- TFileTransport 以文件形式传输
+- TMemoryTransport 将内存用于 I/O Java 实现时内部实际使用了简单的 ByteArrayOutputStream
+- TZlibTransport 使用 zlib 进行压缩，与其他传输方式联合使用，当前 Java 无法实现
+
+Thrift 支持的服务类型
+
+- THsHaServer : Half Sync Half Async THsHa 引入了线程池去处理，其模型把读写任务放到线程池去处理，HA 是在处理 IO 的事件上（accept/read/write io）， HS 用于 handler 对 RPC 的同步处理，是 TNonblockingServer 的一个扩展，所以也要使用 TFramedTransport
+- TNonblockingServer 多线程服务模型，使用非阻塞式 IO（需使用 TFranedTransport）
+- TSimpleServer 简单的单线程服务模型，常用于测试
+- TThreadPoolServer 多线程服务模型，使用标准的阻塞式 IO
+- ~~TThreadSelectorServer~~ 
+
+## 9. gRPC
 
 ## Netty 大文件传送支持
 
