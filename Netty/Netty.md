@@ -609,6 +609,117 @@ Thrift 支持的服务类型
 
 ## 9. gRPC
 
+### 9.1 Quick Start
+
+下载 grpc-java
+
+```shell
+git clone -b v1.37.1 https://github.com/grpc/grpc-java
+```
+
+进入指定目录并用 gradle 安装目录命令安装目录内文件
+
+```shell
+cd grpc-java/examples
+gradle installDist
+```
+
+运行服务器，然后运行客户端
+
+```shell
+./build/install/examples/bin/hello-world-server
+./build/install/examples/bin/hello-world-client
+```
+
+添加服务
+
+文件位置：`src/main/proto/helloworld.proto` 
+
+```protobuf
+// The greeting service definition.
+service Greeter {
+  // Sends a greeting
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+  // Sends another greeting
+  // 这是新加的行
+  rpc SayHelloAgain (HelloRequest) returns (HelloReply) {}
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}
+```
+
+然后在之前的文件夹编译新的 java 文件
+
+```shell
+gradle installDist
+```
+
+客户端和服务端文件都在 `src/main/java/io/grpc/examples/helloworld/` 文件夹下
+
+服务端代码修改
+
+```java
+  static class GreeterImpl extends GreeterGrpc.GreeterImplBase {
+
+    @Override
+    public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+      HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+    }
+
+      // 这个是新加的方法，一定要重新编译，让 Interface 有这个方法再去 Override
+    @Override
+    public void sayHelloAgain(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+      HelloReply reply = HelloReply.newBuilder().setMessage("Hello Again " + req.getName()).build();
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+    }
+  }
+```
+
+客户端代码修改
+
+```java
+  public void greet(String name) {
+    logger.info("Will try to greet " + name + " ...");
+    HelloRequest request = HelloRequest.newBuilder().setName(name).build();
+    HelloReply response;
+    try {
+      response = blockingStub.sayHello(request);
+    } catch (StatusRuntimeException e) {
+      logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+      return;
+    }
+    logger.info("Greeting: " + response.getMessage());
+      
+      // 下面是新加的代码
+    try {
+      response = blockingStub.sayHelloAgain(request);
+    } catch (StatusRuntimeException e) {
+      logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+      return;
+    }
+    logger.info("Greeting: " + response.getMessage());
+  }
+```
+
+重新构建加运行
+
+```shell
+gradle installDist
+./build/install/examples/bin/hello-world-server
+./build/install/examples/bin/hello-world-client
+```
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
