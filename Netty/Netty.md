@@ -720,6 +720,31 @@ gradle installDist
 ./build/install/examples/bin/hello-world-client
 ```
 
+## 10. Gradle Wrapper 在 Gradle 中的使用
+
+```shell
+./gradlew # 如果没有 gradle 自动加载 gradle 然后用 gradle 构建
+```
+
+gradle-wrapper.properties
+
+```properties
+distributionBase=  # gradle 目录
+distributionPath=  # gradle 位置
+zipStoreBase=	   # 解压根目录
+zipStorePath=      # 解压根目录
+distributionUrl=   # gradle 下载的 url
+```
+
+gradle 指定 wrapper 版本
+
+```groovy
+task wrapper(type: Wrapper){
+    gradleVersion = '3.4'
+    distributionType = 'all' // all | bin
+}
+```
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
