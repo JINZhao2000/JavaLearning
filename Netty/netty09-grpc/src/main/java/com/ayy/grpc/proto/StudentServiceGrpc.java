@@ -1,4 +1,4 @@
-package com.ayy.grpc;
+package com.ayy.grpc.proto;
 
 import static io.grpc.MethodDescriptor.generateFullMethodName;
 
