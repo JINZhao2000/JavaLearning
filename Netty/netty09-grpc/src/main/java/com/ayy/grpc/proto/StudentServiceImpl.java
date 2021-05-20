@@ -17,4 +17,15 @@ public class StudentServiceImpl extends StudentServiceGrpc.StudentServiceImplBas
         responseObserver.onNext(MyResponse.newBuilder().setRealname("realname").build());
         responseObserver.onCompleted();
     }
+
+    @Override
+    public void getStudentsByAge(StudentRequest request, StreamObserver<StudentResponse> responseObserver) {
+        System.out.println("age : "+request.getAge());
+
+        responseObserver.onNext(StudentResponse.newBuilder().setName("Student1").setAge(20).setCity("City1").build());
+        responseObserver.onNext(StudentResponse.newBuilder().setName("Student2").setAge(30).setCity("City2").build());
+        responseObserver.onNext(StudentResponse.newBuilder().setName("Student3").setAge(40).setCity("City3").build());
+        responseObserver.onNext(StudentResponse.newBuilder().setName("Student4").setAge(50).setCity("City4").build());
+        responseObserver.onCompleted();
+    }
 }
