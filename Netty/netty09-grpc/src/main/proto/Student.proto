@@ -10,6 +10,7 @@ service StudentService {
   rpc GetRealNameByStudentname (MyRequest) returns (MyResponse) {}
   rpc GetStudentsByAge (StudentRequest) returns (stream StudentResponse) {}
   rpc GetStudentsWrapperByAges (stream StudentRequest) returns (StudentResponseList) {}
+  rpc BidirectionalTalk (stream StreamRequest) returns (stream StreamResponse) {}
 }
 
 
@@ -33,4 +34,12 @@ message StudentResponse {
 
 message StudentResponseList {
   repeated StudentResponse studentResponse = 1;
+}
+
+message StreamRequest {
+  string request_info = 1;
+}
+
+message StreamResponse {
+  string response_info = 1;
 }
