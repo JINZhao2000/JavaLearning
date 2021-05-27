@@ -767,6 +767,24 @@ Java 程序通过流来完成输入和输出。流是生产或消费信息的抽
 
 还可以分为节点流和过滤流
 
+## 12. Java NIO 详解
+
+Java NIO 中是面向块（block）或是缓冲区（buffer）编程
+
+三个核心概念
+
+- Selector
+
+- Channel
+
+- Buffer
+
+    Buffer 本身是一块内存，底层实现上是个数组，数据读写都是通过 Buffer 来实现的
+
+
+
+
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
