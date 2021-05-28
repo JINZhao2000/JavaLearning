@@ -781,7 +781,19 @@ Java NIO 中是面向块（block）或是缓冲区（buffer）编程
 
     Buffer 本身是一块内存，底层实现上是个数组，数据读写都是通过 Buffer 来实现的
 
+Buffer 重要状态属性含义与关系
 
+- position
+
+    下一个将要读或者写的索引，永远不会超过 limit
+
+- limit
+
+    指的是第一个不能被读，也不能被写的第一个元素的索引
+
+- capacity
+
+    由 `allocateXXX` 方法确定
 
 
 
