@@ -795,7 +795,19 @@ Buffer 重要状态属性含义与关系
 
     由 `allocateXXX` 方法确定
 
+Buffer 对于每个非布尔类型的基础类型都有其对应的子类
 
+每个子类都有其相对的操作，`read()` 和 `write()` 和绝对操作 `put()` 和 `get()` 
+
+标记和重置 `mark()` 和 `reset()` 
+
+不变性： 0 <= mark <= position <= limit <= capacity
+
+其他操作
+
+- `clear()` 重置然后准备读取，虽然并不会实际擦除数据，但是目的是下次写直接覆盖之前的数据
+- `flip()` 准备写
+- `rewind()` 重新读取内容
 
 ## Netty 大文件传送支持
 
