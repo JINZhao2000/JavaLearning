@@ -809,6 +809,35 @@ Buffer 对于每个非布尔类型的基础类型都有其对应的子类
 - `flip()` 准备写
 - `rewind()` 重新读取内容
 
+文件通道使用
+
+```java
+public static void main(String[] args) throws Exception {
+    FileInputStream inputStream = new FileInputStream("input.txt");
+    FileOutputStream outputStream = new FileOutputStream("output.txt");
+    
+    FileChannel inputChannel = inputStream.getChannel();
+    FileChannel outputChannel = outputStream.getChannel();
+    
+    ByteBuffer buffer = ByteBuffer.allocate(1024);
+    
+    while(true) {
+        buffer.clear();
+        
+        int read = inputChannel.read(buffer);
+        
+        if(-1 == read){
+            break;
+        }
+        buffer.flip();
+        
+        outputChannel.write(buffer);
+    }
+    inputChannel.close();
+    outputChannel.close();
+}
+```
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
