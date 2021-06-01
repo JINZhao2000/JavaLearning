@@ -771,7 +771,7 @@ Java 程序通过流来完成输入和输出。流是生产或消费信息的抽
 
 Java NIO 中是面向块（block）或是缓冲区（buffer）编程
 
-三个核心概念
+### 12.1 三个核心概念
 
 - Selector
 
@@ -781,7 +781,7 @@ Java NIO 中是面向块（block）或是缓冲区（buffer）编程
 
     Buffer 本身是一块内存，底层实现上是个数组，数据读写都是通过 Buffer 来实现的
 
-Buffer 重要状态属性含义与关系
+### 12.2 Buffer 重要状态属性含义与关系
 
 - position
 
@@ -809,7 +809,7 @@ Buffer 对于每个非布尔类型的基础类型都有其对应的子类
 - `flip()` 准备写
 - `rewind()` 重新读取内容
 
-文件通道使用
+### 12.3 文件通道使用
 
 ```java
 public static void main(String[] args) throws Exception {
@@ -838,7 +838,7 @@ public static void main(String[] args) throws Exception {
 }
 ```
 
-Buffer 使用
+### 12.4 Buffer 使用
 
 ```java
 public static void main (String[] args) {
@@ -867,7 +867,7 @@ public static void main (String[] args) {
 }
 ```
 
-只读 Buffer
+### 12.5 只读 Buffer
 
 ```java
 public static void main (String[] args) {
@@ -878,12 +878,43 @@ public static void main (String[] args) {
     }
     
     ByteBuffer readonlyBuffer = buffer.asReadOnlyBuffer();
-    
-    rea
 }
 ```
 
+### 12.6 DirectBuffer - NIO 堆外内存零拷贝
 
+```java
+public static void main(String[] args) throws Exception {
+    FileInputStream inputStream = new FileInputStream("input2.txt");
+    FileOutputStream outputStream = new FileOutputStream("output2.txt");
+    
+    FileChannel inputChannel = inputStream.getChannel();
+    FileChannel outputChannel = outputStream.getChannel();
+    
+    ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+    
+    while(true) {
+        buffer.clear();
+        
+        int read = inputChannel.read(buffer);
+        
+        if(-1 == read){
+            break;
+        }
+        buffer.flip();
+        
+        outputChannel.write(buffer);
+    }
+    inputChannel.close();
+    outputChannel.close();
+}
+```
+
+`allocateDirect()` 方法通过 `Unsafe` 类，在堆外直接开辟一个空间，可以让操作系统直接操作内存，少了一次数据拷贝的过程（这是因为 Java 里 new 出来的对象都是在堆上的，当要进行读写操作时，需要往系统内拷贝一份到内存中再操作）
+
+在堆上的对象要被拷贝一份到系统内存中的原因是：在 GC 的时候，JVM 会对堆的对象进行标记，清理和压缩，在压缩的时候会移动堆内对象地址，如果不拷贝会导致读写的时候会导致 `OutOfMemoryError` ，或者只能停止 GC，但是相对而言，拷贝的速度比 IO 的速度快，所以相对而言，做拷贝性能更高
+
+当 DirectByteBuffer 被回收时，在堆外分配的内存就会通过 JNI 释放，避免了内存泄漏的问题
 
 ## Netty 大文件传送支持
 
