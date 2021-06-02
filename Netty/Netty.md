@@ -916,6 +916,87 @@ public static void main(String[] args) throws Exception {
 
 当 DirectByteBuffer 被回收时，在堆外分配的内存就会通过 JNI 释放，避免了内存泄漏的问题
 
+文件操作堆外内存
+
+```java
+public static void main(String[] args) throws Exception{
+    RandomAccessFile ramdomAccessFile = new RandomAccessFile("file", "rw");
+    FileChannel fileChannel = randomAccessFile.getChannel();
+    
+    MappedByteBuffer mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 5);
+    
+    mappedByteBuffer.put(0, (byte)'a');
+    mappedByteBuffer.put(1, (byte)'b');
+    
+    randomAccessFile.close();
+}
+```
+
+文件操作锁
+
+```java
+public static void main(String[] args) throws Exception {
+    RandomAccessFile ramdomAccessFile = new RandomAccessFile("file", "rw");
+    FileChannel fileChannel = randomAccessFile.getChannel();
+    
+    FileLock fileLock = fileChannel.lock(3, 6, true); // begin, size, shared
+    // fileLock.isValid();
+    // fileLock.isShared();
+    fileLock.release();
+    
+    randomAccessFile.close();
+}
+```
+
+### 12.7 Scattering 和 Gathering
+
+```java
+public static void main(String[] args) {
+    ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+    InetSocketAddress address = new InetSocketAddress(10000);
+    serverSocketChannel.socket().bind(address);
+    
+    int messageLength = 2 + 3 + 4;
+    
+    ByteBuffer[] buffers = new ByteBuffer[3];
+    
+    buffers[0] = ByteBuffer.allocate(2);
+    buffers[1] = ByteBuffer.allocate(3);
+    buffers[2] = ByteBuffer.allocate(4);
+    
+    SocketChannel channel = serverSocketChannel.accept();
+    
+    while(true) {
+        int bytesRead = 0;
+        while(bytesRead < messageLength) {
+            long r = channel.read(buffers);
+            bytesRead += r;
+            
+            System.out.println(bytesRead);
+            
+            Arrays.asList(buffers).stream().map(buffer -> buffer.position + " --- " + buffer.limit).
+                forEach(System.out::println);
+        }
+        Arrays.asList(buffers).forEach(buffer -> buffer.filp());
+		
+        long bytesWritten = 0;
+        while(bytesWritten < messageLength) {
+            long r = socketChannel.write(buffers);
+            bytesWritten += r;
+        }
+        
+        Arrays.asList(buffers).forEach(buffer -> buffer.clear());
+        
+        System.out.println(bytesRead);
+        System.out.println(bytesWritten);
+        System.out.println(messageLength);
+    }
+}
+// 用 telnet 或者 nc 测试
+```
+
+
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
