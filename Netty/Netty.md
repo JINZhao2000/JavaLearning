@@ -995,7 +995,29 @@ public static void main(String[] args) {
 // 用 telnet 或者 nc 测试
 ```
 
+### 12.7 Selector
 
+```java
+public static void main(String[] args) {
+    int[] ports = new int[5];
+    
+    ports[0] = 10001;
+    ports[1] = 10002;
+    ports[2] = 10003;
+    ports[3] = 10004;
+    ports[4] = 10005;
+    
+    Selector selector = Selector.open();
+    
+    
+}
+```
+
+SelectionKeys
+
+keys
+
+selectedKeys
 
 ## Netty 大文件传送支持
 
