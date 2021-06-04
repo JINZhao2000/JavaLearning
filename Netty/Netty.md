@@ -1008,8 +1008,16 @@ public static void main(String[] args) {
     ports[4] = 10005;
     
     Selector selector = Selector.open();
-    
-    
+    // SelectorProvider.provider().openSelector(); - spi
+    // System.out.println(SelectorProvider.provider().getClass()); // class sun.nio.ch.KQueueSelectorProvider
+    // sun.nio.ch.DefaultSelectorProvider.create().getClass(); - class sun.nio.ch.KQueueSelectorProvider
+    for (int i = 0; i < ports.length; ++i) {
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.configureBlocking(false);
+        ServerSocket serverSocket = serverSocketChannel.socket();
+        InetSocketAddress address = new InetSocketAddress(ports[i]);
+        serverSocket.bind(address);
+    }
 }
 ```
 
