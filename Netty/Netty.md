@@ -1017,6 +1017,49 @@ public static void main(String[] args) {
         ServerSocket serverSocket = serverSocketChannel.socket();
         InetSocketAddress address = new InetSocketAddress(ports[i]);
         serverSocket.bind(address);
+        
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT); // selector, ops
+    }
+    
+    while(true) {
+        int number = selector.select();
+        Set<SelectionKey> selectionKeys = selector.selectedKeys();
+        Iterator<SelectionKey> iter = selectionKeys.iterator();
+        
+        while(iter.hasNext()) {
+            SelectionKey selectionKey = iter.next();
+            
+            if(selectionKey.isAcceptable()) {
+                ServerSocketChannel serverSocketChannel = (ServerSocketChannel) seletionKey.channel();
+                SocketChannel socketChannel = serverSocketChannel.accept();
+                socketChannel.configureBlocking(false);
+                
+                socketChannel.register(selectorm SelectionKey.OP_READ);
+                
+                iter.remove();
+            } else if(selectionKey.isReadable()) {
+                SocketChannel socketChannel = (SocketChannel) selectionKey.channel();
+                
+                int bytesRead = 0;
+                
+                while(true) {
+                    ByteBuffer byteBuffer = ByteBuffer.allocate(512);
+                    
+                    byteBuffer.clear();
+                    int read = socketChannel.read(byteBuffer);
+                    if(read <= 0){
+                        break;
+                    }
+                    byteBuffer.flip();
+                    
+                    socketChannel.write(byteBuffer);
+                    
+                    bytesRead += read;
+                }
+                
+                
+            }
+        }
     }
 }
 ```
