@@ -78,14 +78,17 @@ public class NioServer {
                                     ByteBuffer writeBuffer = ByteBuffer.allocate(1024);
 
                                     writeBuffer.put((senderKey + "-" + receivedMessage).getBytes());
+                                    writeBuffer.flip();
+
+                                    socketChannel.write(writeBuffer);
                                 }
                             }
                         }
-                        selectionKeys.clear();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 });
+                selectionKeys.clear();
             } catch (Exception e) {
                 e.printStackTrace();
             }
