@@ -1056,8 +1056,6 @@ public static void main(String[] args) {
                     
                     bytesRead += read;
                 }
-                
-                
             }
         }
     }
@@ -1069,6 +1067,45 @@ SelectionKeys
 keys
 
 selectedKeys
+
+__Java 编解码补充__
+
+```java
+public static void main(String[] args) {
+    String inputFile = "input.txt";
+    String outputFile = "output.txt";
+    
+    RandomAccessFile input = new RandomAccessFile(inputFile, "r");
+    RandomAccessFile output = new RandomAccessFile(outputFile, "rw");
+    
+    long inputLength = new File(inputFile).length();
+    
+    FileChannel inputChannel = input.getChannel();
+    FileChannel outputChannel = output.getChannel();
+    
+    MappedByteBuffer inputData = inputFileChannel.map(FileChannel.MapMode.READ_ONLY, 0, inputLength);
+    
+    Charset charset = Charset.forName("utf-8");
+    CharsetDecoder decoder = charset.newDecoder();
+    CharsetEncoder encoder = charset.newEncoder();
+    
+    CharBuffer buffer = decoder.decode(inputData);
+    ByteBuffer outputBuffer = encoder.encode(charBuffer);
+    
+    outputChannel.write(outputBuffer);
+    
+    input.close();
+    
+}
+```
+
+文件储存的时候就是 utf-8，即使经过 iso-8859-1 编码和解码，再通过 utf-8 去读取文件时，原来的字节还是没有变（因为 iso-8859-1 不会丢失任何一个字节），所以这个时候不会出现乱码
+
+LE BE 小端与大端
+
+文件开头以 `0xFEFF` 为 BE `0xFFFE` 为 LE （Zero Width No-Break Space）
+
+BOM（Byte Order Mark）
 
 ## Netty 大文件传送支持
 
