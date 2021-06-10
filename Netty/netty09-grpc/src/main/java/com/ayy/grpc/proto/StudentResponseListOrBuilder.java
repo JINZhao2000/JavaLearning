@@ -4,30 +4,30 @@
 package com.ayy.grpc.proto;
 
 public interface StudentResponseListOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.ayy.grpc.proto.StudentResponseList)
+    // @@protoc_insertion_point(interface_extends:com.ayy.grpc.StudentResponseList)
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <code>repeated .com.ayy.grpc.proto.StudentResponse studentResponse = 1;</code>
+   * <code>repeated .com.ayy.grpc.StudentResponse studentResponse = 1;</code>
    */
-  java.util.List<StudentResponse>
+  java.util.List<com.ayy.grpc.proto.StudentResponse> 
       getStudentResponseList();
   /**
-   * <code>repeated .com.ayy.grpc.proto.StudentResponse studentResponse = 1;</code>
+   * <code>repeated .com.ayy.grpc.StudentResponse studentResponse = 1;</code>
    */
-  StudentResponse getStudentResponse(int index);
+  com.ayy.grpc.proto.StudentResponse getStudentResponse(int index);
   /**
-   * <code>repeated .com.ayy.grpc.proto.StudentResponse studentResponse = 1;</code>
+   * <code>repeated .com.ayy.grpc.StudentResponse studentResponse = 1;</code>
    */
   int getStudentResponseCount();
   /**
-   * <code>repeated .com.ayy.grpc.proto.StudentResponse studentResponse = 1;</code>
+   * <code>repeated .com.ayy.grpc.StudentResponse studentResponse = 1;</code>
    */
-  java.util.List<? extends StudentResponseOrBuilder>
+  java.util.List<? extends com.ayy.grpc.proto.StudentResponseOrBuilder> 
       getStudentResponseOrBuilderList();
   /**
-   * <code>repeated .com.ayy.grpc.proto.StudentResponse studentResponse = 1;</code>
+   * <code>repeated .com.ayy.grpc.StudentResponse studentResponse = 1;</code>
    */
-  StudentResponseOrBuilder getStudentResponseOrBuilder(
+  com.ayy.grpc.proto.StudentResponseOrBuilder getStudentResponseOrBuilder(
       int index);
 }

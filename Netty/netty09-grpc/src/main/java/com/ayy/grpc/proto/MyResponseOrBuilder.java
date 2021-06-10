@@ -4,14 +4,14 @@
 package com.ayy.grpc.proto;
 
 public interface MyResponseOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.ayy.grpc.proto.MyResponse)
+    // @@protoc_insertion_point(interface_extends:com.ayy.grpc.MyResponse)
     com.google.protobuf.MessageOrBuilder {
 
   /**
    * <code>string realname = 2;</code>
    * @return The realname.
    */
-  String getRealname();
+  java.lang.String getRealname();
   /**
    * <code>string realname = 2;</code>
    * @return The bytes for realname.

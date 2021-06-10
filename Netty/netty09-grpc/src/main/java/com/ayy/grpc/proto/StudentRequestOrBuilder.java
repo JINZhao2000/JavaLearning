@@ -4,7 +4,7 @@
 package com.ayy.grpc.proto;
 
 public interface StudentRequestOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.ayy.grpc.proto.StudentRequest)
+    // @@protoc_insertion_point(interface_extends:com.ayy.grpc.StudentRequest)
     com.google.protobuf.MessageOrBuilder {
 
   /**

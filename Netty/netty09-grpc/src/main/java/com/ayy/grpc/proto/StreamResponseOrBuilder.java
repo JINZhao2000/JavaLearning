@@ -4,14 +4,14 @@
 package com.ayy.grpc.proto;
 
 public interface StreamResponseOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.ayy.grpc.proto.StreamResponse)
+    // @@protoc_insertion_point(interface_extends:com.ayy.grpc.StreamResponse)
     com.google.protobuf.MessageOrBuilder {
 
   /**
    * <code>string response_info = 1;</code>
    * @return The responseInfo.
    */
-  String getResponseInfo();
+  java.lang.String getResponseInfo();
   /**
    * <code>string response_info = 1;</code>
    * @return The bytes for responseInfo.

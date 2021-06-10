@@ -14,29 +14,29 @@ public final class StudentServiceGrpc {
   public static final String SERVICE_NAME = "com.ayy.grpc.StudentService";
 
   // Static method descriptors that strictly reflect the proto.
-  private static volatile io.grpc.MethodDescriptor<MyRequest,
-      MyResponse> getGetRealNameByStudentnameMethod;
+  private static volatile io.grpc.MethodDescriptor<com.ayy.grpc.proto.MyRequest,
+      com.ayy.grpc.proto.MyResponse> getGetRealNameByStudentnameMethod;
 
   @io.grpc.stub.annotations.RpcMethod(
       fullMethodName = SERVICE_NAME + '/' + "GetRealNameByStudentname",
-      requestType = MyRequest.class,
-      responseType = MyResponse.class,
+      requestType = com.ayy.grpc.proto.MyRequest.class,
+      responseType = com.ayy.grpc.proto.MyResponse.class,
       methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
-  public static io.grpc.MethodDescriptor<MyRequest,
-      MyResponse> getGetRealNameByStudentnameMethod() {
-    io.grpc.MethodDescriptor<MyRequest, MyResponse> getGetRealNameByStudentnameMethod;
+  public static io.grpc.MethodDescriptor<com.ayy.grpc.proto.MyRequest,
+      com.ayy.grpc.proto.MyResponse> getGetRealNameByStudentnameMethod() {
+    io.grpc.MethodDescriptor<com.ayy.grpc.proto.MyRequest, com.ayy.grpc.proto.MyResponse> getGetRealNameByStudentnameMethod;
     if ((getGetRealNameByStudentnameMethod = StudentServiceGrpc.getGetRealNameByStudentnameMethod) == null) {
       synchronized (StudentServiceGrpc.class) {
         if ((getGetRealNameByStudentnameMethod = StudentServiceGrpc.getGetRealNameByStudentnameMethod) == null) {
           StudentServiceGrpc.getGetRealNameByStudentnameMethod = getGetRealNameByStudentnameMethod =
-              io.grpc.MethodDescriptor.<MyRequest, MyResponse>newBuilder()
+              io.grpc.MethodDescriptor.<com.ayy.grpc.proto.MyRequest, com.ayy.grpc.proto.MyResponse>newBuilder()
               .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
               .setFullMethodName(generateFullMethodName(SERVICE_NAME, "GetRealNameByStudentname"))
               .setSampledToLocalTracing(true)
               .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  MyRequest.getDefaultInstance()))
+                  com.ayy.grpc.proto.MyRequest.getDefaultInstance()))
               .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  MyResponse.getDefaultInstance()))
+                  com.ayy.grpc.proto.MyResponse.getDefaultInstance()))
               .setSchemaDescriptor(new StudentServiceMethodDescriptorSupplier("GetRealNameByStudentname"))
               .build();
         }
@@ -45,29 +45,29 @@ public final class StudentServiceGrpc {
     return getGetRealNameByStudentnameMethod;
   }
 
-  private static volatile io.grpc.MethodDescriptor<StudentRequest,
-      StudentResponse> getGetStudentsByAgeMethod;
+  private static volatile io.grpc.MethodDescriptor<com.ayy.grpc.proto.StudentRequest,
+      com.ayy.grpc.proto.StudentResponse> getGetStudentsByAgeMethod;
 
   @io.grpc.stub.annotations.RpcMethod(
       fullMethodName = SERVICE_NAME + '/' + "GetStudentsByAge",
-      requestType = StudentRequest.class,
-      responseType = StudentResponse.class,
+      requestType = com.ayy.grpc.proto.StudentRequest.class,
+      responseType = com.ayy.grpc.proto.StudentResponse.class,
       methodType = io.grpc.MethodDescriptor.MethodType.SERVER_STREAMING)
-  public static io.grpc.MethodDescriptor<StudentRequest,
-      StudentResponse> getGetStudentsByAgeMethod() {
-    io.grpc.MethodDescriptor<StudentRequest, StudentResponse> getGetStudentsByAgeMethod;
+  public static io.grpc.MethodDescriptor<com.ayy.grpc.proto.StudentRequest,
+      com.ayy.grpc.proto.StudentResponse> getGetStudentsByAgeMethod() {
+    io.grpc.MethodDescriptor<com.ayy.grpc.proto.StudentRequest, com.ayy.grpc.proto.StudentResponse> getGetStudentsByAgeMethod;
     if ((getGetStudentsByAgeMethod = StudentServiceGrpc.getGetStudentsByAgeMethod) == null) {
       synchronized (StudentServiceGrpc.class) {
         if ((getGetStudentsByAgeMethod = StudentServiceGrpc.getGetStudentsByAgeMethod) == null) {
           StudentServiceGrpc.getGetStudentsByAgeMethod = getGetStudentsByAgeMethod =
-              io.grpc.MethodDescriptor.<StudentRequest, StudentResponse>newBuilder()
+              io.grpc.MethodDescriptor.<com.ayy.grpc.proto.StudentRequest, com.ayy.grpc.proto.StudentResponse>newBuilder()
               .setType(io.grpc.MethodDescriptor.MethodType.SERVER_STREAMING)
               .setFullMethodName(generateFullMethodName(SERVICE_NAME, "GetStudentsByAge"))
               .setSampledToLocalTracing(true)
               .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  StudentRequest.getDefaultInstance()))
+                  com.ayy.grpc.proto.StudentRequest.getDefaultInstance()))
               .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  StudentResponse.getDefaultInstance()))
+                  com.ayy.grpc.proto.StudentResponse.getDefaultInstance()))
               .setSchemaDescriptor(new StudentServiceMethodDescriptorSupplier("GetStudentsByAge"))
               .build();
         }
@@ -76,29 +76,29 @@ public final class StudentServiceGrpc {
     return getGetStudentsByAgeMethod;
   }
 
-  private static volatile io.grpc.MethodDescriptor<StudentRequest,
-      StudentResponseList> getGetStudentsWrapperByAgesMethod;
+  private static volatile io.grpc.MethodDescriptor<com.ayy.grpc.proto.StudentRequest,
+      com.ayy.grpc.proto.StudentResponseList> getGetStudentsWrapperByAgesMethod;
 
   @io.grpc.stub.annotations.RpcMethod(
       fullMethodName = SERVICE_NAME + '/' + "GetStudentsWrapperByAges",
-      requestType = StudentRequest.class,
-      responseType = StudentResponseList.class,
+      requestType = com.ayy.grpc.proto.StudentRequest.class,
+      responseType = com.ayy.grpc.proto.StudentResponseList.class,
       methodType = io.grpc.MethodDescriptor.MethodType.CLIENT_STREAMING)
-  public static io.grpc.MethodDescriptor<StudentRequest,
-      StudentResponseList> getGetStudentsWrapperByAgesMethod() {
-    io.grpc.MethodDescriptor<StudentRequest, StudentResponseList> getGetStudentsWrapperByAgesMethod;
+  public static io.grpc.MethodDescriptor<com.ayy.grpc.proto.StudentRequest,
+      com.ayy.grpc.proto.StudentResponseList> getGetStudentsWrapperByAgesMethod() {
+    io.grpc.MethodDescriptor<com.ayy.grpc.proto.StudentRequest, com.ayy.grpc.proto.StudentResponseList> getGetStudentsWrapperByAgesMethod;
     if ((getGetStudentsWrapperByAgesMethod = StudentServiceGrpc.getGetStudentsWrapperByAgesMethod) == null) {
       synchronized (StudentServiceGrpc.class) {
         if ((getGetStudentsWrapperByAgesMethod = StudentServiceGrpc.getGetStudentsWrapperByAgesMethod) == null) {
           StudentServiceGrpc.getGetStudentsWrapperByAgesMethod = getGetStudentsWrapperByAgesMethod =
-              io.grpc.MethodDescriptor.<StudentRequest, StudentResponseList>newBuilder()
+              io.grpc.MethodDescriptor.<com.ayy.grpc.proto.StudentRequest, com.ayy.grpc.proto.StudentResponseList>newBuilder()
               .setType(io.grpc.MethodDescriptor.MethodType.CLIENT_STREAMING)
               .setFullMethodName(generateFullMethodName(SERVICE_NAME, "GetStudentsWrapperByAges"))
               .setSampledToLocalTracing(true)
               .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  StudentRequest.getDefaultInstance()))
+                  com.ayy.grpc.proto.StudentRequest.getDefaultInstance()))
               .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  StudentResponseList.getDefaultInstance()))
+                  com.ayy.grpc.proto.StudentResponseList.getDefaultInstance()))
               .setSchemaDescriptor(new StudentServiceMethodDescriptorSupplier("GetStudentsWrapperByAges"))
               .build();
         }
@@ -107,29 +107,29 @@ public final class StudentServiceGrpc {
     return getGetStudentsWrapperByAgesMethod;
   }
 
-  private static volatile io.grpc.MethodDescriptor<StreamRequest,
-      StreamResponse> getBidirectionalTalkMethod;
+  private static volatile io.grpc.MethodDescriptor<com.ayy.grpc.proto.StreamRequest,
+      com.ayy.grpc.proto.StreamResponse> getBidirectionalTalkMethod;
 
   @io.grpc.stub.annotations.RpcMethod(
       fullMethodName = SERVICE_NAME + '/' + "BidirectionalTalk",
-      requestType = StreamRequest.class,
-      responseType = StreamResponse.class,
+      requestType = com.ayy.grpc.proto.StreamRequest.class,
+      responseType = com.ayy.grpc.proto.StreamResponse.class,
       methodType = io.grpc.MethodDescriptor.MethodType.BIDI_STREAMING)
-  public static io.grpc.MethodDescriptor<StreamRequest,
-      StreamResponse> getBidirectionalTalkMethod() {
-    io.grpc.MethodDescriptor<StreamRequest, StreamResponse> getBidirectionalTalkMethod;
+  public static io.grpc.MethodDescriptor<com.ayy.grpc.proto.StreamRequest,
+      com.ayy.grpc.proto.StreamResponse> getBidirectionalTalkMethod() {
+    io.grpc.MethodDescriptor<com.ayy.grpc.proto.StreamRequest, com.ayy.grpc.proto.StreamResponse> getBidirectionalTalkMethod;
     if ((getBidirectionalTalkMethod = StudentServiceGrpc.getBidirectionalTalkMethod) == null) {
       synchronized (StudentServiceGrpc.class) {
         if ((getBidirectionalTalkMethod = StudentServiceGrpc.getBidirectionalTalkMethod) == null) {
           StudentServiceGrpc.getBidirectionalTalkMethod = getBidirectionalTalkMethod =
-              io.grpc.MethodDescriptor.<StreamRequest, StreamResponse>newBuilder()
+              io.grpc.MethodDescriptor.<com.ayy.grpc.proto.StreamRequest, com.ayy.grpc.proto.StreamResponse>newBuilder()
               .setType(io.grpc.MethodDescriptor.MethodType.BIDI_STREAMING)
               .setFullMethodName(generateFullMethodName(SERVICE_NAME, "BidirectionalTalk"))
               .setSampledToLocalTracing(true)
               .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  StreamRequest.getDefaultInstance()))
+                  com.ayy.grpc.proto.StreamRequest.getDefaultInstance()))
               .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
-                  StreamResponse.getDefaultInstance()))
+                  com.ayy.grpc.proto.StreamResponse.getDefaultInstance()))
               .setSchemaDescriptor(new StudentServiceMethodDescriptorSupplier("BidirectionalTalk"))
               .build();
         }
@@ -144,7 +144,7 @@ public final class StudentServiceGrpc {
   public static StudentServiceStub newStub(io.grpc.Channel channel) {
     io.grpc.stub.AbstractStub.StubFactory<StudentServiceStub> factory =
       new io.grpc.stub.AbstractStub.StubFactory<StudentServiceStub>() {
-        @Override
+        @java.lang.Override
         public StudentServiceStub newStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
           return new StudentServiceStub(channel, callOptions);
         }
@@ -159,7 +159,7 @@ public final class StudentServiceGrpc {
       io.grpc.Channel channel) {
     io.grpc.stub.AbstractStub.StubFactory<StudentServiceBlockingStub> factory =
       new io.grpc.stub.AbstractStub.StubFactory<StudentServiceBlockingStub>() {
-        @Override
+        @java.lang.Override
         public StudentServiceBlockingStub newStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
           return new StudentServiceBlockingStub(channel, callOptions);
         }
@@ -174,7 +174,7 @@ public final class StudentServiceGrpc {
       io.grpc.Channel channel) {
     io.grpc.stub.AbstractStub.StubFactory<StudentServiceFutureStub> factory =
       new io.grpc.stub.AbstractStub.StubFactory<StudentServiceFutureStub>() {
-        @Override
+        @java.lang.Override
         public StudentServiceFutureStub newStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
           return new StudentServiceFutureStub(channel, callOptions);
         }
@@ -188,61 +188,61 @@ public final class StudentServiceGrpc {
 
     /**
      */
-    public void getRealNameByStudentname(MyRequest request,
-                                         io.grpc.stub.StreamObserver<MyResponse> responseObserver) {
+    public void getRealNameByStudentname(com.ayy.grpc.proto.MyRequest request,
+        io.grpc.stub.StreamObserver<com.ayy.grpc.proto.MyResponse> responseObserver) {
       io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getGetRealNameByStudentnameMethod(), responseObserver);
     }
 
     /**
      */
-    public void getStudentsByAge(StudentRequest request,
-                                 io.grpc.stub.StreamObserver<StudentResponse> responseObserver) {
+    public void getStudentsByAge(com.ayy.grpc.proto.StudentRequest request,
+        io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StudentResponse> responseObserver) {
       io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getGetStudentsByAgeMethod(), responseObserver);
     }
 
     /**
      */
-    public io.grpc.stub.StreamObserver<StudentRequest> getStudentsWrapperByAges(
-        io.grpc.stub.StreamObserver<StudentResponseList> responseObserver) {
+    public io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StudentRequest> getStudentsWrapperByAges(
+        io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StudentResponseList> responseObserver) {
       return io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall(getGetStudentsWrapperByAgesMethod(), responseObserver);
     }
 
     /**
      */
-    public io.grpc.stub.StreamObserver<StreamRequest> bidirectionalTalk(
-        io.grpc.stub.StreamObserver<StreamResponse> responseObserver) {
+    public io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StreamRequest> bidirectionalTalk(
+        io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StreamResponse> responseObserver) {
       return io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall(getBidirectionalTalkMethod(), responseObserver);
     }
 
-    @Override public final io.grpc.ServerServiceDefinition bindService() {
+    @java.lang.Override public final io.grpc.ServerServiceDefinition bindService() {
       return io.grpc.ServerServiceDefinition.builder(getServiceDescriptor())
           .addMethod(
             getGetRealNameByStudentnameMethod(),
             io.grpc.stub.ServerCalls.asyncUnaryCall(
               new MethodHandlers<
-                MyRequest,
-                MyResponse>(
+                com.ayy.grpc.proto.MyRequest,
+                com.ayy.grpc.proto.MyResponse>(
                   this, METHODID_GET_REAL_NAME_BY_STUDENTNAME)))
           .addMethod(
             getGetStudentsByAgeMethod(),
             io.grpc.stub.ServerCalls.asyncServerStreamingCall(
               new MethodHandlers<
-                StudentRequest,
-                StudentResponse>(
+                com.ayy.grpc.proto.StudentRequest,
+                com.ayy.grpc.proto.StudentResponse>(
                   this, METHODID_GET_STUDENTS_BY_AGE)))
           .addMethod(
             getGetStudentsWrapperByAgesMethod(),
             io.grpc.stub.ServerCalls.asyncClientStreamingCall(
               new MethodHandlers<
-                StudentRequest,
-                StudentResponseList>(
+                com.ayy.grpc.proto.StudentRequest,
+                com.ayy.grpc.proto.StudentResponseList>(
                   this, METHODID_GET_STUDENTS_WRAPPER_BY_AGES)))
           .addMethod(
             getBidirectionalTalkMethod(),
             io.grpc.stub.ServerCalls.asyncBidiStreamingCall(
               new MethodHandlers<
-                StreamRequest,
-                StreamResponse>(
+                com.ayy.grpc.proto.StreamRequest,
+                com.ayy.grpc.proto.StreamResponse>(
                   this, METHODID_BIDIRECTIONAL_TALK)))
           .build();
     }
@@ -256,7 +256,7 @@ public final class StudentServiceGrpc {
       super(channel, callOptions);
     }
 
-    @Override
+    @java.lang.Override
     protected StudentServiceStub build(
         io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
       return new StudentServiceStub(channel, callOptions);
@@ -264,32 +264,32 @@ public final class StudentServiceGrpc {
 
     /**
      */
-    public void getRealNameByStudentname(MyRequest request,
-                                         io.grpc.stub.StreamObserver<MyResponse> responseObserver) {
+    public void getRealNameByStudentname(com.ayy.grpc.proto.MyRequest request,
+        io.grpc.stub.StreamObserver<com.ayy.grpc.proto.MyResponse> responseObserver) {
       io.grpc.stub.ClientCalls.asyncUnaryCall(
           getChannel().newCall(getGetRealNameByStudentnameMethod(), getCallOptions()), request, responseObserver);
     }
 
     /**
      */
-    public void getStudentsByAge(StudentRequest request,
-                                 io.grpc.stub.StreamObserver<StudentResponse> responseObserver) {
+    public void getStudentsByAge(com.ayy.grpc.proto.StudentRequest request,
+        io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StudentResponse> responseObserver) {
       io.grpc.stub.ClientCalls.asyncServerStreamingCall(
           getChannel().newCall(getGetStudentsByAgeMethod(), getCallOptions()), request, responseObserver);
     }
 
     /**
      */
-    public io.grpc.stub.StreamObserver<StudentRequest> getStudentsWrapperByAges(
-        io.grpc.stub.StreamObserver<StudentResponseList> responseObserver) {
+    public io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StudentRequest> getStudentsWrapperByAges(
+        io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StudentResponseList> responseObserver) {
       return io.grpc.stub.ClientCalls.asyncClientStreamingCall(
           getChannel().newCall(getGetStudentsWrapperByAgesMethod(), getCallOptions()), responseObserver);
     }
 
     /**
      */
-    public io.grpc.stub.StreamObserver<StreamRequest> bidirectionalTalk(
-        io.grpc.stub.StreamObserver<StreamResponse> responseObserver) {
+    public io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StreamRequest> bidirectionalTalk(
+        io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StreamResponse> responseObserver) {
       return io.grpc.stub.ClientCalls.asyncBidiStreamingCall(
           getChannel().newCall(getBidirectionalTalkMethod(), getCallOptions()), responseObserver);
     }
@@ -303,7 +303,7 @@ public final class StudentServiceGrpc {
       super(channel, callOptions);
     }
 
-    @Override
+    @java.lang.Override
     protected StudentServiceBlockingStub build(
         io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
       return new StudentServiceBlockingStub(channel, callOptions);
@@ -311,15 +311,15 @@ public final class StudentServiceGrpc {
 
     /**
      */
-    public MyResponse getRealNameByStudentname(MyRequest request) {
+    public com.ayy.grpc.proto.MyResponse getRealNameByStudentname(com.ayy.grpc.proto.MyRequest request) {
       return io.grpc.stub.ClientCalls.blockingUnaryCall(
           getChannel(), getGetRealNameByStudentnameMethod(), getCallOptions(), request);
     }
 
     /**
      */
-    public java.util.Iterator<StudentResponse> getStudentsByAge(
-        StudentRequest request) {
+    public java.util.Iterator<com.ayy.grpc.proto.StudentResponse> getStudentsByAge(
+        com.ayy.grpc.proto.StudentRequest request) {
       return io.grpc.stub.ClientCalls.blockingServerStreamingCall(
           getChannel(), getGetStudentsByAgeMethod(), getCallOptions(), request);
     }
@@ -333,7 +333,7 @@ public final class StudentServiceGrpc {
       super(channel, callOptions);
     }
 
-    @Override
+    @java.lang.Override
     protected StudentServiceFutureStub build(
         io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
       return new StudentServiceFutureStub(channel, callOptions);
@@ -341,8 +341,8 @@ public final class StudentServiceGrpc {
 
     /**
      */
-    public com.google.common.util.concurrent.ListenableFuture<MyResponse> getRealNameByStudentname(
-        MyRequest request) {
+    public com.google.common.util.concurrent.ListenableFuture<com.ayy.grpc.proto.MyResponse> getRealNameByStudentname(
+        com.ayy.grpc.proto.MyRequest request) {
       return io.grpc.stub.ClientCalls.futureUnaryCall(
           getChannel().newCall(getGetRealNameByStudentnameMethod(), getCallOptions()), request);
     }
@@ -366,34 +366,34 @@ public final class StudentServiceGrpc {
       this.methodId = methodId;
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
+    @java.lang.Override
+    @java.lang.SuppressWarnings("unchecked")
     public void invoke(Req request, io.grpc.stub.StreamObserver<Resp> responseObserver) {
       switch (methodId) {
         case METHODID_GET_REAL_NAME_BY_STUDENTNAME:
-          serviceImpl.getRealNameByStudentname((MyRequest) request,
-              (io.grpc.stub.StreamObserver<MyResponse>) responseObserver);
+          serviceImpl.getRealNameByStudentname((com.ayy.grpc.proto.MyRequest) request,
+              (io.grpc.stub.StreamObserver<com.ayy.grpc.proto.MyResponse>) responseObserver);
           break;
         case METHODID_GET_STUDENTS_BY_AGE:
-          serviceImpl.getStudentsByAge((StudentRequest) request,
-              (io.grpc.stub.StreamObserver<StudentResponse>) responseObserver);
+          serviceImpl.getStudentsByAge((com.ayy.grpc.proto.StudentRequest) request,
+              (io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StudentResponse>) responseObserver);
           break;
         default:
           throw new AssertionError();
       }
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
+    @java.lang.Override
+    @java.lang.SuppressWarnings("unchecked")
     public io.grpc.stub.StreamObserver<Req> invoke(
         io.grpc.stub.StreamObserver<Resp> responseObserver) {
       switch (methodId) {
         case METHODID_GET_STUDENTS_WRAPPER_BY_AGES:
           return (io.grpc.stub.StreamObserver<Req>) serviceImpl.getStudentsWrapperByAges(
-              (io.grpc.stub.StreamObserver<StudentResponseList>) responseObserver);
+              (io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StudentResponseList>) responseObserver);
         case METHODID_BIDIRECTIONAL_TALK:
           return (io.grpc.stub.StreamObserver<Req>) serviceImpl.bidirectionalTalk(
-              (io.grpc.stub.StreamObserver<StreamResponse>) responseObserver);
+              (io.grpc.stub.StreamObserver<com.ayy.grpc.proto.StreamResponse>) responseObserver);
         default:
           throw new AssertionError();
       }
@@ -404,12 +404,12 @@ public final class StudentServiceGrpc {
       implements io.grpc.protobuf.ProtoFileDescriptorSupplier, io.grpc.protobuf.ProtoServiceDescriptorSupplier {
     StudentServiceBaseDescriptorSupplier() {}
 
-    @Override
+    @java.lang.Override
     public com.google.protobuf.Descriptors.FileDescriptor getFileDescriptor() {
-      return StudentInfo.getDescriptor();
+      return com.ayy.grpc.proto.StudentInfo.getDescriptor();
     }
 
-    @Override
+    @java.lang.Override
     public com.google.protobuf.Descriptors.ServiceDescriptor getServiceDescriptor() {
       return getFileDescriptor().findServiceByName("StudentService");
     }
@@ -429,7 +429,7 @@ public final class StudentServiceGrpc {
       this.methodName = methodName;
     }
 
-    @Override
+    @java.lang.Override
     public com.google.protobuf.Descriptors.MethodDescriptor getMethodDescriptor() {
       return getServiceDescriptor().findMethodByName(methodName);
     }

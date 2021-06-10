@@ -4,14 +4,14 @@
 package com.ayy.grpc.proto;
 
 public interface MyRequestOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.ayy.grpc.proto.MyRequest)
+    // @@protoc_insertion_point(interface_extends:com.ayy.grpc.MyRequest)
     com.google.protobuf.MessageOrBuilder {
 
   /**
    * <code>string studentname = 1;</code>
    * @return The studentname.
    */
-  String getStudentname();
+  java.lang.String getStudentname();
   /**
    * <code>string studentname = 1;</code>
    * @return The bytes for studentname.
