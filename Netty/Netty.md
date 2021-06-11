@@ -1107,6 +1107,62 @@ LE BE 小端与大端
 
 BOM（Byte Order Mark）
 
+### 12.8 Zero Copy
+
+NIO 零拷贝
+
+原先的拷贝式操作
+
+User Space                                  Kernel Space                                                               Hardware
+
+​         |          -- read() syscall ->            \|                                                                                   \|
+
+​         |                                                     \|                            -- ask for data ->                          \| 
+
+​         |                                                     \|         <- data to kernel buffer through DMA --    \| 
+
+​         | <- copy data to user buffer     \|                                                                                   \| 
+
+​         | --------                                           \|                                                                                   \| 
+
+​         |         \| code logic continues     \|                                                                                   \| 
+
+​         | <------                                           \|                                                                                   \| 
+
+​         |                                                      \|                                                                                   \| 
+
+​         |   write() syscall, copies data to\|                                                                                   \| 
+
+​         |      -- kernel socket buffer ->    \|                                                                                   \| 
+
+​         |                                                      \|                             -- write data ->                            \| 
+
+​         |                                                      \|                             <- done --                                     \| 
+
+​         |       <- write() returns --              \|                                                                                   \| 
+
+ 零拷贝操作
+
+User Space                                  Kernel Space                                                               Hardware
+
+​         |          -- sendfile() syscall ->      \|                                                                                   \|
+
+​         |                                                     \|                            -- ask for data ->                          \| 
+
+​         |                                                     \|         <- data to kernel buffer through DMA --    \| 
+
+​         |                                                      \| --------                                                                       \| 
+
+​         |                                                      \|          \| code logic continues                                 \| 
+
+​         |                                                      \| <------                                                                        \|  
+
+​         |                                                      \|                             -- write data ->                            \| 
+
+​         |                                                      \|                             <- done --                                     \| 
+
+​         |       <- sendfile() returns --        \|                                                                                   \| 
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
