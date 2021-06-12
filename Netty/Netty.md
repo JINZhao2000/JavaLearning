@@ -1163,6 +1163,22 @@ User Space                                  Kernel Space                        
 
 ​         |       <- sendfile() returns --        \|                                                                                   \| 
 
+如果支持 scatter / gather
+
+User Space                                  Kernel Space                                                                                        Hardware
+
+​         |          -- sendfile() syscall ->      \|                                                                                                           \|
+
+​         |                                                     \|                                          -- ask for data ->                                    \| 
+
+​         |                                                     \|                   <- data to kernel buffer through DMA --                  \| 
+
+​         |                                                     \|<- reads data from kernel through scatter / gather DMA --    \| 
+
+​         |       <- sendfile() returns --       \|                                                                                                           \| 
+
+
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
