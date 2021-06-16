@@ -1274,6 +1274,45 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
 }
 ```
 
+### 13.2 Executor
+
+DefaultThreadFactory
+
+```java
+public class DefaultThreadFactory implements ThreadFactory {
+    public DefaultThreadFactory(String poolName, boolean daemon, int priority, ThreadGroup threadGroup) {
+        ObjectUtil.checkNotNull(poolName, "poolName");
+
+        if (priority < Thread.MIN_PRIORITY || priority > Thread.MAX_PRIORITY) {
+            throw new IllegalArgumentException(
+                    "priority: " + priority + " (expected: Thread.MIN_PRIORITY <= priority <= Thread.MAX_PRIORITY)");
+        }
+
+        prefix = poolName + '-' + poolId.incrementAndGet() + '-';
+        this.daemon = daemon;
+        this.priority = priority;
+        this.threadGroup = threadGroup;
+    }
+}
+```
+
+ThreadPerTaskExecutor
+
+```java
+public final class ThreadPerTaskExecutor implements Executor {
+    private final ThreadFactory threadFactory;
+
+    public ThreadPerTaskExecutor(ThreadFactory threadFactory) {
+        this.threadFactory = ObjectUtil.checkNotNull(threadFactory, "threadFactory");
+    }
+
+    @Override
+    public void execute(Runnable command) {
+        threadFactory.newThread(command).start();
+    }
+}
+```
+
 
 
 ## Netty 大文件传送支持
