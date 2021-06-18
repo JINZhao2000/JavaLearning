@@ -1442,6 +1442,41 @@ public class ReflectiveChannelFactory<T extends Channel> implements ChannelFacto
 }
 ```
 
+### 13.4 Netty 提供的 Future 与 ChannelFuture
+
+java.util.concurrent.Future
+
+一个 Future 代表的是一个异步计算的结果
+
+io.netty .... Future
+
+继承了 jdk 1.5 的 Future 并且提供了增加 Listeners 的选项（为了把握调用 `get()` ）的时机
+
+提供了 `isSuccess()` 方法，保证 `isDone()` 并且没有被取消，取消，失败，成功都是完成状态
+
+ChannelFuture
+
+```java
+/*
+                                        +---------------------------+
+                                        | Completed successfully    |
+                                        +---------------------------+
+                                   +---->      isDone() = true      |
+   +--------------------------+    |    |   isSuccess() = true      |
+   |        Uncompleted       |    |    +===========================+
+   +--------------------------+    |    | Completed with failure    |
+   |      isDone() = false    |    |    +---------------------------+
+   |   isSuccess() = false    |----+---->      isDone() = true      |
+   | isCancelled() = false    |    |    |       cause() = non-null  |
+   |       cause() = null     |    |    +===========================+
+   +--------------------------+    |    | Completed by cancellation |
+                                   |    +---------------------------+
+                                   +---->      isDone() = true      |
+                                        | isCancelled() = true      |
+                                        +---------------------------+
+*/
+```
+
 
 
 ## Netty 大文件传送支持
