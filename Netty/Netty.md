@@ -1477,6 +1477,76 @@ ChannelFuture
 */
 ```
 
+ChannelHandler
+
+ChannelHandler 会被 IO 线程调用，所以不要在 ChannelHandler 里面调用 `await()` 方法，该方法会阻塞 IO 线程，因为 IO 线程里用 while 循环，会造成死循环。为了避免该情况发生，当调用 `await()` 方法时会抛出 `BlovkingOperationException` 异常
+
+改超时与 IO 超时不同，IO 超时会在 ChannelFuture 标志为失败
+
+### 13.5 服务器地址绑定
+
+Options
+
+```java
+public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C extends Channel> implements Cloneable {
+    AbstractBootstrap(AbstractBootstrap<B, C> bootstrap) {
+        group = bootstrap.group;
+        channelFactory = bootstrap.channelFactory;
+        handler = bootstrap.handler;
+        localAddress = bootstrap.localAddress;
+        synchronized (bootstrap.options) {
+            options.putAll(bootstrap.options);
+        }
+        attrs.putAll(bootstrap.attrs);
+    }
+    
+    static void setChannelOptions(
+            Channel channel, Map.Entry<ChannelOption<?>, Object>[] options, InternalLogger logger) {
+        for (Map.Entry<ChannelOption<?>, Object> e: options) {
+            setChannelOption(channel, e.getKey(), e.getValue(), logger);
+        }
+    }
+}
+```
+
+
+
+```java
+public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerChannel> {
+    @Override
+    void init(Channel channel) {
+        setChannelOptions(channel, newOptionsArray(), logger);
+        setAttributes(channel, newAttributesArray());
+
+        ChannelPipeline p = channel.pipeline();
+
+        final EventLoopGroup currentChildGroup = childGroup;
+        final ChannelHandler currentChildHandler = childHandler;
+        final Entry<ChannelOption<?>, Object>[] currentChildOptions = newOptionsArray(childOptions);
+        final Entry<AttributeKey<?>, Object>[] currentChildAttrs = newAttributesArray(childAttrs);
+
+        p.addLast(new ChannelInitializer<Channel>() {
+            @Override
+            public void initChannel(final Channel ch) {
+                final ChannelPipeline pipeline = ch.pipeline();
+                ChannelHandler handler = config.handler();
+                if (handler != null) {
+                    pipeline.addLast(handler);
+                }
+
+                ch.eventLoop().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        pipeline.addLast(new ServerBootstrapAcceptor(
+                                ch, currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs));
+                    }
+                });
+            }
+        });
+    }
+}
+```
+
 
 
 ## Netty 大文件传送支持
