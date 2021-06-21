@@ -1563,6 +1563,10 @@ Reactor 通过分发恰当的处理器来处理 IO 线程
 
 通过将处理器绑定到事件上来管理
 
+![reactors](images/reactors.png) 
+
+相对于 Netty，mainReactor 类比 BossGroup (ParentGroup)，可以只有一个，SubReactor 相当于 WorkGroup (ChildGroup) 
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
