@@ -1567,6 +1567,23 @@ Reactor 通过分发恰当的处理器来处理 IO 线程
 
 相对于 Netty，mainReactor 类比 BossGroup (ParentGroup)，可以只有一个，SubReactor 相当于 WorkGroup (ChildGroup) 
 
+Reactor 模式连接的执行过程
+
+1. Acceptor   register_handler()    Initiation Dispatcher
+2. Initiation Dispatcher  handler_events()
+3. Initiation Dispatcher  select()
+4. Client  connect()  Initiation Dispatcher
+5. Initiation Dispatcher  handle_event()  Acceptor
+6. Acceptor  accept(), create()  Handler
+7. Handler  register_handler()  Initiation Dispatcher
+
+Reactor 模式发送数据的执行过程
+
+1. Client A  send()  Initiation Dispatcher
+2. Initiation Dispatcher handle_event()  Handler for Client A
+3. Handler for Client A  recv(), write() Handler for Client B (Loop)
+4. Handler for Client A  return()  Initiation Dispatcher
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
