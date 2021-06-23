@@ -1584,6 +1584,163 @@ Reactor 模式发送数据的执行过程
 3. Handler for Client A  recv(), write() Handler for Client B (Loop)
 4. Handler for Client A  return()  Initiation Dispatcher
 
+## 14. Netty 自适应缓冲区分配策略与对外内存的创建方式
+
+DefaultChannelConfig
+
+```java
+public class DefaultChannelConfig implements ChannelConfig {
+    public DefaultChannelConfig(Channel channel) {
+        // 根据前一次读取大小来调节缓冲区大小
+        this(channel, new AdaptiveRecvByteBufAllocator());
+    }
+
+    protected DefaultChannelConfig(Channel channel, RecvByteBufAllocator allocator) {
+        setRecvByteBufAllocator(allocator, channel.metadata());
+        this.channel = channel;
+    }
+}
+```
+
+AdaptiveRecvByteBufAllocator
+
+```java
+public class AdaptiveRecvByteBufAllocator extends DefaultMaxMessagesRecvByteBufAllocator {
+
+    static final int DEFAULT_MINIMUM = 64;
+    // Use an initial value that is bigger than the common MTU of 1500
+    static final int DEFAULT_INITIAL = 2048;
+    static final int DEFAULT_MAXIMUM = 65536;
+    
+    static {
+        List<Integer> sizeTable = new ArrayList<Integer>();
+        // 先存储可分配的缓冲区大小
+        for (int i = 16; i < 512; i += 16) {
+            sizeTable.add(i);
+        }
+        // Suppress a warning since i becomes negative when an integer overflow happens
+        for (int i = 512; i > 0; i <<= 1) { // lgtm[java/constant-comparison]
+            sizeTable.add(i);
+        }
+
+        SIZE_TABLE = new int[sizeTable.size()];
+        for (int i = 0; i < SIZE_TABLE.length; i ++) {
+            SIZE_TABLE[i] = sizeTable.get(i);
+        }
+    }
+    
+    public AdaptiveRecvByteBufAllocator() {
+        this(DEFAULT_MINIMUM, DEFAULT_INITIAL, DEFAULT_MAXIMUM);
+    }
+    
+    public AdaptiveRecvByteBufAllocator(int minimum, int initial, int maximum) {
+        checkPositive(minimum, "minimum");
+        if (initial < minimum) {
+            throw new IllegalArgumentException("initial: " + initial);
+        }
+        if (maximum < initial) {
+            throw new IllegalArgumentException("maximum: " + maximum);
+        }
+
+        int minIndex = getSizeTableIndex(minimum);
+        if (SIZE_TABLE[minIndex] < minimum) {
+            this.minIndex = minIndex + 1;
+        } else {
+            this.minIndex = minIndex;
+        }
+
+        int maxIndex = getSizeTableIndex(maximum);
+        if (SIZE_TABLE[maxIndex] > maximum) {
+            this.maxIndex = maxIndex - 1;
+        } else {
+            this.maxIndex = maxIndex;
+        }
+
+        this.initial = initial;
+    }
+    
+	private final class HandleImpl extends MaxMessageHandle {
+        public int guess() {
+            return nextReceiveBufferSize;
+        }
+
+        private void record(int actualReadBytes) {
+            if (actualReadBytes <= SIZE_TABLE[max(0, index - INDEX_DECREMENT)]) {
+                if (decreaseNow) {
+                    index = max(index - INDEX_DECREMENT, minIndex);
+                    nextReceiveBufferSize = SIZE_TABLE[index];
+                    decreaseNow = false;
+                } else {
+                    decreaseNow = true;
+                }
+            } else if (actualReadBytes >= nextReceiveBufferSize) {
+                index = min(index + INDEX_INCREMENT, maxIndex);
+                nextReceiveBufferSize = SIZE_TABLE[index];
+                decreaseNow = false;
+            }
+        }
+    }
+}
+```
+
+缓冲区分配
+
+```java
+public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessagesRecvByteBufAllocator {
+    public abstract class MaxMessageHandle implements ExtendedHandle {
+        public ByteBuf allocate(ByteBufAllocator alloc) {
+            return alloc.ioBuffer(guess());
+        }
+    }
+}
+```
+
+alloc.ioBuffer()
+
+```java
+public abstract class AbstractByteBufAllocator implements ByteBufAllocator {
+    public ByteBuf ioBuffer(int initialCapacity) {
+        if (PlatformDependent.hasUnsafe() || isDirectBufferPooled()) {
+            return directBuffer(initialCapacity);
+        }
+        return heapBuffer(initialCapacity);
+    }
+    
+    public ByteBuf directBuffer(int initialCapacity, int maxCapacity) {
+        if (initialCapacity == 0 && maxCapacity == 0) {
+            return emptyBuf;
+        }
+        validate(initialCapacity, maxCapacity);
+        return newDirectBuffer(initialCapacity, maxCapacity);
+    }
+}
+```
+
+申请内存
+
+```java
+public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
+    public UnpooledDirectByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
+        super(maxCapacity);
+        ObjectUtil.checkNotNull(alloc, "alloc");
+        checkPositiveOrZero(initialCapacity, "initialCapacity");
+        checkPositiveOrZero(maxCapacity, "maxCapacity");
+        if (initialCapacity > maxCapacity) {
+            throw new IllegalArgumentException(String.format(
+                    "initialCapacity(%d) > maxCapacity(%d)", initialCapacity, maxCapacity));
+        }
+
+        this.alloc = alloc;
+        setByteBuffer(allocateDirect(initialCapacity), false);
+    }
+    
+    protected ByteBuffer allocateDirect(int initialCapacity) {
+        // java.nio
+        return ByteBuffer.allocateDirect(initialCapacity);
+    }
+}
+```
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
