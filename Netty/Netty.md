@@ -1584,6 +1584,30 @@ Reactor 模式发送数据的执行过程
 3. Handler for Client A  recv(), write() Handler for Client B (Loop)
 4. Handler for Client A  return()  Initiation Dispatcher
 
+### 13.7 Reactor 五大角色深入分析
+
+1. Handle
+
+    称作句柄、描述符，本质上是一种资源，由操作系统提供，该资源用于一个个的事件，比如说文件描述符，或是针对网络的 socket 描述符
+
+    事件既可以来自于外部，也可以来自于内部，外部事件比如客户端的连接请求，客户端发来的数据等，内部事件比如操作系统产生的定时器事件等，它本质上就是一个文件描述符
+
+    Handle 是事件产生的发源地
+
+2. Synchronous Event Demultiplexer
+
+    称作同步事件分离器，本身是一个系统调用，用于等待事件的发生（一个或多个），调用方法会再调用它的时候阻塞，一直阻塞到同步事件分离器上有事件产生为止
+
+    对于 Linux 来说，同步事件分离器指的是常用的 I/O 多路复用机制，比如 select，poll，epoll
+
+    Java NIO 中对应的就是 Selector
+
+3. Event Handler
+
+    称作事件处理器，本身由多个回调方法组成，这些回调方法构成了与应用相关的对于某个事件的反馈机制
+
+    Java NIO 中没有对应原生实现，Netty 在事件处理器这个角色上进行了一个升级，提供了大量的回调方法，供我们在特定事件产生时实现相应的回调方法进行业务逻辑的处理
+
 ## 14. Netty 自适应缓冲区分配策略与对外内存的创建方式
 
 DefaultChannelConfig
@@ -1740,6 +1764,8 @@ public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
     }
 }
 ```
+
+
 
 ## Netty 大文件传送支持
 
