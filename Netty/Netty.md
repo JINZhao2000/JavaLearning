@@ -1618,6 +1618,12 @@ Reactor 模式发送数据的执行过程
 
     它本身是整个事件处理器的核心所在，它会通过同步事件分离器来等待事件的发生，一旦事件发生，它首先分离出每一个事件，然后调用事件处理器，最后调用相关的回调方法来处理这些事件
 
+首先 Initiation Dispatcher 在启动后，首先将若干个 Event Handler 注册在其上，注册同时指定感兴趣事件（由 Handler 决定），并开启事件死循环，并且通过 Synchronous Event Demultuplexer 等待事件产生，当感兴趣事件发生时，通过 Initiation Dispatcher 去选择并触发对应的 Concrete Event Handler 的回调方法，从而响应处于 Ready 状态的 Handler 并且将这个 Handler 作为 key 并分发恰当的事件处理方法，从而响应这个事件，所发生类型可以作为该方法参数并被该方法内部使用来执行额外的特定服务的分离与分发
+
+与 Netty 的对应关系
+
+Initiation Dispatcher：mainReactor 与 subReactor（两个 EventGroup）Acceptor 用于 mainReactor 接受连接以后将任务交给 subReactor
+
 ## 14. Netty 自适应缓冲区分配策略与对外内存的创建方式
 
 DefaultChannelConfig
