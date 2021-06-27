@@ -1781,7 +1781,20 @@ public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
 }
 ```
 
+## 15. Channel 与 ChannelPipeline
 
+Channel 可以理解为一个网络套接字 socket 的连接点，或者是一个能够提供 IO 操作的组件（比如读，写，连接，绑定等）
+
+Channel 给用户提供了
+
+- 当前 Channel 状态（连接？打开？）
+- Channel 的配置信息
+- Channel 支持的 IO 操作
+- 将 Handler 组合起来的 ChannelPipeline
+
+所有的 IO 操作都是异步的，任何 IO 调用都会立即返回
+
+ChannelPipeline 创建时机：在 channelFactory.newChannel() 的时候 new AbstractChannel 内部创建 ChannelPipeline
 
 ## Netty 大文件传送支持
 
