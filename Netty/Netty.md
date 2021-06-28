@@ -1796,6 +1796,47 @@ Channel 给用户提供了
 
 ChannelPipeline 创建时机：在 channelFactory.newChannel() 的时候 new AbstractChannel 内部创建 ChannelPipeline
 
+```java
+public abstract class AbstractChannel extends DefaultAttributeMap implements Channel {
+    private final DefaultChannelPipeline pipeline;
+    
+    protected AbstractChannel(Channel parent) {
+        this.parent = parent;
+        id = newId();
+        unsafe = newUnsafe();
+        pipeline = newChannelPipeline();
+    }
+    
+    protected DefaultChannelPipeline newChannelPipeline() {
+        return new DefaultChannelPipeline(this);
+    }
+}
+```
+
+ChannelPipeline 创建
+
+```java
+public class DefaultChannelPipeline implements ChannelPipeline {
+    protected DefaultChannelPipeline(Channel channel) {
+        this.channel = ObjectUtil.checkNotNull(channel, "channel");
+        succeededFuture = new SucceededChannelFuture(channel, null);
+        voidPromise =  new VoidChannelPromise(channel, true);
+
+        tail = new TailContext(this);
+        head = new HeadContext(this);
+
+        head.next = tail;
+        tail.prev = head;
+    }
+}
+```
+
+ChannelPipeline 是一些 ChannelHandler 的集合，用来拦截 Channel 进和出的事件进行操作（Interceptor - Filter Pattern）
+
+InBoundHandler 是按添加顺序进行拦截
+
+OutBoundHandler 是按添加顺序倒序进行拦截
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
