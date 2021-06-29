@@ -1837,6 +1837,33 @@ InBoundHandler 是按添加顺序进行拦截
 
 OutBoundHandler 是按添加顺序倒序进行拦截
 
+## 16. Netty 常量池实现及 ChannelOption 与 Attribute
+
+常量维护
+
+```java
+public abstract class ConstantPool<T extends Constant<T>> {
+    private final ConcurrentMap<String, T> constants = PlatformDependent.newConcurrentHashMap();
+
+    private final AtomicInteger nextId = new AtomicInteger(1);
+    
+    // 创建常量
+    private T getOrCreate(String name) {
+        T constant = constants.get(name);
+        if (constant == null) {
+            final T tempConstant = newConstant(nextId(), name);
+            constant = constants.putIfAbsent(name, tempConstant);
+            if (constant == null) {
+                return tempConstant;
+            }
+        }
+        return constant;
+    }
+}
+```
+
+ChannelOption\<T\>，AttributeKey\<T\> 中不存值，只储存 Option 的类型：T
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
