@@ -1837,6 +1837,49 @@ InBoundHandler 是按添加顺序进行拦截
 
 OutBoundHandler 是按添加顺序倒序进行拦截
 
+ChannelInitializer\<T\> 中 ChannelPipeline 对 Handler 的添加
+
+```java
+public class DefaultChannelPipeline implements ChannelPipeline {
+    @Override
+    public final ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler) {
+        final AbstractChannelHandlerContext newCtx;
+        synchronized (this) {
+            checkMultiplicity(handler);
+
+            newCtx = newContext(group, filterName(name, handler), handler);
+
+            addLast0(newCtx);
+
+            // If the registered is false it means that the channel was not registered on an eventLoop yet.
+            // In this case we add the context to the pipeline and add a task that will call
+            // ChannelHandler.handlerAdded(...) once the channel is registered.
+            if (!registered) {
+                newCtx.setAddPending();
+                callHandlerCallbackLater(newCtx, true);
+                return this;
+            }
+
+            EventExecutor executor = newCtx.executor();
+            if (!executor.inEventLoop()) {
+                callHandlerAddedInEventLoop(newCtx, executor);
+                return this;
+            }
+        }
+        callHandlerAdded0(newCtx);
+        return this;
+    }
+    
+    private void addLast0(AbstractChannelHandlerContext newCtx) {
+        AbstractChannelHandlerContext prev = tail.prev;
+        newCtx.prev = prev;
+        newCtx.next = tail;
+        prev.next = newCtx;
+        tail.prev = newCtx;
+    }
+}
+```
+
 ## 16. Netty 常量池实现及 ChannelOption 与 Attribute
 
 常量维护
@@ -1863,6 +1906,12 @@ public abstract class ConstantPool<T extends Constant<T>> {
 ```
 
 ChannelOption\<T\>，AttributeKey\<T\> 中不存值，只储存 Option 的类型：T
+
+ChannelOption 主要维护了 TCP/IP 的配置
+
+Attribute 维护了业务数据，用于 Handler 之间的通信
+
+
 
 ## Netty 大文件传送支持
 
