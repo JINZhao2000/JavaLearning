@@ -1841,6 +1841,15 @@ ChannelInitializer\<T\> 中 ChannelPipeline 对 Handler 的添加
 
 ```java
 public class DefaultChannelPipeline implements ChannelPipeline {
+    // 这里维护了一个 handler 名称的 c
+    private static final FastThreadLocal<Map<Class<?>, String>> nameCaches =
+            new FastThreadLocal<Map<Class<?>, String>>() {
+        @Override
+        protected Map<Class<?>, String> initialValue() {
+            return new WeakHashMap<Class<?>, String>();
+        }
+    };
+    
     @Override
     public final ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler) {
         final AbstractChannelHandlerContext newCtx;
@@ -1876,6 +1885,19 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         newCtx.next = tail;
         prev.next = newCtx;
         tail.prev = newCtx;
+    }
+    
+    // 确定 handler 是否已经存在
+    private static void checkMultiplicity(ChannelHandler handler) {
+        if (handler instanceof ChannelHandlerAdapter) {
+            ChannelHandlerAdapter h = (ChannelHandlerAdapter) handler;
+            if (!h.isSharable() && h.added) {
+                throw new ChannelPipelineException(
+                        h.getClass().getName() +
+                        " is not a @Sharable handler, so can't be added or removed multiple times.");
+            }
+            h.added = true;
+        }
     }
 }
 ```
