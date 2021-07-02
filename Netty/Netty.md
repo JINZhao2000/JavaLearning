@@ -1839,9 +1839,11 @@ OutBoundHandler 是按添加顺序倒序进行拦截
 
 ChannelInitializer\<T\> 中 ChannelPipeline 对 Handler 的添加
 
+在 ChannelInitializer 完成对 Handler 的添加后，将自己从 ChannelPipeline 中移除（因为本身并不是处理器，是一个添加处理器的封装）
+
 ```java
 public class DefaultChannelPipeline implements ChannelPipeline {
-    // 这里维护了一个 handler 名称的 c
+    // 这里维护了一个 handler 名称的 cache
     private static final FastThreadLocal<Map<Class<?>, String>> nameCaches =
             new FastThreadLocal<Map<Class<?>, String>>() {
         @Override
@@ -1863,6 +1865,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
             // In this case we add the context to the pipeline and add a task that will call
             // ChannelHandler.handlerAdded(...) once the channel is registered.
+            // 此处的意思是，如果 handler 没有被加上时，会挂起一个 task 去添加 handler，然后直接返回
             if (!registered) {
                 newCtx.setAddPending();
                 callHandlerCallbackLater(newCtx, true);
@@ -1899,6 +1902,34 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             h.added = true;
         }
     }
+    
+    private void callHandlerAdded0(final AbstractChannelHandlerContext ctx) {
+        try {
+            // handler 在这里才被真正地添加上
+            ctx.callHandlerAdded();
+        } catch (Throwable t) {
+            boolean removed = false;
+            try {
+                atomicRemoveFromHandlerList(ctx);
+                ctx.callHandlerRemoved();
+                removed = true;
+            } catch (Throwable t2) {
+                if (logger.isWarnEnabled()) {
+                    logger.warn("Failed to remove a handler: " + ctx.name(), t2);
+                }
+            }
+
+            if (removed) {
+                fireExceptionCaught(new ChannelPipelineException(
+                        ctx.handler().getClass().getName() +
+                        ".handlerAdded() has thrown an exception; removed.", t));
+            } else {
+                fireExceptionCaught(new ChannelPipelineException(
+                        ctx.handler().getClass().getName() +
+                        ".handlerAdded() has thrown an exception; also failed to remove.", t));
+            }
+        }
+    }
 }
 ```
 
@@ -1933,7 +1964,13 @@ ChannelOption 主要维护了 TCP/IP 的配置
 
 Attribute 维护了业务数据，用于 Handler 之间的通信
 
+## 17. ChannelHandlerContext 
 
+ChannelHandlerContext 是一个桥梁，它可以直接获取 Channel，ChannelPipeline 和 ChannelHandler
+
+*从 Netty 4.1 开始，ChannelHandlerContext.attr() == Channel.attr()
+
+​	即在 Netty 里，原本每个 Handler 对应一个 ChannelHandlerContext，其中每一个都维护了自己的 Map，而现在是 Channel 和所有的 ChannelHandlerContext 公用同一个 Map
 
 ## Netty 大文件传送支持
 
