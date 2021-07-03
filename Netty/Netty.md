@@ -1392,6 +1392,8 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
             return new DefaultChannelPromise(new FailedChannel(), GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
+        // 此处 config() 返回的是 ServerBootstrapConfig，group() 返回 MultithreadEventLoopGroup
+        // 是由于 NioEventLoopGroup 继承了 MultithreadEventLoopGroup
         ChannelFuture regFuture = config().group().register(channel);
         if (regFuture.cause() != null) {
             if (channel.isRegistered()) {
