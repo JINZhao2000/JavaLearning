@@ -1935,6 +1935,217 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 }
 ```
 
+Channel 注册
+
+```java
+public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C extends Channel> implements Cloneable {
+    final ChannelFuture initAndRegister() {
+        Channel channel = null;
+        try {
+            channel = channelFactory.newChannel();
+            init(channel);
+        } catch (Throwable t) {
+            if (channel != null) {
+                channel.unsafe().closeForcibly();
+                return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
+            }
+            return new DefaultChannelPromise(new FailedChannel(), GlobalEventExecutor.INSTANCE).setFailure(t);
+        }
+        // 这里是注册的部分
+        ChannelFuture regFuture = config().group().register(channel);
+        if (regFuture.cause() != null) {
+            if (channel.isRegistered()) {
+                channel.close();
+            } else {
+                channel.unsafe().closeForcibly();
+            }
+        }
+        return regFuture;
+    }
+}
+```
+
+group().register(channel)
+
+```java
+public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutorGroup implements EventLoopGroup {
+    @Override
+    public EventLoop next() {
+        return (EventLoop) super.next();
+    }
+    
+    @Override
+    public ChannelFuture register(Channel channel) {
+        // next() 返回一个 EventGroup
+        return next().register(channel);
+    }
+}
+```
+
+next()
+
+```java
+public abstract class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
+    private final EventExecutorChooserFactory.EventExecutorChooser chooser;
+    
+    // choose 初始化地方
+    protected MultithreadEventExecutorGroup(int nThreads, Executor executor,
+                                            EventExecutorChooserFactory chooserFactory, Object... args) {
+        if (nThreads <= 0) {
+            throw new IllegalArgumentException(String.format("nThreads: %d (expected: > 0)", nThreads));
+        }
+
+        if (executor == null) {
+            executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
+        }
+
+        children = new EventExecutor[nThreads];
+
+        for (int i = 0; i < nThreads; i ++) {
+            boolean success = false;
+            try {
+                children[i] = newChild(executor, args);
+                success = true;
+            } catch (Exception e) {
+                // TODO: Think about if this is a good exception type
+                throw new IllegalStateException("failed to create a child event loop", e);
+            } finally {
+                if (!success) {
+                    for (int j = 0; j < i; j ++) {
+                        children[j].shutdownGracefully();
+                    }
+
+                    for (int j = 0; j < i; j ++) {
+                        EventExecutor e = children[j];
+                        try {
+                            while (!e.isTerminated()) {
+                                e.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
+                            }
+                        } catch (InterruptedException interrupted) {
+                            // Let the caller handle the interruption.
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        chooser = chooserFactory.newChooser(children);
+
+        final FutureListener<Object> terminationListener = new FutureListener<Object>() {
+            @Override
+            public void operationComplete(Future<Object> future) throws Exception {
+                if (terminatedChildren.incrementAndGet() == children.length) {
+                    terminationFuture.setSuccess(null);
+                }
+            }
+        };
+
+        for (EventExecutor e: children) {
+            e.terminationFuture().addListener(terminationListener);
+        }
+
+        Set<EventExecutor> childrenSet = new LinkedHashSet<EventExecutor>(children.length);
+        Collections.addAll(childrenSet, children);
+        readonlyChildren = Collections.unmodifiableSet(childrenSet);
+    }
+    
+    @Override
+    public EventExecutor next() {
+        return chooser.next();
+    }
+}
+```
+
+EventExecutorChooserFactory
+
+```java
+@UnstableApi
+public interface EventExecutorChooserFactory {
+
+    /**
+     * Returns a new {@link EventExecutorChooser}.
+     */
+    EventExecutorChooser newChooser(EventExecutor[] executors);
+
+    /**
+     * Chooses the next {@link EventExecutor} to use.
+     */
+    @UnstableApi
+    interface EventExecutorChooser {
+
+        /**
+         * Returns the new {@link EventExecutor} to use.
+         * 返回一个新的可用的 EventExecutor 对象
+         */
+        EventExecutor next();
+    }
+}
+```
+
+实现
+
+```java
+/**
+ * Default implementation which uses simple round-robin to choose next {@link EventExecutor}.
+ * 负载均衡 round-robin 轮询算法
+ */
+@UnstableApi
+public final class DefaultEventExecutorChooserFactory implements EventExecutorChooserFactory {
+    public static final DefaultEventExecutorChooserFactory INSTANCE = new DefaultEventExecutorChooserFactory();
+
+    private DefaultEventExecutorChooserFactory() { }
+
+    // 判断数组是否是 2 的幂次方来决定轮询c
+    @Override
+    public EventExecutorChooser newChooser(EventExecutor[] executors) {
+        if (isPowerOfTwo(executors.length)) {
+            return new PowerOfTwoEventExecutorChooser(executors);
+        } else {
+            return new GenericEventExecutorChooser(executors);
+        }
+    }
+
+    private static boolean isPowerOfTwo(int val) {
+        return (val & -val) == val;
+    }
+
+    private static final class PowerOfTwoEventExecutorChooser implements EventExecutorChooser {
+        private final AtomicInteger idx = new AtomicInteger();
+        private final EventExecutor[] executors;
+
+        PowerOfTwoEventExecutorChooser(EventExecutor[] executors) {
+            this.executors = executors;
+        }
+
+        @Override
+        public EventExecutor next() {
+            return executors[idx.getAndIncrement() & executors.length - 1];
+        }
+    }
+
+    private static final class GenericEventExecutorChooser implements EventExecutorChooser {
+        // Use a 'long' counter to avoid non-round-robin behaviour at the 32-bit overflow boundary.
+        // The 64-bit long solves this by placing the overflow so far into the future, that no system
+        // will encounter this in practice.
+        private final AtomicLong idx = new AtomicLong();
+        private final EventExecutor[] executors;
+
+        GenericEventExecutorChooser(EventExecutor[] executors) {
+            this.executors = executors;
+        }
+
+        @Override
+        public EventExecutor next() {
+            return executors[(int) Math.abs(idx.getAndIncrement() % executors.length)];
+        }
+    }
+}
+```
+
+
+
 ## 16. Netty 常量池实现及 ChannelOption 与 Attribute
 
 常量维护
