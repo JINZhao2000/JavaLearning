@@ -2097,7 +2097,7 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
 
     private DefaultEventExecutorChooserFactory() { }
 
-    // 判断数组是否是 2 的幂次方来决定轮询c
+    // 判断数组是否是 2 的幂次方来决定轮询除法的策略
     @Override
     public EventExecutorChooser newChooser(EventExecutor[] executors) {
         if (isPowerOfTwo(executors.length)) {
@@ -2144,7 +2144,173 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
 }
 ```
 
+Channel 的注册
 
+```java
+public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor implements EventLoop {
+    @Override
+    public ChannelFuture register(Channel channel) {
+        // Netty 说不建议开发者自己去 new DefaultChannelPromise，Netty 主要用于自己内部调用
+        return register(new DefaultChannelPromise(channel, this));
+    }
+    
+    @Override
+    public ChannelFuture register(final ChannelPromise promise) {
+        ObjectUtil.checkNotNull(promise, "promise");
+        promise.channel().unsafe().register(this, promise);
+        return promise;
+    }
+}
+```
+
+Unsafe
+
+```java
+public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
+    @Override
+    protected AbstractNioUnsafe newUnsafe() {
+        return new NioMessageUnsafe();
+    }
+    
+    protected abstract class AbstractUnsafe implements Unsafe {
+        @Override
+        public final void register(EventLoop eventLoop, final ChannelPromise promise) {
+            ObjectUtil.checkNotNull(eventLoop, "eventLoop");
+            if (isRegistered()) {
+                promise.setFailure(new IllegalStateException("registered to an event loop already"));
+                return;
+            }
+            if (!isCompatible(eventLoop)) {
+                promise.setFailure(
+                        new IllegalStateException("incompatible event loop type: " + eventLoop.getClass().getName()));
+                return;
+            }
+
+            AbstractChannel.this.eventLoop = eventLoop;
+
+            if (eventLoop.inEventLoop()) {
+                // 如果当前线程是在 EventLoop 里面则直接执行
+                register0(promise);
+            } else {
+                try {
+                    // 否则就提交一个任务交给 EventLoop 执行
+                    eventLoop.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            register0(promise);
+                        }
+                    });
+                } catch (Throwable t) {
+                    logger.warn(
+                            "Force-closing a channel whose registration task was not accepted by an event loop: {}",
+                            AbstractChannel.this, t);
+                    closeForcibly();
+                    closeFuture.setClosed();
+                    safeSetFailure(promise, t);
+                }
+            }
+        }
+        
+        private void register0(ChannelPromise promise) {
+            try {
+                // check if the channel is still open as it could be closed in the mean time when the register
+                // call was outside of the eventLoop
+                if (!promise.setUncancellable() || !ensureOpen(promise)) {
+                    return;
+                }
+                boolean firstRegistration = neverRegistered;
+                doRegister();
+                neverRegistered = false;
+                registered = true;
+
+                // Ensure we call handlerAdded(...) before we actually notify the promise. This is needed as the
+                // user may already fire events through the pipeline in the ChannelFutureListener.
+                pipeline.invokeHandlerAddedIfNeeded();
+
+                safeSetSuccess(promise);
+                pipeline.fireChannelRegistered();
+                // Only fire a channelActive if the channel has never been registered. This prevents firing
+                // multiple channel actives if the channel is deregistered and re-registered.
+                if (isActive()) {
+                    if (firstRegistration) {
+                        pipeline.fireChannelActive();
+                    } else if (config().isAutoRead()) {
+                        // This channel was registered before and autoRead() is set. This means we need to begin read
+                        // again so that we process inbound data.
+                        //
+                        // See https://github.com/netty/netty/issues/4805
+                        beginRead();
+                    }
+                }
+            } catch (Throwable t) {
+                // Close the channel directly to avoid FD leak.
+                closeForcibly();
+                closeFuture.setClosed();
+                safeSetFailure(promise, t);
+            }
+        }
+    }
+    
+}
+```
+
+eventLoop.inEventLoop() 判断
+
+```java
+public abstract class AbstractEventExecutor extends AbstractExecutorService implements EventExecutor {
+    @Override
+    public boolean inEventLoop() {
+        return inEventLoop(Thread.currentThread());
+    }
+}
+
+// 如果 Thread 在 EventLoop 中执行则返回 true
+public abstract class SingleThreadEventExecutor extends AbstractScheduledEventExecutor implements OrderedEventExecutor {
+    @Override
+    public boolean inEventLoop(Thread thread) {
+        return thread == this.thread;
+    }
+}
+```
+
+doRegister()
+
+```java
+public abstract class AbstractNioChannel extends AbstractChannel {
+    @Override
+    protected void doRegister() throws Exception {
+        boolean selected = false;
+        for (;;) {
+            try {
+                // javaChannel() 返回 SelectableChannel
+                // unwrappedSelector() 返回 Selector
+                // 注册成功后返回
+                selectionKey = javaChannel().register(eventLoop().unwrappedSelector(), 0, this);
+                return;
+            } catch (CancelledKeyException e) {
+                if (!selected) {
+                    // Force the Selector to select now as the "canceled" SelectionKey may still be
+                    // cached and not removed because no Select.select(..) operation was called yet.
+                    eventLoop().selectNow();
+                    selected = true;
+                } else {
+                    // We forced a select operation on the selector before but the SelectionKey is still cached
+                    // for whatever reason. JDK bug ?
+                    throw e;
+                }
+            }
+        }
+    }
+}
+```
+
+原则：
+
+1. 一个 EventLoopGroup 当中会包含一个或多个 EventLoop
+2. 一个 EventLoop 在它的整个生命周期当中，都只会与唯一一个 Thread 进行绑定
+3. 所有由 EventLoop 所处理的 IO 事件，都将在它所关联的那个 Thread 上进行处理
+4. 一个 Channel 在它的整个生命周期中，只会注册在一个 EventLoop 上
+5. 一个 EventLoop 在运行过程中，会被分配给一个或者多个 Channel
 
 ## 16. Netty 常量池实现及 ChannelOption 与 Attribute
 
