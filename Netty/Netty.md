@@ -2351,6 +2351,27 @@ ChannelHandlerContext 是一个桥梁，它可以直接获取 Channel，ChannelP
 
 ​	即在 Netty 里，原本每个 Handler 对应一个 ChannelHandlerContext，其中每一个都维护了自己的 Map，而现在是 Channel 和所有的 ChannelHandlerContext 公用同一个 Map
 
+## 18. Netty 底层架构总结
+
+在 Netty 中，Channel 的实现一定是线程安全的，基于此，我们可以储存一个 Channel 的引用，并且在需要向远程端点发送数据的时候，通过这个引用来调用 Channel 相应的方法，即使有很多线程都在使用它也不会出现多线程问题，而且消息一定会按照提交顺序发送出去（基于队列）
+
+重要结论：在业务开发中，不要将长时间执行的耗时任务放入 EventLoop 的执行队列中（Handler 的回调方法），因为它将会一直阻塞该线程所对应所有 Channel 上的其它执行任务，如果我们需要进行阻塞调用或者耗时操作，那么我们就需要使用一个专门的 EventExecutor（业务线程池）
+
+业务线程池的两种方式：
+
+1. 在 ChannelHandler 的回调方法中使用自定义的线程池（ExecutorService）
+
+2. 借助于 Netty 提供的向 ChannelPipeline 添加 ChannelHandler 时调用的 addLast 方法来传递
+
+    ```java
+    // 这两个方法提交的 Handler 都会由 Netty 的 IO 线程执行
+    ChannelPipeline addLast(ChannelHandler... handlers);
+    ChannelPipeline addLast(String name, ChannelHandler handler);
+    // 这两个方法提交的 Handler 只会由指定的 EventExecutorGroup 来执行
+    ChannelPipeline addLast(EventExecutorGroup group, ChannelHandler... handlers);
+    ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler);
+    ```
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
