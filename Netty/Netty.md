@@ -2372,6 +2372,45 @@ ChannelHandlerContext 是一个桥梁，它可以直接获取 Channel，ChannelP
     ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler);
     ```
 
+__异步读写操作的架构思想与观察者模式的使用__ 
+
+通过添加 Observer 在完成任务时调用 Observer 的方法来实现回调
+
+ ```java
+ public interface ChannelFutureListener extends GenericFutureListener<ChannelFuture> {
+     ChannelFutureListener CLOSE = new ChannelFutureListener() {
+         @Override
+         public void operationComplete(ChannelFuture future) {
+             future.channel().close();
+         }
+     };
+ 
+     ChannelFutureListener CLOSE_ON_FAILURE = new ChannelFutureListener() {
+         @Override
+         public void operationComplete(ChannelFuture future) {
+             if (!future.isSuccess()) {
+                 future.channel().close();
+             }
+         }
+     };
+ 
+     ChannelFutureListener FIRE_EXCEPTION_ON_FAILURE = new ChannelFutureListener() {
+         @Override
+         public void operationComplete(ChannelFuture future) {
+             if (!future.isSuccess()) {
+                 future.channel().pipeline().fireExceptionCaught(future.cause());
+             }
+         }
+     };
+ }
+ ```
+
+JDK 的 Future 与 Netty 的 Future
+
+JDK 的 Future 检查结果操作是阻塞的，而 Netty 通过 ChannelFutureListener 等方式以回调方式处理结果，去除了手工检查的操作
+
+ChannelFutureListener 的 operationComplete 方法是由 IO 线程执行的，所以不要执行耗时操作（与 Handler 是一个道理）
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
