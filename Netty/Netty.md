@@ -2411,6 +2411,8 @@ JDK 的 Future 检查结果操作是阻塞的，而 Netty 通过 ChannelFutureLi
 
 ChannelFutureListener 的 operationComplete 方法是由 IO 线程执行的，所以不要执行耗时操作（与 Handler 是一个道理）
 
+__适配器模式与模板方法模式__ 
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
