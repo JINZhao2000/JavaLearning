@@ -2413,6 +2413,10 @@ ChannelFutureListener 的 operationComplete 方法是由 IO 线程执行的，�
 
 __适配器模式与模板方法模式__ 
 
+## 19. Netty 开发过程中常见重要事项分析
+
+
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
