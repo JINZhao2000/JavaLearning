@@ -2419,7 +2419,23 @@ __适配器模式与模板方法模式__
 
 ## 19. Netty 开发过程中常见重要事项分析
 
+__发送消息时 ChannelHandlerContext 与 Channel 的 WriteAndFlush 方法的不同__ 
 
+Channel 的 WiteAndFlush 的方法是将消息放在 Handler 链上，从最开始的 Hanlder 开始逐个调用
+
+ChannelHandlerContext 的 WriteAndFlush 的方法是将消息放在 Handler 链上，从当前的 Handler 开始逐个调用（即下一个 Handler 会处理这个消息）
+
+__Netty 中的 NIO 与 OIO__ 
+
+Nio 中是一个 Group 拥有数个 EventLoop，每个 EventLoop 调用多个 Channel
+
+Oio 中是一个 Group 拥有数个 EventLoop，每个 EventLoop 对应一个 Channel
+
+Oio 是通过在 Nio 中 try-catch SocketTimeoutExceptoin 的方式，在 catch 块中记录执行的进度来通过 Nio 实现 Oio
+
+__共享 EventLoop__ 
+
+在 channelActive 中创建 Bootstrap 对象，然后通过 group(ctx.channel().eventLoop()) 来绑定在一起
 
 ## Netty 大文件传送支持
 
