@@ -2417,6 +2417,37 @@ __适配器模式与模板方法模式__
 
 模板方法：通过将一个方法封装调用一个抽象方法，然后再让使用者实现这个抽象类，有点类似 AOP
 
+__Buffer__ 
+
+NIO 操作文件步骤
+
+1. 从 FileInputStream 中获取 Channel 对象
+2. 创建 Buffer
+3. 将数据从 Channel 中读取到 Buffer 对象中
+
+flip()
+
+1. limit = position
+2. position = 0
+3. mark = -1
+
+clear()
+
+1. position = 0
+2. limit = capacity
+3. mark = -1
+
+compact()
+
+1. 所有未读消息复制到初始处
+2. position = 最后一个未读元素后面
+3. limit = capacity
+4. mark = -1
+
+读写
+
+https://www.zhihu.com/question/57374068/answer/152691891 
+
 ## 19. Netty 开发过程中常见重要事项分析
 
 __发送消息时 ChannelHandlerContext 与 Channel 的 WriteAndFlush 方法的不同__ 
@@ -2436,6 +2467,36 @@ Oio 是通过在 Nio 中 try-catch SocketTimeoutExceptoin 的方式，在 catch 
 __共享 EventLoop__ 
 
 在 channelActive 中创建 Bootstrap 对象，然后通过 group(ctx.channel().eventLoop()) 来绑定在一起
+
+## 20. ByteBuf
+
+例子
+
+```java
+public static void main(String[] args) {
+    ByteBuf buffer = Unpooled.buffer(10);
+    for (int i = 0; i < 10; i++) {
+        buffer.writeByte(i);
+    }
+ 	for (int i = 0; i < buffer.capacity(); i++) {
+        System.out.println(buffer.getByte(i));
+    }
+}
+```
+
+ByteBuf 是一个随机或序列地对零个或多个字节访问的 buffer
+
+推荐使用 Unpooled 的静态方法来创建
+
+__顺序访问__ 
+
+提供了两个指针：readerIndex 与 writerIndex 来实现读与写操作的索引
+
+0 - readerIndex => discardable bytes 可丢弃字节
+
+readerIndex - writerIndex => readable bytes 可读字节
+
+writerIndex - capacity => writable bytes 可写字节
 
 ## Netty 大文件传送支持
 
