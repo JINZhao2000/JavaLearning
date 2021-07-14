@@ -2498,6 +2498,17 @@ readerIndex - writerIndex => readable bytes 可读字节
 
 writerIndex - capacity => writable bytes 可写字节
 
+通过索引访问时不会改变 index，但是通过 readXxx 或者 writeXxx 会改变 index
+
+```java
+public static void main(String[] args) {
+    // UnpooledByteBufAllocator$InstrumentedUnpooledUnsafeH
+    ByteBuf bytebuf = Unpooled.copiedBuffer("string", Charset.forName("utf-8"));
+}
+```
+
+
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
