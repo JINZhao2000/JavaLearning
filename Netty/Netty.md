@@ -2507,7 +2507,29 @@ public static void main(String[] args) {
 }
 ```
 
+__Netty 提供的三种缓冲区类型__ 
 
+1. heap buffer（array）
+
+2. direct buffer
+
+3. composite buffer
+
+    ```java
+    public static void main(String[] args) {
+        CompositeByteBuf buffers = Unpooled.compositeBuffer();
+        
+        ByteBuf heapBuf = Unpooled.buffer(10);
+        ByteBuf directBuf = Unpooled.directBuffer(10);
+        
+        buffers.addComponents(heapBuf, directBuf);
+        
+        // removeComponent(int);
+        
+    }
+    ```
+
+    
 
 ## Netty 大文件传送支持
 
