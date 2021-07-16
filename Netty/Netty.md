@@ -2529,7 +2529,79 @@ __Netty 提供的三种缓冲区类型__
     }
     ```
 
+
+JDK ByteBuffer 缺点：
+
+final byte[] hb 字节数组是 final 修饰，一但长度确定就不能扩容与收缩，待存储数据可能出现 `IndexOutOfBoundException()` ，如果空间不足，只能重新创建一个全新的 ByteBuffer 对象，然后再将之前的数据拷贝过去，这一切操作都是由操作者实现
+
+ByteBuffer 只有 position 一个指针来标识位置，读写切换需要用 flip() 方法或者 rewind() 方法
+
+Netty ByteBuf 优点：
+
+存储字节是动态的，其最大值是 Integer.MAX_VALUE，在 write() 方法中会判断 buffer 的容量，如果不足则自动扩容
+
+ByteBuf 是读写索引完全分开的
+
+### 21. Netty 引用计数与自旋锁
+
+ByteBuf 中
+
+```java
+public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
+    private static final ReferenceCountUpdater<AbstractReferenceCountedByteBuf> updater = new ReferenceCountUpdater<AbstractReferenceCountedByteBuf>() {
+        protected AtomicIntegerFieldUpdater<AbstractReferenceCountedByteBuf> updater() {
+            return AbstractReferenceCountedByteBuf.AIF_UPDATER;
+        }
+
+        protected long unsafeOffset() {
+            return AbstractReferenceCountedByteBuf.REFCNT_FIELD_OFFSET;
+        }
+    };
     
+    public ByteBuf retain() {
+        return (ByteBuf)updater.retain(this);
+    }
+}
+```
+
+ReferenceCountedUpdater
+
+```java
+public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
+    public final T retain(T instance) {
+        return this.retain0(instance, 1, 2);
+    }
+
+    public final T retain(T instance, int increment) {
+        int rawIncrement = ObjectUtil.checkPositive(increment, "increment") << 1;
+        return this.retain0(instance, increment, rawIncrement);
+    }
+    
+    private T retain0(T instance, int increment, int rawIncrement) {
+        int oldRef = this.updater().getAndAdd(instance, rawIncrement);
+        if (oldRef != 2 && oldRef != 4 && (oldRef & 1) != 0) {
+            throw new IllegalReferenceCountException(0, increment);
+        } else if ((oldRef > 0 || oldRef + rawIncrement < 0) && (oldRef < 0 || oldRef + rawIncrement >= oldRef)) {
+            return instance;
+        } else {
+            this.updater().getAndAdd(instance, -rawIncrement);
+            throw new IllegalReferenceCountException(realRefCnt(oldRef), increment);
+        }
+    }
+    
+    // CAS
+    public int getAndAdd(T obj, int delta) {
+        int prev, next;
+        do {
+            prev = get(obj);
+            next = prev + delta;
+        } while (!compareAndSet(obj, prev, next));
+        return prev;
+    }
+}
+```
+
+
 
 ## Netty 大文件传送支持
 
