@@ -2542,7 +2542,7 @@ Netty ByteBuf 优点：
 
 ByteBuf 是读写索引完全分开的
 
-### 21. Netty 引用计数与自旋锁
+## 21. Netty 引用计数与自旋锁
 
 ByteBuf 中
 
@@ -2601,7 +2601,12 @@ public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
 }
 ```
 
+AtomicIntegerFieldUpdater：对某个类指定的带 volatile 修饰的 int 进行原子更新
 
+volatile 两个作用：
+
+1. Thread 共享
+2. 内存屏障
 
 ## Netty 大文件传送支持
 
