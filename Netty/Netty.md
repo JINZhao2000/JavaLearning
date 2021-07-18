@@ -2603,10 +2603,24 @@ public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
 
 AtomicIntegerFieldUpdater：对某个类指定的带 volatile 修饰的 int 进行原子更新
 
-volatile 两个作用：
+1. 更新的 Field 必须是 int 类型，而不是 Integer
 
-1. Thread 共享
-2. 内存屏障
+2. 更新的变量必须是 volatile 修饰的变量
+
+    volatile 两个作用：
+
+    1. Thread 之间的可见性
+    2. 内存屏障，防止指令重排序
+
+3. 变量不能是 static 的，必须是实例变量，因为 `Unsafe.objectFieldOffset()`  方法不支持静态变量（CAS 操作本质上是通过对象实例的偏移量来直接进行赋值）
+
+4. 更新器只能修改它可见范围内的变量，因为更新器是通过反射获得这个变量
+
+为什么不用 AtomicInteger：
+
+
+
+
 
 ## Netty 大文件传送支持
 
