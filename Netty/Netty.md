@@ -2598,6 +2598,50 @@ public abstract class ReferenceCountUpdater<T extends ReferenceCounted> {
         } while (!compareAndSet(obj, prev, next));
         return prev;
     }
+    
+    // release
+    public final boolean release(T instance) {
+        int rawCnt = this.nonVolatileRawCnt(instance);
+        return rawCnt == 2 ? this.tryFinalRelease0(instance, 2) || this.retryRelease0(instance, 1) : this.nonFinalRelease0(instance, 1, rawCnt, toLiveRealRefCnt(rawCnt, 1));
+    }
+
+    public final boolean release(T instance, int decrement) {
+        int rawCnt = this.nonVolatileRawCnt(instance);
+        int realCnt = toLiveRealRefCnt(rawCnt, ObjectUtil.checkPositive(decrement, "decrement"));
+        return decrement == realCnt ? this.tryFinalRelease0(instance, rawCnt) || this.retryRelease0(instance, decrement) : this.nonFinalRelease0(instance, decrement, rawCnt, realCnt);
+    }
+
+    private boolean tryFinalRelease0(T instance, int expectRawCnt) {
+        return this.updater().compareAndSet(instance, expectRawCnt, 1);
+    }
+    
+    private boolean nonFinalRelease0(T instance, int decrement, int rawCnt, int realCnt) {
+        return decrement < realCnt && this.updater().compareAndSet(instance, rawCnt, rawCnt - (decrement << 1)) ? false : this.retryRelease0(instance, decrement);
+    }
+    
+    private boolean retryRelease0(T instance, int decrement) {
+        for (;;) {
+            int rawCnt = updater().get(instance), realCnt = toLiveRealRefCnt(rawCnt, decrement);
+            if (decrement == realCnt) {
+                if (tryFinalRelease0(instance, rawCnt)) {
+                    return true;
+                }
+            } else if (decrement < realCnt) {
+                // all changes to the raw count are 2x the "real" change
+                if (updater().compareAndSet(instance, rawCnt, rawCnt - (decrement << 1))) {
+                    return false;
+                }
+            } else {
+                throw new IllegalReferenceCountException(realCnt, -decrement);
+            }
+            Thread.yield(); // this benefits throughput under high contention
+        }
+    }
+    
+    /*
+     * 关于 reference counted objects
+     * https://netty.io/wiki/reference-counted-objects.html
+     */
 }
 ```
 
@@ -2618,9 +2662,7 @@ AtomicIntegerFieldUpdater：对某个类指定的带 volatile 修饰的 int 进�
 
 为什么不用 AtomicInteger：
 
-
-
-
+(我也不知道，到时候看书看到了再说吧，这个问题摸了)
 
 ## Netty 大文件传送支持
 
