@@ -2664,11 +2664,23 @@ AtomicIntegerFieldUpdater：对某个类指定的带 volatile 修饰的 int 进�
 
 (我也不知道，到时候看书看到了再说吧，这个问题摸了)
 
+## 22. Netty 的处理器
+
+Netty 处理器分为入栈处理器（ChannelInboundHandler）和出栈处理器（ChannelOutboundHandler），两者是独立的
+
+数据处理是用的各种编解码器本质上都是处理器
+
+编解码器：无论数据是什么类型，数据在传递是时候都是以字节流的形式传输的，将原本形式转换为字节为编码，从字节变回原本形式为解码，统称为 codec
+
+所以编码一定是 ChannelOutboundHandler，而解码一定是 ChannelInboundHandler
+
+Netty 中，编码器通常以 XxxEncoder 命名，解码器通常以 XxxDecoder 命名
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
 
-## Netty 统一通信 API
+## Netty 统一通信 APIp
 
 ## 零拷贝在 Netty 中的实现与支持
 
