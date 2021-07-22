@@ -2676,11 +2676,60 @@ Netty 处理器分为入栈处理器（ChannelInboundHandler）和出栈处理�
 
 Netty 中，编码器通常以 XxxEncoder 命名，解码器通常以 XxxDecoder 命名
 
+__处理器执行流程__ 
+
+Encoder：
+
+```java
+// 如果消息类型不匹配则直接丢弃
+public abstract class MessageToByteEncoder<I> extends ChannelOutboundHandlerAdapter {
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        ByteBuf buf = null;
+        try {
+            if (acceptOutboundMessage(msg)) {
+                @SuppressWarnings("unchecked")
+                I cast = (I) msg;
+                buf = allocateBuffer(ctx, cast, preferDirect);
+                try {
+                    encode(ctx, cast, buf);
+                } finally {
+                    ReferenceCountUtil.release(cast);
+                }
+
+                if (buf.isReadable()) {
+                    ctx.write(buf, promise);
+                } else {
+                    buf.release();
+                    ctx.write(Unpooled.EMPTY_BUFFER, promise);
+                }
+                buf = null;
+            } else {
+                ctx.write(msg, promise);
+            }
+        } catch (EncoderException e) {
+            throw e;
+        } catch (Throwable e) {
+            throw new EncoderException(e);
+        } finally {
+            if (buf != null) {
+                buf.release();
+            }
+        }
+    }
+}
+```
+
+__关于编解码器重要结论__ 
+
+1. 无论是编码器还是解码器，其所接受消息类型必须与待处理消息类型一致，否则该编解码器不会被执行
+2. 在解码器进行数据解码时，一定要判断 ByteBuf 中的数据是否足够
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
 
-## Netty 统一通信 APIp
+## Netty 统一通信 API
 
 ## 零拷贝在 Netty 中的实现与支持
 
