@@ -2725,6 +2725,41 @@ __关于编解码器重要结论__
 1. 无论是编码器还是解码器，其所接受消息类型必须与待处理消息类型一致，否则该编解码器不会被执行
 2. 在解码器进行数据解码时，一定要判断 ByteBuf 中的数据是否足够
 
+__ReplayingDecoder\<S\>__ 
+
+S 为状态管理泛型，如果不需要状态管理，则用 Void
+
+```java
+public class IntegerHeaderFrameDecoder extends ByteToMessageDecoder {
+    @Override
+    protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out) throws Exception {
+        if (buf.readableBytes() < 4) {
+            return;
+        }
+        
+        buf.markReaderIndex();
+        int length = buf.readInt();
+        
+        if (buf.readableBytes() < length) {
+            buf.resetReaderIndex();
+            return;
+        }
+        
+        out.add(buf.readBytes(length));
+    }
+}
+// 使用 ReplayingDecoder 后
+public class IntegerHeaderFrameDecoder extends ReplayingDecoder<Void> {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out) throws Exception {
+        out.add(buf.readBytes(buf.readInt()));
+    }
+}
+```
+
+实现：
+
+ReplayingDecoder 里面维护了一个 `ReplayingDecoderByteBuf`，它会在读取字节不够的时候抛出一个 `Error` 并返回给 ReplayingDecoder，并且会 rewind 它的读指针
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型
