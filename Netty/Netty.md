@@ -2760,6 +2760,26 @@ public class IntegerHeaderFrameDecoder extends ReplayingDecoder<Void> {
 
 ReplayingDecoder 里面维护了一个 `ReplayingDecoderByteBuf`，它会在读取字节不够的时候抛出一个 `Error` 并返回给 ReplayingDecoder，并且会 rewind 它的读指针
 
+__Netty 内置的编解码器__ 
+
+1. LinedBasedFrameDecoder
+
+    基于行的解码器，识别 `\r` 和 `\n` 
+
+2. FixedLengthFrameDecoder
+
+    基于定长的解码器
+
+3. DelimiterBasedFrameDecoder
+
+    基于分隔符的解码器（贪婪算法）
+
+4. LengthFieldBasedFrameDecoder
+
+    基于长度 header 的解码器
+
+    通过读取 header 中的长度信息，然后读取这个长度的数据
+
 ## Netty 大文件传送支持
 
 ## 可扩展事件模型

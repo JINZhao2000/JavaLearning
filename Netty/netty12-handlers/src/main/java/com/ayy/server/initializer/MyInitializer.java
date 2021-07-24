@@ -1,6 +1,6 @@
 package com.ayy.server.initializer;
 
-import com.ayy.codec.MyByteToLongDecoder;
+import com.ayy.codec.MyByteToLongReplayingDecoder;
 import com.ayy.codec.MyMessageToByteEncoder;
 import com.ayy.server.handler.MyHandler;
 import io.netty.channel.ChannelInitializer;
@@ -19,7 +19,8 @@ public class MyInitializer extends ChannelInitializer<SocketChannel> {
     protected void initChannel(SocketChannel ch) throws Exception {
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast(new MyMessageToByteEncoder());
-        pipeline.addLast(new MyByteToLongDecoder());
+//        pipeline.addLast(new MyByteToLongDecoder());
+        pipeline.addLast(new MyByteToLongReplayingDecoder());
         pipeline.addLast(new MyHandler());
     }
 }
