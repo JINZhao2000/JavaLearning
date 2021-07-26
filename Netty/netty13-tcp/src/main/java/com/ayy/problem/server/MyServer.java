@@ -1,6 +1,6 @@
-package com.ayy.server;
+package com.ayy.problem.server;
 
-import com.ayy.server.initializer.MyServerInitializer;
+import com.ayy.problem.server.initializer.MyServerInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
