@@ -74,11 +74,50 @@
 
 #### 2.1.1 Hadoop 是什么
 
+1. Hadoop 是一个由 Apache 基金会所开发的分布式系统基础架构
+2. 主要解决，海量数据的存储和海量数据分析计算问题
+3. 广义上来说，Hadoop 通常是指一个更广泛的概念 —— Hadoop 生态圈
+    - Hadoop
+    - HBase
+    - Hive
+    - Zookeeper
+    - HAMA
+    - Oozie
+    - Thrift
+    - Nutch
+    - Solr
+    - ......
+
 #### 2.1.2 Hadoop 发展
+
+1. Hadoop 创始人 Doug Cutting，为了实现与 Google 类似的全文搜索功能，他在 Lucene 框架基础上进行优化升级，查询引擎和搜索引擎
+2. 2001 年年底，Lucene 成为 Apache 基金会的一个子项目
+3. 对于海量数据的场景，Lucene 框架面对与 Google 同样的困难，存储海量数据难，检索海量速度慢
+4. 学习和模仿 Google 解决这些问题的办法：微型版 Nutch
+5. 可以说 Google 是 Hadoop 的思想之源
+    - [GFS - HDFS](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf) 
+    - [Map-Reduce - MR](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf) 
+    - [Bigtable - HBase](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/bigtable-osdi06.pdf) 
+6. 2003 - 2004 年，Google 公开了部分 GFS 和 MapReduce 思想细节，以此为基础 Doug Cutting 等人用了 2 年业余时间实现了 DFS 和 MapReduce 机制，使 Nutch 性能提升
+7. 2005 年 Hadoop 作为 Lucene 的子项目 Nutch 的一部分正式引入 Apache 基金会
+8. 2006 年 3 月份，Map-Reduce 和 Nutch Distributed File System（NDFS）分别被纳入到 Hadoop 项目中，Hadoop 就此正式诞生，标志着大数据时代的来临
+9. 名字来源于 Doug Cutting 儿子的玩具大象
 
 #### 2.1.3 Hadoop 3 大发行版本
 
+Apache，Cloudera，Hortonworks
+
+Apache 版本最原始最基础的版本，对于入门学习最好 2006
+
+Cloudera 内部集成了很多大数据框架，对应产品 CDH 2008
+
+Hortonworks 文档较好，对应产品 HDP
+
+Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
+
 #### 2.1.4 Hadoop 优势
+
+1. 高可靠性：Hadoop 底层维护多个数据版本，所以即使 Hadoop 某个计算元素或存储出现故障，也不会导致数据的丢失
 
 #### 2.1.5 Hadoop 组成
 
