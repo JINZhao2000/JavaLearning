@@ -118,8 +118,43 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
 #### 2.1.4 Hadoop 优势
 
 1. 高可靠性：Hadoop 底层维护多个数据版本，所以即使 Hadoop 某个计算元素或存储出现故障，也不会导致数据的丢失
+2. 高扩展性：在集群间分配任务数据，可方便地动态扩展数以千计地节点
+3. 高效性：在 MapReduce 的思想下，Hadoop 是并行工作的，以加快任务处理速度
+4. 高容错性：能够自动将失败的任务重新分配
 
 #### 2.1.5 Hadoop 组成
+
+- Hadoop 1.x
+    - MapReduce 计算+资源调度
+    - HDFS 数据存储
+    - Common 辅助工具
+- Hadoop 2.x
+    - MapReduce 计算
+    - Yarn 资源调度
+    - HDFS 数据存储
+    - Common 辅助工具
+- Hadoop 3.x
+    - MapReduce 计算
+    - Yarn 资源调度
+    - HDFS 数据存储
+    - Common 辅助工具
+
+- HDFS
+
+    Hadoop Distributed File System 简称 HDFS，是一个分布式文件系统
+
+    - NameNode（NN）：存储文件的元数据：如文件名，文件目录结构，文件属性（生成时间，副本数，文件权限），以及每个文件的块列表和块所在的 DataNode 等
+    - DataNode（DN）：在本地文件系统存储文件块数据，以及块数据的校验和
+    - Secondary NameNode（2NN）：每隔一段时间对 NameNode 元数据进行备份
+
+- Yarn
+
+    Yet Another Resource Nagotiator 简称 YARN，是一种资源协调者，是 Hadoop 的资源管理器
+
+    - ResourceManager（RM）：整个集群资源（内存，CPU 等）的 master
+    - NodeManager（NM）：单个节点资源的 master
+    - ApplicationMaster（AM）：单个任务的 master
+    - Container：容器，相当于一台独立的服务器，里面封装了任务运行所需要的资源，如内存，CPU，磁盘，网络
 
 #### 2.1.6 大数据生态体系
 
