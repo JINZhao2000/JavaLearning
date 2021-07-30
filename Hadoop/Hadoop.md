@@ -128,11 +128,13 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
     - MapReduce 计算+资源调度
     - HDFS 数据存储
     - Common 辅助工具
+    
 - Hadoop 2.x
     - MapReduce 计算
     - Yarn 资源调度
     - HDFS 数据存储
     - Common 辅助工具
+    
 - Hadoop 3.x
     - MapReduce 计算
     - Yarn 资源调度
@@ -155,10 +157,53 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
     - NodeManager（NM）：单个节点资源的 master
     - ApplicationMaster（AM）：单个任务的 master
     - Container：容器，相当于一台独立的服务器，里面封装了任务运行所需要的资源，如内存，CPU，磁盘，网络
+    
+- MapReduce
+
+    将计算过程分为两个阶段，Map 和 Reduce
+
+    - Map 阶段并行处理输入数据
+    - Reduce 阶段对 Map 结果进行汇总
 
 #### 2.1.6 大数据生态体系
 
-#### 2.1.7 推荐系统案例
+数据来源层
+
+- 数据库（结构化数据）
+- 文件日志（半结构化数据）
+- 视频和 ppt 等（非结构化数据）
+
+数据传输层
+
+- Sqoop 数据传递
+- Flume 日志收集
+- Kafka 消息队列
+
+数据存储层
+
+- HDFS 文件存储
+- HDFS 文件存储或 HBase 非关系型数据库
+- Kafka 消息队列
+
+资源管理层
+
+- YARN 资源管理
+
+数据计算层
+
+- MapReduce 离线计算 - Hive 数据查询
+- Spark Core 内存计算 - Spark Mlib 数据挖掘 / Spark SQL 数据查询 / Spark Streaming 实时计算 / Flink
+
+任务调度层
+
+- Oozie 任务调度
+- Azkaban 任务调度
+
+以上整体：Zookeeper 数据平台配置和调度
+
+业务模型层
+
+- 业务模型，数据可视化，业务应用
 
 ### 2.2 环境准备
 
