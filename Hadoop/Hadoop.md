@@ -219,6 +219,53 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
 
 #### 2.3.2 生产环境集群（分布式）
 
+- 安全拷贝
+
+    scp -r user@hostname:/path user@hostname:/path
+
+- 同步
+
+    rsync -av user@hostname:/path user@hostname:/path
+
+- xsync 分发脚本
+
+    ```bash
+    #!/bin/bash
+    
+    if [ $# -lt 1 ]
+    then
+            echo Not Enough Argument!
+            exit;
+    fi
+    
+    for host in hadoop02 hadoop03 hadoop04
+    do
+            echo ===== $host =====
+    
+            for file in $@
+            do
+                    if [ -e $file ]
+                            then
+                                    pdir=$(cd -P $(dirname $file); pwd)
+                                    fname=$(basename $file)
+                                    ssh $host "mkdir -p $pdir"
+                                    rsync -av $pdir/$fname $host:$pdir
+                            else
+                                    echo $file does not exist!
+                    fi
+            done
+    done
+    ```
+
+- ssh 免密登录
+
+    ```bash
+    ssh-keygen -t -rsa
+    ssh-copy-id hostname
+    ```
+
+    
+
 ### 2.4 常见错误的解决方案
 
 ## 3. HDFS
