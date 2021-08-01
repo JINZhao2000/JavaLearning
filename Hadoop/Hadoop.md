@@ -264,7 +264,45 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
     ssh-copy-id hostname
     ```
 
-    
+- 集群配置
+
+    - 集群部署计划
+
+        > NameNode 和 SecondaryNameNode 不要安装在一台服务器
+        >
+        > ResourceManager 也很消耗内存，不要和 NameNode 和 SecondaryNameNode 配置在一台机器上
+
+        |      | hadoop01              | hadoop02                        | hadoop03                       |
+        | ---- | --------------------- | ------------------------------- | ------------------------------ |
+        | HDFS | NameNode<br/>DataNode | DataNode                        | SecondaryNameNode<br/>DataNode |
+        | YARN | NodeManager           | ResourceManager<br/>NodeManager | NodeManager                    |
+
+    - 配置文件说明
+
+        Hadoop 配置文件分两类：默认配置文件和自定义配置文件，只有用户想修改某一默认配置值时，才需要修改自定义配置文件，更改相应属性值
+
+        - 默认配置文件
+
+            | 文件               | 位置                                                      |
+            | ------------------ | --------------------------------------------------------- |
+            | core-default.xml   | hadoop-common-3.x.x.jar/core-default.xml                  |
+            | hdfs-default.xml   | hadoop-hdfs-3.x.x.jar/hdfs-default.xml                    |
+            | yarn-default.xml   | hadoop-yarn-common-3.x.x.jar/yarn-default.xml             |
+            | mapred-default.xml | hadoop-mapreduce-client-core-3.x.x.jar/mapred-default.xml |
+
+        - 自定义配置文件
+
+            > core-site.xml
+            >
+            > hdfs-site.xml
+            >
+            > yarn-site.xml
+            >
+            > mapred-site.xml
+
+            文件存放在 $HADOOP_HOME/etc/hadoop/ 下
+
+    - 配置集群
 
 ### 2.4 常见错误的解决方案
 
