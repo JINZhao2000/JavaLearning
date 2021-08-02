@@ -304,6 +304,170 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
 
     - 配置集群
 
+        core-site.xml
+
+        ```xml
+        <configuration>
+        	<!-- NameNode -->
+        	<property>
+        		<name>fs.defaultFS</name>
+        		<value>hdfs://hadoop01:8020</value>
+        		<description>The name of the default file system.  A URI whose
+        		scheme and authority determine the FileSystem implementation.  The
+        		uri's scheme determines the config property (fs.SCHEME.impl) naming
+        		the FileSystem implementation class.  The uri's authority is used to
+        		determine the host, port, etc. for a filesystem.</description>
+        	</property>
+        	<!-- Data Path -->
+        	<property>
+        		<name>hadoop.tmp.dir</name>
+        		<value>/apps/modules/hadoop-3.3.1/data</value>
+        		<description>A base for other temporary directories.</description>
+        	</property>
+        	<!-- Static User -->
+        	<property>
+        		<name>hadoop.http.staticuser.user</name>
+        		<value>root</value>
+        		<description>
+        		The user name to filter as, on static web filters
+        		while rendering content. An example use is the HDFS
+        		web UI (user to be used for browsing files).
+        		</description>
+        	</property>
+        </configuration>
+        ```
+
+        hdfs-site.xml
+
+        ```xml
+        <configuration>
+        	<property>
+        		<name>dfs.namenode.http-address</name>
+        		<value>hadoop01:9870</value>
+        		<description>
+        			The address and the base port where the dfs namenode web ui will listen on.
+        		</description>
+        	</property>
+        	<property>
+        		<name>dfs.namenode.secondary.http-address</name>
+        		<value>hadoop03:9868</value>
+        		<description>
+        			The secondary namenode http server address and port.
+        		</description>
+        	</property>
+        </configuration>
+        ```
+
+        yarn-site.xml
+
+        ```xml
+        <configuration>
+        
+        <!-- Site specific YARN configuration properties -->
+        	<property>
+        		<description>A comma separated list of services where service name should only
+        			contain a-zA-Z0-9_ and can not start with numbers</description>
+        		<name>yarn.nodemanager.aux-services</name>
+        		<value>mapreduce_shuffle</value>
+        	</property>
+        	<property>
+        		<description>The hostname of the RM.</description>
+        		<name>yarn.resourcemanager.hostname</name>
+        		<value>hadoop02</value>
+        	</property>
+        	<property>
+        		<description>Environment variables that containers may override rather than use NodeManager's default.</description>
+        		<name>yarn.nodemanager.env-whitelist</name>
+        		<!-- <value>JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PREPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_HOME,PATH,LANG,TZ</value> -->
+        		<value>JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PREPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_MAPRED_HOME</value>
+        	</property>
+        </configuration>
+        ```
+
+        mapred-site.xml
+
+        ```xml
+        <configuration>
+        	<property>
+        		<name>mapreduce.framework.name</name>
+        		<value>yarn</value>
+        		<description>The runtime framework for executing MapReduce jobs.
+        			Can be one of local, classic or yarn.
+        		</description>
+        	</property>
+        </configuration>
+        ```
+
+    - 配置 workers
+
+        ```bash
+        hadoop01
+        hadoop02
+        hadoop03
+        ```
+
+    - 启动集群
+
+        1. 仅第一次启动需要初始化
+
+            ```bash
+            hdfs namenode -format
+            ```
+
+        2. 启动 HDFS
+
+            ```bash
+            sbin/start-dfs.sh
+            ```
+
+            脚本内配置
+
+            ```bash
+            HDFS_DATANODE_USER=root
+            HADOOP_DATANODE_SECURE_USER=hdfs
+            HDFS_NAMENODE_USER=root
+            HDFS_SECONDARYNAMENODE_USER=root
+            ```
+
+            此外在 $HADOOP_HOME/etc/hadoop/hadoop-env.sh 中再 export 一遍 JAVA_HOME
+
+        3. 在 ResourceManager 节点启动 YARN
+
+            ```bash
+            sbin/start-yarn.sh
+            ```
+
+            脚本内配置
+
+            ```ba
+            YARN_RESOURCEMANAGER_USER=root
+            HADOOP_SECURE_DN_USER=yarn
+            YARN_NODEMANAGER_USER=root
+            ```
+
+        4. Web 端查看 HDFS 的 NameNode
+
+            - http://hadoop01:9870
+            - 查看数据信息
+
+        5. Web 端查看 YARN 的 ResourceManager
+
+            - http://hadoop02:8088
+            - 查看 Job 信息
+
+    - 集群测试
+
+        ```bash
+        # 创建文件夹
+        hadoop fs -mkdir /input
+        # 上传文件
+        hadoop fs -put input/word.txt /input
+        # word count
+        hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.1.jar wordcount /input/word.txt /output
+        ```
+
+        
+
 ### 2.4 常见错误的解决方案
 
 ## 3. HDFS
