@@ -395,6 +395,17 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
         			Can be one of local, classic or yarn.
         		</description>
         	</property>
+            <!-- history job -->
+        	<property>
+        		<name>mapreduce.jobhistory.address</name>
+        		<value>hadoop01:10020</value>
+        		<description>MapReduce JobHistory Server IPC host:port</description>
+        	</property>
+        	<property>
+        		<name>mapreduce.jobhistory.webapp.address</name>
+        		<value>hadoop01:19888</value>
+        		<description>MapReduce JobHistory Server Web UI host:port</description>
+        	</property>
         </configuration>
         ```
 
@@ -466,7 +477,13 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
         hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.1.jar wordcount /input/word.txt /output
         ```
 
-        
+    - 配置历史服务器
+
+        ```bash
+        mapred --daemon start historyserver
+        ```
+
+    - 配置日志聚集
 
 ### 2.4 常见错误的解决方案
 
