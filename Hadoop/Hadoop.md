@@ -485,6 +485,38 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
 
     - 配置日志聚集
 
+        yarn 添加配置
+
+        ```xml
+        	<property>
+        		<description>Whether to enable log aggregation. Log aggregation collects
+        			each container's logs and moves these logs onto a file-system, for e.g.
+        			HDFS, after the application completes. Users can configure the
+        			"yarn.nodemanager.remote-app-log-dir" and
+        			"yarn.nodemanager.remote-app-log-dir-suffix" properties to determine
+        			where these logs are moved to. Users can access the logs via the
+        			Application Timeline Server.
+        		</description>
+        		<name>yarn.log-aggregation-enable</name>
+        		<value>true</value>
+        	</property>
+        	<property>
+        		<description>
+        			URL for log aggregation server
+        		</description>
+        		<name>yarn.log.server.url</name>
+        		<value>http://hadoop01:19888/jobhistory/logs</value>
+        	</property>
+        	<property>
+        		<description>How long to keep aggregation logs before deleting them.  -1 disables. 
+        			Be careful set this too small and you will spam the name node.</description>
+        		<name>yarn.log-aggregation.retain-seconds</name>
+        		<value>604800</value>
+        	</property>
+        ```
+
+        然后需要重启所有服务
+
 ### 2.4 常见错误的解决方案
 
 ## 3. HDFS
