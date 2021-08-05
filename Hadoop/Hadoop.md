@@ -516,6 +516,54 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
         ```
 
         然后需要重启所有服务
+        
+    - 各个组件逐一启动和停止
+
+        ```bash
+        hdfs --daemon start/stop namenode/datanode/secondarynamenode
+        yarn --daemon start/stop resourcemanager/nodemanager
+        ```
+
+    - 启动脚本
+
+        ```bash
+        #!/bin/bash
+        if [ $# -lt 1 ]
+        then
+          echo "No Args Input ..."
+          exit;
+        fi
+        
+        case $1 in
+        "start")
+          echo "===== hadoop start ====="
+          echo "===== hdfs ====="
+          ssh hadoop01 "/apps/modules/hadoop-3.3.1/sbin/start-dfs.sh"
+          echo "===== yarn ====="
+          ssh hadoop02 "/apps/modules/hadoop-3.3.1/sbin/start-yarn.sh"
+          echo "===== history server ====="
+          ssh hadoop01 "/apps/modules/hadoop-3.3.1/bin/mapred --daemon start historyserver"
+          echo "===== started ====="
+        ;;
+        "stop")
+          echo "===== stop ====="
+          echo "===== history server ====="
+          ssh hadoop01 "/apps/modules/hadoop-3.3.1/bin/mapred --daemon stop historyserver"
+          echo "===== yarn ====="
+          ssh hadoop02 "/apps/modules/hadoop-3.3.1/sbin/stop-yarn.sh"
+          echo "===== hdfs ====="
+          ssh hadoop01 "/apps/modules/hadoop-3.3.1/sbin/stop-dfs.sh"
+          echo "===== stoped ====="
+        ;;
+        *)
+          echo "Input Args Error ..."
+        esac
+        for host in hadoop01 hadoop02 hadoop03
+        do
+          echo "===== $host ====="
+          ssh $host jps
+        done
+        ```
 
 ### 2.4 常见错误的解决方案
 
