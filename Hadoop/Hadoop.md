@@ -564,6 +564,92 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
           ssh $host jps
         done
         ```
+        
+    - 端口号
+
+        | 端口名称                   | Hadoop 2.x | Hadoop 3.x     |
+        | -------------------------- | ---------- | -------------- |
+        | NameNode 内部通信端口      | 8020/9000  | 8020/9000/9820 |
+        | NameNode HTTP UI           | 50070      | 9870           |
+        | MapReduce 查看任务执行端口 | 8088       | 8088           |
+        | 历史服务器通信端口         | 19888      | 19888          |
+        | HTTP UI 下载端口           |            | 9864           |
+
+    - 常用配置文件
+
+        - Hadoop 2.x
+
+            core-site.xml
+
+            hdfs-site.xml
+
+            yarn-site.xml
+
+            mapred-site.xml
+
+            slaves
+
+        - Hadoop 3.x
+
+            core-site.xml
+
+            hdfs-site.xml
+
+            yarn-site.xml
+
+            mapred-site.xml
+
+            workers
+
+    - 集群时间同步
+
+        如果服务器能连接外网，不需要时间同步
+
+        > 检查所有节点 ntpd 服务状态和开机自动启动状态
+        >
+        > systemctl status ntpd
+        >
+        > systemctl start ntpd
+        >
+        > systemctl is-enabled ntpd
+        >
+        > 修改 master 主机的 /etc/ntp.conf 文件
+        >
+        > ​	授权某网段上所有机器可以从这台机器上查询和同步时间
+        >
+        > ​	restrict 192.168.68.0 mask 255.255.255.0 nomodify notrap
+        >
+        > ​	不适用其它互联网时间
+        >
+        > ​	将 server xxx iburet 都注释掉
+        >
+        > ​	当该节点丢失网络连接，依然可以采用本地时间作为时间服务器为集群中的其他节点同步
+        >
+        > ​	server 127.127.1.0
+        >
+        > ​	fudge 127.127.1.0 stratum 10
+        >
+        > 修改 master 主机的 /etc/sysconfig
+        >
+        > ​	添加 SYNC_HWCLOCK=yes
+        >
+        > 重新启动 ntpd 服务
+        >
+        > 设置 ntpd 自启动
+        >
+        > 关闭 slaves 机器的 ntp 和自启动
+        >
+        > ​	systemctl stop ntpd
+        >
+        > ​	systemctl disable ntpd
+        >
+        > 配置同步
+        >
+        > ​	crontab -e
+        >
+        > ​	编写定时任务
+        >
+        > ​	* /1 * * * * /usr/sbin/ntpdate host
 
 ### 2.4 常见错误的解决方案
 
