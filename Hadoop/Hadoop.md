@@ -747,7 +747,42 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
 
 4. HDFS 文件块大小
 
+    HDFS 中，文件在物理上是分块存储，块的大小可以通过修改配置参数 `dfs,blocksize` 来规定，在 2.x 和 3.x 默认为 128MB，1.x 为 64MB
+
+    为什么块的大小不能太小也不能太大
+
+    - HDFS 块太小反而会增加寻址时间
+    - 如果块太大，从磁盘传输数据的实际会明显大于定位这个块开始位置所需的时间，导致程序在处理这块数据时会非常慢
+    - HDFS 块大小取决于磁盘传输速率
+
 ### 3.2 HDFS Shell 相关操作
+
+- 基本语法
+
+    `hadoop fs` / `hdfs dfs` 
+
+    ```bash
+    hadoop fs -help xx
+    hadoop fs -mkdir /xxx
+    hadoop fs -moveFromLocal ./xxx /xxx # 从本地剪切文件上传到 hdfs
+    hadoop fs -copyFromLocal ./xxx /xxx # 从本地复制文件上传到 hdfs
+    hadoop fs -put ./xxx /xxx # 等同 copyFromLocal
+    hadoop fs -appendToFile ./xxx /xxx # 从本地文件追加内容到 hdfs
+    hadoop fs -copyToLocal /xxx ./xxx # 从 hdfs 拷贝到本地
+    hadoop fs -get /xxx ./xxx # 等用 copyToLocal
+    hadoop fs -ls
+    hadoop fs -cat
+    hadoop fs -chgrp
+    hadoop fs -chmod
+    hadoop fs -chown
+    hadoop fs -mkdir
+    hadoop fs -mv
+    hadoop fs -cp
+    hadoop fs -tail
+    hadoop fs -rm
+    hadoop fs -du
+    hadoop fs -setrep xx /xxx # 设置副本数量
+    ```
 
 ### 3.3 HDFS 的客户端 API
 
