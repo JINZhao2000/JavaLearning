@@ -788,6 +788,123 @@ Hortonworks 现在已经被 Cloudera 公司收购，推出新的品牌 CDP
 
 ### 3.4 HDFS 的读写流程
 
+__HDFS 写数据流程__ 
+
+1. 服务器启动
+
+2. 创建 DistributedFileSystem 客户端
+
+3. 向 NameNode 上请求传输文件
+
+4. 检查是否可以创建文件
+
+    检查权限
+
+    检查目录结构（是否存在）
+
+5. 响应可以上传数据
+
+6. 请求上传第一个 Block，请求返回 DataNode
+
+7. 副本存储节点选择
+
+    本地节点
+
+    其它机架节点
+
+    其它机架的另一个节点
+
+8. 返回多个节点，表示采用这些节点存储数据
+
+9. 创建 FSDataOutputStream
+
+10. 请求建立 Block 传输通道，client 与 master，master 与 slave，slave 与 slave
+
+11. 应答成功
+
+12. 传输数据 Packet（64k）of Chunks（chunk = chunk 512 bytes + chunksum 4 byte）
+
+__网络拓扑 - 节点距离计算__ 
+
+同一节点上的进程距离为 0
+
+同一机架上的不同节点距离为 2
+
+同一数据中心不同机架上的节点距离为 4
+
+不同数据中心节点距离为 6
+
+__副本节点选择__ 
+
+第一个副本在 Client 的节点上
+
+第二个副本在 Remote 上的随机节点
+
+第三个副本在刚在节点机架上的另一个节点
+
+```java
+package org.apache.hadoop.hdfs.server.blockmanagement;
+
+@InterfaceAudience.Private
+public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
+    protected Node chooseTargetInOrder(int numOfReplicas, 
+                                 Node writer,
+                                 final Set<Node> excludedNodes,
+                                 final long blocksize,
+                                 final int maxNodesPerRack,
+                                 final List<DatanodeStorageInfo> results,
+                                 final boolean avoidStaleNodes,
+                                 final boolean newBlock,
+                                 EnumMap<StorageType, Integer> storageTypes)
+                                 throws NotEnoughReplicasException {
+    final int numOfResults = results.size();
+    if (numOfResults == 0) {
+      DatanodeStorageInfo storageInfo = chooseLocalStorage(writer,
+          excludedNodes, blocksize, maxNodesPerRack, results, avoidStaleNodes,
+          storageTypes, true);
+
+      writer = (storageInfo != null) ? storageInfo.getDatanodeDescriptor()
+                                     : null;
+
+      if (--numOfReplicas == 0) {
+        return writer;
+      }
+    }
+    final DatanodeDescriptor dn0 = results.get(0).getDatanodeDescriptor();
+    if (numOfResults <= 1) {
+      chooseRemoteRack(1, dn0, excludedNodes, blocksize, maxNodesPerRack,
+          results, avoidStaleNodes, storageTypes);
+      if (--numOfReplicas == 0) {
+        return writer;
+      }
+    }
+    if (numOfResults <= 2) {
+      final DatanodeDescriptor dn1 = results.get(1).getDatanodeDescriptor();
+      if (clusterMap.isOnSameRack(dn0, dn1)) {
+        chooseRemoteRack(1, dn0, excludedNodes, blocksize, maxNodesPerRack,
+            results, avoidStaleNodes, storageTypes);
+      } else if (newBlock){
+        chooseLocalRack(dn1, excludedNodes, blocksize, maxNodesPerRack,
+            results, avoidStaleNodes, storageTypes);
+      } else {
+        chooseLocalRack(writer, excludedNodes, blocksize, maxNodesPerRack,
+            results, avoidStaleNodes, storageTypes);
+      }
+      if (--numOfReplicas == 0) {
+        return writer;
+      }
+    }
+    chooseRandom(numOfReplicas, NodeBase.ROOT, excludedNodes, blocksize,
+        maxNodesPerRack, results, avoidStaleNodes, storageTypes);
+    return writer;
+  }
+}
+```
+
+__HDFS 读数据流程__ 
+
+
+
 ### 3.5 NN 和 2NN
 
 ### 3.6 DataNode 工作机制
