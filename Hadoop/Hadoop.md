@@ -903,9 +903,63 @@ public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
 
 __HDFS 读数据流程__ 
 
-
+1. 请求下载文件
+2. 检查是否存在文件以及是否有权限下载文件
+3. 返回目标文件的元数据
+4. 创建 `FSDataInputStream` 请求读取数据（负载均衡）
+5. 传输数据（串行化）
 
 ### 3.5 NN 和 2NN
+
+__NameNode__ 
+
+1. 从 edits_inprogress_xxx 和 fsimage 中加载编辑日志和镜像文件到内存
+2. 元数据的增删改
+3. 记录操作日志，更新滚动日志
+4. 内存数据增删改
+
+__SecondNameNode__ 
+
+1. 请求是否需要 CheckPoint
+    - 定时时间到
+    - Edits 中数据满了
+2. 请求执行 CheckPoint
+3. 滚动正在写的 Edits（NN 中）
+4. 拷贝到 2NN
+5. 加载到内存并合并
+6. 生成新的 fsimage
+7. 拷贝到 NN
+8. 重命名成 fsimage（NN 中）
+
+Fsimage 与 Edits 概念
+
+NameNode 被格式化之后，将在 `${hadoop.tmp.dir}/tmp/dfs/name/current` 目录中产生如下文件
+
+> fsimage_xxx - HDFS 文件系统元数据的一个永久性的检查点，其中包含 HDFS 文件系统的所有目录和文件 inode 的序列化信息
+>
+> fsimage_xxx.md5
+>
+> edits_xxx-xxx 存放 HDFS 文件系统的所有更新操作路径，文件系统客户端执行的所有写操作首先会被记录到 Edits 文件中
+>
+> edits_inprogress_xxx
+>
+> seen_txid 保存的是一个数字，就是 edits_的数字
+>
+> VERSION
+
+每次 NameNode 启动的时候，都会将 fsimage 文件读入内存，加载 Edits 里面的更新操作，保证内存中的元数据信息是最新的，同步的，可以看成 NameNode 启动的时候就将 fsimage 和 edits 文件进行了合并
+
+__查看 fsimage 文件__ 
+
+```bash
+hdfs oiv -p XML -i fsimage_xxx -o <output file>
+```
+
+__查看 edits 文件__ 
+
+```bash
+hdfs oev -p XML -i edits_inprogress_xxx -o <output file>
+```
 
 ### 3.6 DataNode 工作机制
 
