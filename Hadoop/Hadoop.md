@@ -961,7 +961,81 @@ __查看 edits 文件__
 hdfs oev -p XML -i edits_inprogress_xxx -o <output file>
 ```
 
+__CheckPoint 时间设置__ 
+
+- 通常情况下，SecondaryNameNode 每隔一小时执行一次
+
+    hdfs-default.xml
+
+    ```xml
+    <property>
+    	<name>dfs.namenode.checkpoint.period</name>
+        <value>3600s</value>
+    </property>
+    ```
+
+- 一分钟检查一次操作次数，当操作次数达到 1m 的时候，SecondaryNameNode 执行一次
+
+    ```xml
+    <property>
+    	<name>dfs.namenode.checkpoint.txns</name>
+        <value>1000000</value>
+    </property>
+    <property>
+    	<name>dfs.namenode.checkpoint.check.period</name>
+        <value>60s</value>
+    </property>
+    ```
+
 ### 3.6 DataNode 工作机制
+
+1. DataNode 启动后向 NameNode 注册
+2. 注册成功
+3. 每周期（默认 6 小时）上报所有块信息
+
+4. 心跳每周期（默认 3 秒），心跳返回结果带有 NameNode 给该 DataNode 的命令
+5. 超过周期（默认 10 分钟 + 30 秒）没有收到 DataNode 的心跳，则认为该节点不可用（类似 Eureka - CAP 中的 AP 原则）
+
+DN 向 NN 汇报时间间隔
+
+```xml
+<property>
+    <name>dfs.blockreport.intervalMsec</name>
+   	<value>21600000</value>
+</property>
+```
+
+DN 扫描自己节点块信息列表的时间
+
+```xml
+<property>
+	<name>dfs.datanode.directoryscan.interval</name>
+    <value>21600s</value>
+</property>
+```
+
+超时计算
+
+timeout = 2 * dfs.namenode.heartbeat.recheck-interval + 10 * dfs.heartbeat.interval
+
+```xml
+<property>
+	<name>dfs.namenode.heartbeat.recheck-interval</name>
+    <value>300000</value>
+</property>
+<property>
+	<name>dfs.heartbeat.interval</name>
+    <value>3</value>
+</property>
+```
+
+__数据完整性__ 
+
+1. 当 DataNode 读取 Block 的时候，它会计算 CheckSum
+2. 如果计算后的 CheckSum 与 Block 创建时的不一样，说明 Block 已经损坏
+3. Client 读取其它 DataNode 上的 Block
+4. 常见的检验算法 CRC（32），MD5（128），SHA1（160）
+5. DataNode 在其文件创建后周期验证 CheckSum
 
 ## 4. MapReduce
 
