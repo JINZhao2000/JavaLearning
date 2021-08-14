@@ -1039,5 +1039,152 @@ __数据完整性__
 
 ## 4. MapReduce
 
+### 4.1 MapReduce 概述
+
+__MapReduce 定义__ 
+
+- 完全并发对数据进行 K，V 配对，形成分布式的 Map
+- 对所有的 Map 进行 Reduce，将结果汇集到一起
+
+__MapReduce 优缺点__ 
+
+- 优点
+    1. 易于编程：用户只关心业务逻辑，实现框架的接口
+    2. 良好的扩展性：可以动态增加服务器，解决计算资源不够的问题
+    3. 高容错性：任何一台机器宕机，可以将任务转移到其它的节点
+    4. 适合海量计算：几千台服务器共同计算
+- 缺点
+    1. 不擅长实时计算 - MySQL
+    2. 不擅长流式计算 - Spark Streaming / Flink
+    3. 不擅长 DAG 有向无环图计算 - Spark
+
+__MapReduce 进程__ 
+
+- MrAppMaster：负责整个程序的过程调度及状态协调
+
+- MapTask：负责 Map 阶段的整个数据处理流程
+
+- ReduceTask：负责 Reduce 阶段整个处理流程
+
+    MapTask 与 ReduceTask 进程名为 yarn-child
+
+__WordCount (Hello World)__ 
+
+```java
+public class WordCount {
+    // <Object, Text, Text, IntWritable>
+    // 输入：分隔符，内容；输出：内容，计数
+    public static class TokenizerMapper extends Mapper<Object, Text, Text, IntWritable>{
+    	private final static IntWritable one = new IntWritable(1);
+	    private Text word = new Text();      
+	    public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+    		StringTokenizer itr = new StringTokenizer(value.toString());
+	    	while (itr.hasMoreTokens()) {
+        		word.set(itr.nextToken());
+	        	context.write(word, one);
+	      	}
+	    }
+  	}
+  
+    // <Text, IntWritable, Text, IntWritable>
+    // Map 输出，也是 Reduce 输入：K，V；Reduce 输出：Map<K, V>
+    public static class IntSumReducer extends Reducer<Text,IntWritable,Text,IntWritable> {
+        private IntWritable result = new IntWritable();
+        public void reduce(Text key, Iterable<IntWritable> values, Context context) 
+            throws IOException, InterruptedException {
+            int sum = 0;
+            for (IntWritable val : values) {
+                sum += val.get();
+            }
+            result.set(sum);
+            context.write(key, result);
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        Configuration conf = new Configuration();
+        String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
+        if (otherArgs.length < 2) {
+            System.err.println("Usage: wordcount <in> [<in>...] <out>");
+            System.exit(2);
+        }
+        Job job = Job.getInstance(conf, "word count");
+        job.setJarByClass(WordCount.class);
+        job.setMapperClass(TokenizerMapper.class);
+        job.setCombinerClass(IntSumReducer.class);
+        job.setReducerClass(IntSumReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+        for (int i = 0; i < otherArgs.length - 1; ++i) {
+            FileInputFormat.addInputPath(job, new Path(otherArgs[i]));
+        }
+        FileOutputFormat.setOutputPath(job, new Path(otherArgs[otherArgs.length - 1]));
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    }
+}
+```
+
+__Hadoop 数据类型__ 
+
+| Java 类型 | Hadoop Writable 类型 |
+| --------- | -------------------- |
+| Boolean   | BooleanWritable      |
+| Byte      | ByteWritable         |
+| Int       | IntWritable          |
+| Float     | FloatWritable        |
+| Long      | LongWritable         |
+| Double    | DoubleWritable       |
+| String    | Text                 |
+| Map       | MapWritable          |
+| Array     | ArrayWritable        |
+| Null      | NullWritable         |
+
+__MapReduce 编程规范__ 
+
+程序分为三部分：Mapper，Reducer 和 Driver
+
+- Mapper
+
+    1. 用户自定义的 Mapper 要继承自己的父类
+    2. Mapper 的输入数据是 K，V 对的形式
+    3. Mapper 中的业务逻辑写在 map() 方法中
+    4. Mapper 的输出数据是 K，V 对的形式
+    5. map() 方法（MapTask 进程）对每一个 <K, V> 调用一次
+
+- Reducer
+
+    1. 用户自定义的 Reducer 要继承自己的父类
+    2. Reducer 的输入数据类型对应 Mapper 输出的类型，也是 K，V
+    3. Reduce 中的业务逻辑写在 reduce() 方法中
+    4. ReduceTask 进程对每一组相同 K 的 <K, V> 组调用一次 reduce() 方法
+
+- Driver
+
+    相当于  YARN 集群的客户端，用于提交整个程序到 YARN 集群，提交的是封装了 MapReduce 程序相关运行参数的 Job 对象
+
+### 4.2 序列化
+
+### 4.3 MapReduce 框架原理
+
+__输入的数据 InputFormat__ 
+
+__Shuffle__ 
+
+__输出的数据 OutputFormat__ 
+
+__Join__ 
+
+__ETL__ 
+
+### 4.4 数据压缩
+
+__压缩算法__ 
+
+__特点__ 
+
+__生产环境使用__ 
+
+### 4.5 常见错误与解决方案
+
 ## 5. Yarn
 
