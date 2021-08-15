@@ -1073,7 +1073,7 @@ __WordCount (Hello World)__
 ```java
 public class WordCount {
     // <Object, Text, Text, IntWritable>
-    // 输入：分隔符，内容；输出：内容，计数
+    // 输入：偏移量，内容；输出：内容，计数
     public static class TokenizerMapper extends Mapper<Object, Text, Text, IntWritable>{
     	private final static IntWritable one = new IntWritable(1);
 	    private Text word = new Text();      
@@ -1161,6 +1161,25 @@ __MapReduce 编程规范__
 - Driver
 
     相当于  YARN 集群的客户端，用于提交整个程序到 YARN 集群，提交的是封装了 MapReduce 程序相关运行参数的 Job 对象
+
+__WordCount__ 
+
+- Mapper
+    - 将 MapTask 传的文本内容转成 String
+    - 根据空格将一行分成单词
+    - 将单词输出为 <单词，I>
+- Reducer
+    - 汇总各个 key 的个数
+    - 输出该 key 的总次数
+- Driver
+    - 获取配置信息，获取 Job 对象实例
+    - 指定本程序的 jar 包所在的本地路径
+    - 关联 Mapper 和 Reducer 业务类
+    - 指定 Mapper 输出数据的 K，V 类型
+    - 指定最终输出的数据的 K，V 类型
+    - 指定 Job 的输入原始文件所在目录
+    - 指定 Job 的输出结果所在目录
+    - 提交作业
 
 ### 4.2 序列化
 
