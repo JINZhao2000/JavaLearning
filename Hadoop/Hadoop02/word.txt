@@ -1,0 +1,7 @@
+chmod
+cls
+cls
+dir
+cd
+rm cd
+cls mkdir
