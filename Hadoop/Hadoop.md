@@ -1244,6 +1244,366 @@ __输入的数据 InputFormat__
     - 默认情况下，切片大小 = BlockSize
     - 切片时不考虑数据集整体，而是逐个针对每一个文件单独切片
 
+Job 提交流程
+
+Job
+
+```java
+public class Job extends JobContextImpl implements JobContext, AutoCloseable {
+    public boolean waitForCompletion(boolean verbose) throws IOException, InterruptedException, ClassNotFoundException {
+        if (state == JobState.DEFINE) {
+            submit(); /////
+        }
+        if (verbose) {
+            monitorAndPrintJob();
+        } else {
+            // get the completion poll interval from the client.
+            int completionPollIntervalMillis = Job.getCompletionPollInterval(cluster.getConf());
+            while (!isComplete()) {
+                try {
+                    Thread.sleep(completionPollIntervalMillis);
+                } catch (InterruptedException ie) {
+                }
+            }
+        }
+        return isSuccessful();
+    }
+    
+    public void submit() throws IOException, InterruptedException, ClassNotFoundException {
+	    ensureState(JobState.DEFINE);
+	    setUseNewAPI();
+	    connect(); /////
+	    final JobSubmitter submitter = getJobSubmitter(cluster.getFileSystem(), cluster.getClient());
+    	status = ugi.doAs(new PrivilegedExceptionAction<JobStatus>() {
+            public JobStatus run() throws IOException, InterruptedException, ClassNotFoundException {
+                return submitter.submitJobInternal(Job.this, cluster);
+            }
+        });
+        state = JobState.RUNNING;
+        LOG.info("The url to track the job: " + getTrackingURL());
+    }
+    
+    @Private
+    @VisibleForTesting
+    synchronized void connect() throws IOException, InterruptedException, ClassNotFoundException {
+        if (cluster == null) {
+            cluster = ugi.doAs(new PrivilegedExceptionAction<Cluster>() {
+                public Cluster run() throws IOException, InterruptedException, ClassNotFoundException {
+                    return new Cluster(getConfiguration());
+                }
+            });
+        }
+    }
+}
+```
+
+Cluster
+
+```java
+public class Cluster {
+	public Cluster(Configuration conf) throws IOException {
+		this(null, conf);
+	}
+    
+    public Cluster(InetSocketAddress jobTrackAddr, Configuration conf) throws IOException {
+        this.conf = conf;
+        this.ugi = UserGroupInformation.getCurrentUser();
+        initialize(jobTrackAddr, conf);
+    }
+    
+    private void initialize(InetSocketAddress jobTrackAddr, Configuration conf) throws IOException {
+        initProviderList();
+        final IOException initEx = new IOException("Cannot initialize Cluster. Please check your configuration for "
+            + MRConfig.FRAMEWORK_NAME
+            + " and the correspond server addresses.");
+        if (jobTrackAddr != null) {
+            LOG.info("Initializing cluster for Job Tracker=" + jobTrackAddr.toString());
+        }
+        for (ClientProtocolProvider provider : providerList) {
+            LOG.debug("Trying ClientProtocolProvider : "
+                      + provider.getClass().getName());
+            ClientProtocol clientProtocol = null;
+            try {
+                if (jobTrackAddr == null) {
+                    clientProtocol = provider.create(conf);
+                } else {
+                    clientProtocol = provider.create(jobTrackAddr, conf);
+                }
+                if (clientProtocol != null) {
+                    clientProtocolProvider = provider;
+                    client = clientProtocol;
+                    LOG.debug("Picked " + provider.getClass().getName() + " as the ClientProtocolProvider");
+                    break;
+                } else {
+                    LOG.debug("Cannot pick " + provider.getClass().getName()
+                              + " as the ClientProtocolProvider - returned null protocol");
+                }
+            } catch (Exception e) {
+                final String errMsg = "Failed to use " + provider.getClass().getName() + " due to error: ";
+                initEx.addSuppressed(new IOException(errMsg, e));
+                LOG.info(errMsg, e);
+            }
+        }
+        if (null == clientProtocolProvider || null == client) {
+            throw initEx;
+        }
+    }
+}
+```
+
+JobSubmitter
+
+```java
+class JobSubmitter {
+    JobStatus submitJobInternal(Job job, Cluster cluster) throws ClassNotFoundException, InterruptedException, IOException {
+        //validate the jobs output specs 
+        checkSpecs(job); ///// 
+        Configuration conf = job.getConfiguration();
+        addMRFrameworkToDistributedCache(conf);
+        Path jobStagingArea = JobSubmissionFiles.getStagingDir(cluster, conf);
+        //configure the command line options correctly on the submitting dfs
+        InetAddress ip = InetAddress.getLocalHost();
+        if (ip != null) {
+            submitHostAddress = ip.getHostAddress();
+            submitHostName = ip.getHostName();
+            conf.set(MRJobConfig.JOB_SUBMITHOST,submitHostName);
+            conf.set(MRJobConfig.JOB_SUBMITHOSTADDR,submitHostAddress);
+        }
+        JobID jobId = submitClient.getNewJobID();
+        job.setJobID(jobId);
+        Path submitJobDir = new Path(jobStagingArea, jobId.toString());
+        JobStatus status = null;
+        try {
+            conf.set(MRJobConfig.USER_NAME, UserGroupInformation.getCurrentUser().getShortUserName());
+            conf.set("hadoop.http.filter.initializers", 
+                     "org.apache.hadoop.yarn.server.webproxy.amfilter.AmFilterInitializer");
+            conf.set(MRJobConfig.MAPREDUCE_JOB_DIR, submitJobDir.toString());
+            LOG.debug("Configuring job " + jobId + " with " + submitJobDir + " as the submit dir");
+            // get delegation token for the dir
+            TokenCache.obtainTokensForNamenodes(job.getCredentials(), new Path[] { submitJobDir }, conf);
+            populateTokenCache(conf, job.getCredentials());
+            // generate a secret to authenticate shuffle transfers
+            if (TokenCache.getShuffleSecretKey(job.getCredentials()) == null) {
+                KeyGenerator keyGen;
+                try {
+                    keyGen = KeyGenerator.getInstance(SHUFFLE_KEYGEN_ALGORITHM);
+                    keyGen.init(SHUFFLE_KEY_LENGTH);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new IOException("Error generating shuffle secret key", e);
+                }
+                SecretKey shuffleKey = keyGen.generateKey();
+                TokenCache.setShuffleSecretKey(shuffleKey.getEncoded(), job.getCredentials());
+            }
+            if (CryptoUtils.isEncryptedSpillEnabled(conf)) {
+                conf.setInt(MRJobConfig.MR_AM_MAX_ATTEMPTS, 1);
+                LOG.warn("Max job attempts set to 1 since encrypted intermediate" + "data spill is enabled");
+            }
+            copyAndConfigureFiles(job, submitJobDir); /////
+            Path submitJobFile = JobSubmissionFiles.getJobConfPath(submitJobDir);
+            // Create the splits for the job
+            LOG.debug("Creating splits at " + jtFs.makeQualified(submitJobDir));
+            
+            
+            
+            
+            
+            // 切片 ！！！
+            int maps = writeSplits(job, submitJobDir);  
+            conf.setInt(MRJobConfig.NUM_MAPS, maps);
+            LOG.info("number of splits:" + maps);
+            
+            int maxMaps = conf.getInt(MRJobConfig.JOB_MAX_MAP, MRJobConfig.DEFAULT_JOB_MAX_MAP);
+            if (maxMaps >= 0 && maxMaps < maps) {
+                throw new IllegalArgumentException("The number of map tasks " + maps +
+                                                   " exceeded limit " + maxMaps);
+            }
+            // write "queue admins of the queue to which job is being submitted"
+            // to job file.
+            String queue = conf.get(MRJobConfig.QUEUE_NAME, JobConf.DEFAULT_QUEUE_NAME);
+            AccessControlList acl = submitClient.getQueueAdmins(queue);
+            conf.set(toFullPropertyName(queue, QueueACL.ADMINISTER_JOBS.getAclName()), acl.getAclString());
+            // removing jobtoken referrals before copying the jobconf to HDFS
+            // as the tasks don't need this setting, actually they may break
+            // because of it if present as the referral will point to a
+            // different job.
+            TokenCache.cleanUpTokenReferral(conf);
+            if (conf.getBoolean(
+                MRJobConfig.JOB_TOKEN_TRACKING_IDS_ENABLED,
+                MRJobConfig.DEFAULT_JOB_TOKEN_TRACKING_IDS_ENABLED)) {
+                // AddHDFS tracking ids
+                ArrayList<String> trackingIds = new ArrayList<String>();
+                for (Token<? extends TokenIdentifier> t : job.getCredentials().getAllTokens()) {
+                    trackingIds.add(t.decodeIdentifier().getTrackingId());
+                }
+                conf.setStrings(MRJobConfig.JOB_TOKEN_TRACKING_IDS, trackingIds.toArray(new String[trackingIds.size()]));
+            }
+            // Set reservation info if it exists
+            ReservationId reservationId = job.getReservationId();
+            if (reservationId != null) {
+                conf.set(MRJobConfig.RESERVATION_ID, reservationId.toString());
+            }
+            // Write job file to submit dir
+            writeConf(conf, submitJobFile);
+            // Now, actually submit the job (using the submit name)
+            printTokens(jobId, job.getCredentials());
+            status = submitClient.submitJob(jobId, submitJobDir.toString(), job.getCredentials());
+            if (status != null) {
+                return status;
+            } else {
+                throw new IOException("Could not launch job");
+            }
+        } finally {
+            if (status == null) {
+                LOG.info("Cleaning up the staging area " + submitJobDir);
+                if (jtFs != null && submitJobDir != null)
+                    jtFs.delete(submitJobDir, true);
+            }
+        }
+    }
+    
+    private void checkSpecs(Job job) throws ClassNotFoundException, InterruptedException, IOException {
+        JobConf jConf = (JobConf)job.getConfiguration();
+        // Check the output specification
+        if (jConf.getNumReduceTasks() == 0 ? 
+            jConf.getUseNewMapper() : jConf.getUseNewReducer()) {
+            org.apache.hadoop.mapreduce.OutputFormat<?, ?> output =
+                ReflectionUtils.newInstance(job.getOutputFormatClass(), job.getConfiguration());
+            output.checkOutputSpecs(job);
+        } else {
+            jConf.getOutputFormat().checkOutputSpecs(jtFs, jConf);
+        }
+    }
+    
+    // FileOutputFormat imple;ents
+    public void checkOutputSpecs(JobContext job) throws FileAlreadyExistsException, IOException{
+        // Ensure that the output directory is set and not already there
+        Path outDir = getOutputPath(job);
+        if (outDir == null) {
+            throw new InvalidJobConfException("Output directory not set.");
+        }
+        // get delegation token for outDir's file system
+        TokenCache.obtainTokensForNamenodes(job.getCredentials(),
+                                            new Path[] { outDir }, job.getConfiguration());        
+        if (outDir.getFileSystem(job.getConfiguration()).exists(outDir)) {
+            throw new FileAlreadyExistsException("Output directory " + outDir + " already exists");
+        }
+    }
+    
+    private void copyAndConfigureFiles(Job job, Path jobSubmitDir) throws IOException {
+        Configuration conf = job.getConfiguration();
+        boolean useWildcards = conf.getBoolean(Job.USE_WILDCARD_FOR_LIBJARS,
+                                               Job.DEFAULT_USE_WILDCARD_FOR_LIBJARS);
+        JobResourceUploader rUploader = new JobResourceUploader(jtFs, useWildcards);
+        rUploader.uploadResources(job, jobSubmitDir); /////
+
+        // Get the working directory. If not set, sets it to filesystem working dir
+        // This code has been added so that working directory reset before running
+        // the job. This is necessary for backward compatibility as other systems
+        // might use the public API JobConf#setWorkingDirectory to reset the working
+        // directory.
+        job.getWorkingDirectory();
+    }
+}
+```
+
+JobResourceUploader
+
+```java
+class JobResourceUploader {
+    public void uploadResources(Job job, Path submitJobDir) throws IOException {
+        try {
+            initSharedCache(job.getJobID(), job.getConfiguration());
+            uploadResourcesInternal(job, submitJobDir);
+        } finally {
+            stopSharedCache();
+        }
+    }
+    
+    private void uploadResourcesInternal(Job job, Path submitJobDir) throws IOException {
+        Configuration conf = job.getConfiguration();
+        short replication = (short) conf.getInt(Job.SUBMIT_REPLICATION, Job.DEFAULT_SUBMIT_REPLICATION);
+        
+        if (!(conf.getBoolean(Job.USED_GENERIC_PARSER, false))) {
+            LOG.warn("Hadoop command-line option parsing not performed. "
+                     + "Implement the Tool interface and execute your application "
+                     + "with ToolRunner to remedy this.");
+        }
+        // Figure out what fs the JobTracker is using. Copy the
+        // job to it, under a temporary name. This allows DFS to work,
+        // and under the local fs also provides UNIX-like object loading
+        // semantics. (that is, if the job file is deleted right after
+        // submission, we can still run the submission to completion)
+
+        // Create a number of filenames in the JobTracker's fs namespace
+        LOG.debug("default FileSystem: " + jtFs.getUri());
+        if (jtFs.exists(submitJobDir)) {
+            throw new IOException("Not submitting job. Job directory " + submitJobDir
+                                  + " already exists!! This is unexpected.Please check what's there in"
+                                  + " that directory");
+        }
+        // Create the submission directory for the MapReduce job.
+        submitJobDir = jtFs.makeQualified(submitJobDir);
+        submitJobDir = new Path(submitJobDir.toUri().getPath());
+        FsPermission mapredSysPerms = new FsPermission(JobSubmissionFiles.JOB_DIR_PERMISSION);
+        mkdirs(jtFs, submitJobDir, mapredSysPerms);
+
+        if (!conf.getBoolean(MRJobConfig.MR_AM_STAGING_DIR_ERASURECODING_ENABLED,
+                             MRJobConfig.DEFAULT_MR_AM_STAGING_ERASURECODING_ENABLED)) {
+            disableErasureCodingForPath(submitJobDir);
+        }
+
+        // Get the resources that have been added via command line arguments in the
+        // GenericOptionsParser (i.e. files, libjars, archives).
+        Collection<String> files = conf.getStringCollection("tmpfiles");
+        Collection<String> libjars = conf.getStringCollection("tmpjars");
+        Collection<String> archives = conf.getStringCollection("tmparchives");
+        String jobJar = job.getJar();
+        
+        // Merge resources that have been programmatically specified for the shared
+        // cache via the Job API.
+        files.addAll(conf.getStringCollection(MRJobConfig.FILES_FOR_SHARED_CACHE));
+        libjars.addAll(conf.getStringCollection(MRJobConfig.FILES_FOR_CLASSPATH_AND_SHARED_CACHE));
+        archives.addAll(conf.getStringCollection(MRJobConfig.ARCHIVES_FOR_SHARED_CACHE));
+
+        Map<URI, FileStatus> statCache = new HashMap<URI, FileStatus>();
+        checkLocalizationLimits(conf, files, libjars, archives, jobJar, statCache);
+
+        Map<String, Boolean> fileSCUploadPolicies = new LinkedHashMap<String, Boolean>();
+        Map<String, Boolean> archiveSCUploadPolicies = new LinkedHashMap<String, Boolean>();
+
+        uploadFiles(job, files, submitJobDir, mapredSysPerms, replication, fileSCUploadPolicies, statCache);
+        uploadLibJars(job, libjars, submitJobDir, mapredSysPerms, replication, fileSCUploadPolicies, statCache);
+        uploadArchives(job, archives, submitJobDir, mapredSysPerms, replication, archiveSCUploadPolicies, statCache);
+        uploadJobJar(job, jobJar, submitJobDir, replication, statCache);
+        addLog4jToDistributedCache(job, submitJobDir);
+
+        // Note, we do not consider resources in the distributed cache for the
+        // shared cache at this time. Only resources specified via the
+        // GenericOptionsParser or the jobjar.
+        Job.setFileSharedCacheUploadPolicies(conf, fileSCUploadPolicies);
+        Job.setArchiveSharedCacheUploadPolicies(conf, archiveSCUploadPolicies);
+
+        // set the timestamps of the archives and files
+        // set the public/private visibility of the archives and files
+        ClientDistributedCacheManager.determineTimestampsAndCacheVisibilities(conf, statCache);
+        // get DelegationToken for cached file
+        ClientDistributedCacheManager.getDelegationTokens(conf, job.getCredentials());
+    }
+}
+```
+
+流程：
+
+1. Job.submit()
+2. JobSubmitter：Cluster 成员 Proxy
+3. YarnRunner -> YARN 或者本地程序 LocalJobRunner
+4. 通过 Cluster 进行
+    1. StagingDir
+    2. JobID
+    3. 调用 FileInputFormat.getSplits() 获取切片信息并序列化成文件 Job.split
+    4. 将 Job 相关参数写到文件 Job.xml
+    5. 如果是 yarnRunner，还需要获取 Job 的 jar 包 xxx.jar
+
 __Shuffle__ 
 
 __输出的数据 OutputFormat__ 
