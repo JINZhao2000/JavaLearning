@@ -1592,7 +1592,7 @@ class JobResourceUploader {
 }
 ```
 
-流程：
+Job 流程：
 
 1. Job.submit()
 2. JobSubmitter：Cluster 成员 Proxy
@@ -1603,6 +1603,130 @@ class JobResourceUploader {
     3. 调用 FileInputFormat.getSplits() 获取切片信息并序列化成文件 Job.split
     4. 将 Job 相关参数写到文件 Job.xml
     5. 如果是 yarnRunner，还需要获取 Job 的 jar 包 xxx.jar
+
+切片
+
+JobSubmitter
+
+```java
+class JobSubmitter {
+    private int writeSplits(org.apache.hadoop.mapreduce.JobContext job, Path jobSubmitDir) 
+        throws IOException, InterruptedException, ClassNotFoundException {
+        JobConf jConf = (JobConf)job.getConfiguration();
+        int maps;
+        if (jConf.getUseNewMapper()) {
+            maps = writeNewSplits(job, jobSubmitDir);  /////
+        } else {
+            maps = writeOldSplits(jConf, jobSubmitDir);
+        }
+        return maps;
+    }
+
+    private <T extends InputSplit> int writeNewSplits(JobContext job, Path jobSubmitDir) 
+        throws IOException, InterruptedException, ClassNotFoundException {
+        Configuration conf = job.getConfiguration();
+        InputFormat<?, ?> input =
+            ReflectionUtils.newInstance(job.getInputFormatClass(), conf);
+
+        List<InputSplit> splits = input.getSplits(job); /////
+        T[] array = (T[]) splits.toArray(new InputSplit[splits.size()]);
+
+        // sort the splits into order based on size, so that the biggest
+        // go first
+        Arrays.sort(array, new SplitComparator());
+        JobSplitWriter.createSplitFiles(jobSubmitDir, conf, jobSubmitDir.getFileSystem(conf), array); ///// 生成切片文件
+        return array.length;
+    }
+}
+```
+
+FileInputFormat
+
+```java
+public abstract class FileInputFormat<K, V> extends InputFormat<K, V> {
+    public List<InputSplit> getSplits(JobContext job) throws IOException {
+        StopWatch sw = new StopWatch().start();
+        long minSize = Math.max(getFormatMinSplitSize(), getMinSplitSize(job)); // Max(1 or SPLIT_MINIZE)
+        // SPLIT_MINIZE => mapreduce.input.fileinputformat.split.minsize: default = 0
+        long maxSize = getMaxSplitSize(job);  // SPLIT_MAXSIZE or Long.MAX_VALUE
+        // SPLITE_MAXSIZE => mapreduce.input.fileinputformat.split.maxsize
+
+        // generate splits
+        List<InputSplit> splits = new ArrayList<InputSplit>();
+        List<FileStatus> files = listStatus(job);
+
+        boolean ignoreDirs = !getInputDirRecursive(job)
+            && job.getConfiguration().getBoolean(INPUT_DIR_NONRECURSIVE_IGNORE_SUBDIRS, false);
+        for (FileStatus file: files) {
+            if (ignoreDirs && file.isDirectory()) {
+                continue;
+            }
+            Path path = file.getPath();
+            long length = file.getLen();
+            if (length != 0) {
+                BlockLocation[] blkLocations;
+                if (file instanceof LocatedFileStatus) {
+                    blkLocations = ((LocatedFileStatus) file).getBlockLocations();
+                } else {
+                    FileSystem fs = path.getFileSystem(job.getConfiguration());
+                    blkLocations = fs.getFileBlockLocations(file, 0, length);
+                }
+                // 并不是所有文件都支持切片，如果不支持切片的压缩文件
+                if (isSplitable(job, path)) {
+                    // 本地模式为 32MB 33554432
+                    long blockSize = file.getBlockSize();
+                    // Math.max(minSize, Math.min(maxSize, blockSize));
+                    long splitSize = computeSplitSize(blockSize, minSize, maxSize);
+
+                    long bytesRemaining = length;
+                    while (((double) bytesRemaining)/splitSize > SPLIT_SLOP) { // SPLIT_SLOP = 1.1
+                        int blkIndex = getBlockIndex(blkLocations, length-bytesRemaining);
+                        splits.add(makeSplit(path, length-bytesRemaining, splitSize,
+                                             blkLocations[blkIndex].getHosts(),
+                                             blkLocations[blkIndex].getCachedHosts()));
+                        bytesRemaining -= splitSize;
+                    }
+
+                    if (bytesRemaining != 0) {
+                        int blkIndex = getBlockIndex(blkLocations, length-bytesRemaining);
+                        splits.add(makeSplit(path, length-bytesRemaining, bytesRemaining,
+                                             blkLocations[blkIndex].getHosts(),
+                                             blkLocations[blkIndex].getCachedHosts()));
+                    }
+                } else { // not splitable
+                    if (LOG.isDebugEnabled()) {
+                        // Log only if the file is big enough to be splitted
+                        if (length > Math.min(file.getBlockSize(), minSize)) {
+                            LOG.debug("File is not splittable so no parallelization "
+                                      + "is possible: " + file.getPath());
+                        }
+                    }
+                    splits.add(makeSplit(path, 0, length, blkLocations[0].getHosts(),
+                                         blkLocations[0].getCachedHosts()));
+                }
+            } else { 
+                //Create empty hosts array for zero length files
+                splits.add(makeSplit(path, 0, length, new String[0]));
+            }
+        }
+    }
+```
+
+JobSubmitWriter
+
+```java
+public class JobSplitWriter {
+    public static <T extends InputSplit> void createSplitFiles(
+        Path jobSubmitDir, Configuration conf, FileSystem fs, T[] splits) 
+        throws IOException, InterruptedException {
+        FSDataOutputStream out = createFile(fs, JobSubmissionFiles.getJobSplitFile(jobSubmitDir), conf);
+        SplitMetaInfo[] info = writeNewSplits(conf, splits, out);
+        out.close();
+        writeJobSplitMetaInfo(fs,JobSubmissionFiles.getJobSplitMetaFile(jobSubmitDir), 
+                              new FsPermission(JobSubmissionFiles.JOB_FILE_PERMISSION), splitVersion,info);
+    }
+}
+```
 
 __Shuffle__ 
 
