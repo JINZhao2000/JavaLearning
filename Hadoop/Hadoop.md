@@ -1728,6 +1728,49 @@ public class JobSplitWriter {
 }
 ```
 
+FileInputFormat 切片流程
+
+1. 先找到数据存储目录
+
+2. 开始遍历处理（规划切片）目录下的每一个文件
+
+3. 遍历第一个文件 xxx
+
+    1. 获取文件大小 `fs.sizeOf(xxx)` 
+
+    2. 计算切片大小
+
+        `computeSplitSize(Math.max(minSize, Math.min(maxSize, blockSize))) = blockSize = 128M` 
+
+    3. 默认情况下，切片大小 = blockSize
+
+    4. 开始切，形成第 1 个切片：每次切片时，都要判断剩下的块是否大于块的 1.1 倍，不大于 1.1 倍就划分一块切片
+
+    5. 将切片信息写到一个切片规划中
+
+    6. 整个切片的核心过程在 `getSplit()` 方法中完成
+
+    7. `InputSplit` 只记录了切片的原数据信息，比如起始位置，长度以及所在的节点列表等
+
+4. 提交切片规划文件到 YARN 上，YARN 上的 MRAppMaster 就可以根据切片规划文件计算开启 MapTask 个数
+
+FileInputFormat 切片机制
+
+1. 简单地按照文件的内容长度进行切片
+2. 切片大小，默认等于 Block 大小
+3. 切片时不考虑数据集整体，而是逐个针对每一个文件单独切片
+
+FileInputFormat 参数配置
+
+- `Math.max(minSize, Math.min(maxSize, blockSize));` 
+- `mapreduce.input.fileinputformat.split.minsize = 1`
+- `mapreduce.input.fileinputformat.split.maxsize = Long.MAX_VALUE` 
+- API
+    - `(FileSplit) context.getInputSplit();` 
+    - `inputSplit.getPath().getName()` 
+
+TextInputFormat
+
 __Shuffle__ 
 
 __输出的数据 OutputFormat__ 
