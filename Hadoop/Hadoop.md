@@ -1769,7 +1769,43 @@ FileInputFormat 参数配置
     - `(FileSplit) context.getInputSplit();` 
     - `inputSplit.getPath().getName()` 
 
+FileInputFormat 常见的接口实现类包括：TextInputFormat，KeyValueTextInputFormat，NLineInputFormat，CombineTextInputFormat 和自定义 InputFormat
+
 TextInputFormat
+
+> TextInputFormat 是默认的 FileInputFormat 实现类，按行读取每条记录，Key 是存储改行在整个文件的其实字节偏移量，LongWritable 类型，Value 是这行的内容，不包括任何终止符（换行符或者回车符），Text 类型
+
+CombineTextInputFormat 切片机制
+
+> 默认的切片机制是对任务按文件规划切片，不管文件多小，都会是一个单独的切片，都会给一个 MapTask，这样如果由大量小文件，就会产生大量的 MapTask，处理效率极其低下
+
+1. 应用场景
+
+    CombineTextInputFormat 用于小文件过多的场景，它可以将多个小文件从逻辑上规划到一个切片中，这样多个小文件就可以交给一个 MapTask 处理
+
+2. 虚拟存储切片最大值设置
+
+    `CombineTextInputFormat.setMaxInputSplitSize(job, 4194304); // 4 MB ` 
+
+    注意：虚拟存储切片最大值设置最好根据实际的小文件大小情况来设置具体的值
+
+3. 切片机制
+
+    生成切片过程包括：虚拟存储过程和切片过程二部分
+
+    虚拟存储过程
+
+    > 判断文件大小是否大于 setMaxInputSplitSize 值
+    >
+    > 如果不大于则单独生成一个虚拟存储文件
+    >
+    > 如果大于则使最后两个切片的大小平均，之前的切片大小为 Max 大小
+
+    切片过程
+
+    >判断虚拟存储的文件大小是否大于 setMaxInputSplitSize 值，大于等于则单独形成一个切片
+    >
+    >如果不大于则跟下一个虚拟存储文件进行合并，共同形成一个切片，合并的最终大小与切片大小无关
 
 __Shuffle__ 
 
