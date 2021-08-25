@@ -1807,6 +1807,48 @@ CombineTextInputFormat 切片机制
     >
     >如果不大于则跟下一个虚拟存储文件进行合并，共同形成一个切片，合并的最终大小与切片大小无关
 
+__MapReduce 工作流程__ 
+
+1. 获取待处理文本
+
+2. 客户端 `submit()` 前，获取待处理数据的信息，然后根据参数配置，形成一个任务分配的规划
+
+3. 提交信息
+
+    - 本地：job.split，wc.jar，job.xml
+    - yarn：RM
+
+4. yarn 计算出 MapTask 数量：MRAppMaster，NodeManager
+
+5. 默认 TextInputFormat
+
+6. Mapper 逻辑运算输出到 OutputCollector（环形缓冲区）
+
+7. 向环形缓冲区写入 <K, V> 数据，左半侧是索引 kvmata，kvindex，右半侧是数据 <K, V> bufindex
+
+    - meta：index，partition，keystart，valstart
+    - records：key，value，unused
+
+    写到 80% 时反向写数据
+
+8. 分区，排序（快排）
+
+9. 溢出到文件（分区且区内有序）
+
+10. Merge 归并排序（磁盘上）
+
+11. Combiner 合并
+
+12. 所有 MapTask 任务完成后，启动相应数量的 ReduceTask，并告知 ReduceTask 处理数据范围（数据分区）
+
+13. 下载到 ReduceTask 本地磁盘 合并文件 归并排序
+
+14. 一次读取一组
+
+15. 分组 GroupingComparator
+
+16. 默认 TextOutputFormat -> Reduce(k, v), Context.write(k, v) -> OutputFormat -> RecordWriter -> Write(k, v)
+
 __Shuffle__ 
 
 __输出的数据 OutputFormat__ 
