@@ -1849,7 +1849,105 @@ __MapReduce 工作流程__
 
 16. 默认 TextOutputFormat -> Reduce(k, v), Context.write(k, v) -> OutputFormat -> RecordWriter -> Write(k, v)
 
-__Shuffle__ 
+__Shuffle（Map 方法之后，Reduce 方法之前）__ 
+
+Shuffle 机制
+
+1. Map 方法进图 getPartition 方法，获取分区，然后进入环形缓冲区，默认 100M
+2. 环形缓冲区到达 80% 时进行逆写
+3. 数据溢出后，对数据进行排序（快排），通过重新排序 key 的 index，优先按照字典顺序排序
+4. 产生两个文件 split.index 和 split.out
+5. 对这些数据进行归并排序
+6. Combiner（可选）
+7. 压缩数据
+8. 数据写入磁盘，等待 Reduce 来拉取数据
+9. Reduce 拉取数据放入内存缓冲，不够时溢出到磁盘，最后归并排序
+10. 按照相同的 key 分组，进入到 Reduce 方法
+
+Partition 分区
+
+- 问题引出
+
+    要求将统计结果按照条件输出到不同文件中（分区）
+
+- 默认 Partition 分区
+
+    Job 中设置
+
+    ```java
+    job.setNumReduceTasks(int num);
+    ```
+
+    HashPartitioner
+
+    ```java
+    public class HashPartitioner<K2, V2> implements Partitioner<K2, V2> {
+        public void configure(JobConf job) {}
+        /** Use {@link Object#hashCode()} to partition. */
+        public int getPartition(K2 key, V2 value, int numReduceTasks) {
+            return (key.hashCode() & Integer.MAX_VALUE) % numReduceTasks;
+        }
+    }
+    ```
+
+    MapTask
+
+    ```java
+    public class MapTask extends Task {
+        @Override
+        public void write(K key, V value) throws IOException, InterruptedException {
+          collector.collect(key, value, partitioner.getPartition(key, value, partitions));
+        }
+    }
+    ```
+
+    如果没有设置 NumReduceTasks 则不会通过 HashPartitioner
+
+    MapTask
+
+    ```java
+    private class NewOutputCollector<K,V>
+        extends org.apache.hadoop.mapreduce.RecordWriter<K,V> {
+        private final MapOutputCollector<K,V> collector;
+        private final org.apache.hadoop.mapreduce.Partitioner<K,V> partitioner;
+        private final int partitions;
+        NewOutputCollector(org.apache.hadoop.mapreduce.JobContext jobContext,
+                           JobConf job,
+                           TaskUmbilicalProtocol umbilical,
+                           TaskReporter reporter
+                          ) throws IOException, ClassNotFoundException {
+            collector = createSortingCollector(job, reporter);
+            partitions = jobContext.getNumReduceTasks();
+            if (partitions > 1) {
+                partitioner = (org.apache.hadoop.mapreduce.Partitioner<K,V>)
+                    ReflectionUtils.newInstance(jobContext.getPartitionerClass(), job);
+            } else {
+                partitioner = new org.apache.hadoop.mapreduce.Partitioner<K,V>() {
+                    @Override
+                    public int getPartition(K key, V value, int numPartitions) {
+                        return partitions - 1;
+                    }
+                };
+            }
+        }
+    }
+    ```
+
+- 自定义 Partitioner
+
+    - 自定义类继承 Partitioner，重写 getPartition() 方法
+
+    - 在 Job 驱动中，设定自定义 Partitioner
+
+        ```java
+        job.setPartitionerClass(MyPartitioner.class);
+        ```
+
+    - 自定义 Partition 后，要根据自定义 Partitioner 的逻辑设置相应数量的 ReduceTask
+
+        ```java
+        job.setNumReduceTasks(2);
+        ```
 
 __输出的数据 OutputFormat__ 
 
