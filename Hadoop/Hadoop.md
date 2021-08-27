@@ -1949,6 +1949,14 @@ Partition 分区
         job.setNumReduceTasks(2);
         ```
 
+    - 如果设置数量小于 Partition 数量，则会抛出 `IOException` 
+
+    - 如果设置数量等于 1，则不会走自己的 Partitioner
+
+    - 如果设置数量大于 Partition 数量，则会多产生空文件
+
+    - 分区号必须从 0 开始，并且连续
+
 __输出的数据 OutputFormat__ 
 
 __Join__ 
