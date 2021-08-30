@@ -1987,6 +1987,49 @@ WritableComparable 排序
 
         在自定义排序过程中，如果 compareTo 中判断条件为两个即为二次排序
 
+Combiner 
+
+- Combiner 合并
+    - Combiner 是 MR 程序中 Mapper 和 Reducer 之外的一种组件
+
+    - Combiner 组件的父类就是 Reducer
+
+    - Combiner 和 Reducer 的区别在于运行的位置
+
+        Combiner 是在每一个 MapTask 所在的节点运行
+
+        Reducer 是接收全局所有 Mapper 的输出结果
+
+    - Combiner 的意义就是对每一个 MapTask 的输出进行局部汇总，以减小网络传输量
+
+    - Combiner 能够应用的前提是不能影响最终的业务逻辑（算平均值），而且，Combiner 的输出 <K, V> 应该跟 Reducer 的输入 <K, V> 类型要对应起来
+
+- Combiner 实现步骤
+
+    ```java
+    // 其实这个代码和 Reducer d
+    public class WordCountCombiner extends Reducer<Text, IntWritable, Text, IntWritable> {
+        private IntWritable outV = new IntWritable();
+        
+        @Override
+        protected void reduce(Text key, Iterable<IntWritable> values, Context context)
+            throws IOException, InterruptedException {
+            int sum = 0;
+            for (IntWritable value : values) {
+                sum += value.get();
+            }
+            outV.set(sum);
+            context.write(key, outV);
+        }
+    }
+    ```
+
+    Job 添加 Combiner
+
+    ```java
+    job.setCombinerClass(WordCountCombiner.class);
+    ```
+
 __输出的数据 OutputFormat__ 
 
 __Join__ 
