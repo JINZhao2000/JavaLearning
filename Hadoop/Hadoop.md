@@ -2032,6 +2032,82 @@ Combiner
 
 __输出的数据 OutputFormat__ 
 
+OutputFormat 接口实现类
+
+- NullOutputFormat
+- FileOutputFormat
+    - MapFileOutputFormat
+    - SequenceFileOutputFormat
+        - SequenceFileAsBinaryOutputFormat
+    - TextOutputFormat
+- FilterOutputFormat
+    - LazyOutputFormat
+- DBOutputFormat
+    - DBOutputFormat
+
+自定义 OutputFormat
+
+RecordWriter
+
+```java
+public class LogRecordWriter extends RecordWriter<Text, NullWritable> {
+    private FSDataOutputStream log1Out;
+    private FSDataOutputStream log2Out;
+    public LogRecordWriter (TaskAttemptContext job) {
+        try {
+            FileSystem fs = FileSystem.get(job.getConfiguration());   
+            log1Out = fs.create(new Path("/var/log/log1.log"));
+            log2Out = fs.create(new Path("/var/log/log2.log"));
+        } catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+    
+    @Override
+    public void write (K key, V value) throws IOException, InterruptedException {
+        if(....) {
+            log1Out.writeBytes(key+"\n");
+        } else {
+            log2Out.writeBytes(key+"\n");
+        }
+    }
+    
+    @Override
+    public void close (TaskAttemptContext context) throws IOException, InterruptedException {
+ 		IOUtils.closeStream(log1Out);
+        IOUtils.closeStream(log2Out);
+    }
+}
+```
+
+OutputFormat
+
+```java
+public class LogOutputFormat extends FileOutputFormat<Text, NullWritable> {
+    @Override
+    public RecordWriter<Text, NullWritable> getRecordWriter(TaskAttemptContext job)
+        throws IOException, InterruptedException {
+        return new LogRecordWriter(job);
+    }
+}
+```
+
+Job 绑定
+
+```java
+job.setOutputFormatClass(LogOutputFormat.class);
+```
+
+__MapReduce 源码分析__ 
+
+MapTask 工作机制
+
+ReduceTask 工作机制
+
+ReduceTask 并行度决定机制
+
+MapTask 与 ReduceTask 源码分析
+
 __Join__ 
 
 __ETL__ 
