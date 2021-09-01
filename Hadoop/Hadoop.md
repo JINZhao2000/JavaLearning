@@ -2102,9 +2102,58 @@ __MapReduce 源码分析__
 
 MapTask 工作机制
 
+1. Read 阶段
+    - 待处理文本
+    - 配置参数，任务规划
+    - 提交信息
+    - 计算出 MapTask 数量
+2. Map 阶段
+    - InputFormat（默认 TextInputFormat）- RecorderReader
+    - Map 逻辑运算
+3. Collect 阶段
+    - 分区，排序
+4. 溢写阶段
+    - 溢出到文件（分区且区内有序）
+5. Merge 阶段
+    - Merge 归并排序
+
 ReduceTask 工作机制
 
+1. Copy 阶段
+
+    ReduceTask 从各个 MapTask 上远程拷贝一片数据，并针对某一数据，如果其大小超过一定阈值，则写到磁盘上，否则直接放到内存中
+
+    - 从 MapTask 拉取处理好的数据到 ReduceTask 上
+
+2. Sort 阶段
+
+    在远程拷贝数据的同时，ReduceTask 启动了两个后台线程对内存和磁盘上的文件进行合并，以防止内存使用过多或者磁盘上文件过多。按照 MapReduce 语义，用户编写 reduce() 函数输入数据是按 key 进行聚集的一组数据，为了将 key 相同的数据聚在一起，Hadoop 采用了基于排序的策略，由于各个 MapTask 实现已经对自己的处理结果进行了局部排序，因此，ReduceTask 只需要对所有数据进行一次归并排序即可
+
+    - 合并文件，归并排序
+    - 分组
+
+3. Reduce 阶段
+
+    reduce() 函数将计算结果写到 HDFS 上
+
+    - OutputFormat 输出（默认 TextOutputFormat）
+
 ReduceTask 并行度决定机制
+
+- 设置 ReduceTask 并行度（个数）
+
+    ```java
+    job.setNumReduceTasks(int num);
+    ```
+
+- 注意事项
+
+    - ReduceTask = 0，表示没有 Reduce 阶段，输出文件和 Map 个数一致
+    - ReduceTask 默认值为 1，所以输出文件就一个
+    - 如果数据分布不均匀，就有可能在 Reduce 阶段产生数据倾斜
+    - ReduceTask 数量并不是任意设置，还要考虑业务逻辑需求，有些情况下，需要计算全局汇总结果，就只能有一个 ReduceTask
+    - 具体多少个 ReduceTask，需要根据集群性能而定
+    - 如果分区不是 1，但是 ReduceTask 为 1，是否执行分区过程：不执行分区过程，因为 MapTask 源码中，执行分区的前提是先判断 ReduceNum 个数书否大于 1，不大于 1 肯定不执行
 
 MapTask 与 ReduceTask 源码分析
 
