@@ -2157,6 +2157,50 @@ ReduceTask 并行度决定机制
 
 MapTask 与 ReduceTask 源码分析
 
+MapTask 解析流程
+
+> context.write(key, value);
+>
+>  -> collector.collect(key, value, partitioner.getPartition(key, value, partitions));
+>
+> ​      collect();
+>
+> ​      -> close();
+>
+> ​           -> collector.flush();
+>
+> ​				-> sortAndSpill();
+>
+> ​					-> sorter.sort();
+>
+> ​			    <- mergeParts();
+>
+> ​			<- collector.close();
+
+ReduceTask 解析流程
+
+> if(isMapOrReduce())
+>
+> initialize();
+>
+> init(shuffleContext);
+>
+> -> totalMaps = job.getNumMapTasks();
+>
+> ​	merger = createMergeManager(context);
+>
+> ​	-> this.inMemoryMerger = createInMemoryMerger();
+>
+> ​		this.ondiskMerger = new OnDiskMerger(this);
+>
+> rIter = shuffleConsumerPlugin.run();
+>
+> -> eventFetcher.start();
+>
+> ​	eventFetcher.shutDown();
+>
+> ​	copyPhase.complete();
+
 __Join__ 
 
 __ETL__ 
