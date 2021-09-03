@@ -2200,8 +2200,19 @@ ReduceTask 解析流程
 > ​	eventFetcher.shutDown();
 >
 > ​	copyPhase.complete();
+>
+> ​	taskStatus.setPhase(TaskStatus.Phase.SORT);
+>
+> ​	sortPhase.complete();
+>
+> reduce();
+>
+> cleanup(context);
 
 __Join__ 
+
+- Reduce Join
+- Map Join
 
 __ETL__ 
 
