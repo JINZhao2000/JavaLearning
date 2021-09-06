@@ -2211,8 +2211,49 @@ ReduceTask 解析流程
 
 __Join__ 
 
+Map 端的主要工作：为来自不同或文件的 key / value 对，打标签以区别不同来源的记录，然后用连接字段作为 key，其余部分和新加的标志作为 value，最后进行输出
+
+Reduce 端的主要工作：在 Reduce 端以连接字段作为 key 的分组已经完成，我们只需要在每一个分组当中将那些来源于不同文件的记录（在 Map 阶段已经打标志）分开，最后进行合并就行了
+
 - Reduce Join
+
+    缺点：这种方式中，合并操作是在 Reduce 阶段完成，Reduce 端的处理压力太大，Map 节点的运算负载很低，资源利用率不高，且在 Reduce 阶段极易产生数据倾斜 
+
 - Map Join
+
+    - 使用场景
+
+        一张小表，一张大表
+
+    - 具体方法
+
+        将文件读取到缓存集合中
+
+        ```java
+        job.addCacheFile(new URI("file:///"));
+        job.addCacheFile(new URI("hdfs://"));
+        ```
+
+        Map 的 join 阶段不需要 Reduce 阶段
+
+        ```java
+        job.setNumReduceTasks(0);
+        ```
+
+        读取缓存的文件数据（setup 方法中）
+
+        - 获取缓存文件
+        - 循环读取缓存文件一行
+        - 切割
+        - 缓存数据到集合
+        - 关流
+
+        map
+
+        - 获取一行
+        - 截取
+        - 获取 id
+        - 获取集合中的 value
 
 __ETL__ 
 
