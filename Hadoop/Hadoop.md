@@ -2255,7 +2255,49 @@ Reduce 端的主要工作：在 Reduce 端以连接字段作为 key 的分组已
         - 获取 id
         - 获取集合中的 value
 
-__ETL__ 
+__ETL__ （数据清洗）
+
+ETL （Extract-Transform-Load）用来描述将数据从来源端经过抽取（Extract），转换（Transform），加载（Load）至目的端的过程
+
+MapReduce 通过设置 MapTask 以及取消 ReduceTask，在 MapTask 内的 map() 方法决定是否写入 context 来实现是否需要该数据
+
+__MapReduce 总结__ 
+
+1. 输入数据接口：InputFormat
+
+    - 默认使用的实现类是：TextInputFormat
+    - TextInputFormat 的功能逻辑是：一次读一行文本，然后将起始的偏移量作为 key，行作为内容返回
+    - CombineTextInputFormat 可以把多个小文件合并成一个切片处理，提高处理效率
+
+2. 逻辑处理接口：Mapper
+
+    用户根据业务需求实现其中的三个方法：map() setup() cleanup()
+
+3. Partitioner 分区
+
+    - 有默认实现 HashPartitioner，逻辑是根据 key 的哈希值和 numReduces 来返回一个分区号：`key.hashCode()&Integer.MAX_VALUE % numReduces`
+    - 如果业务上有特别需求，可以自定义分区
+
+4. Comparable 排序
+
+    - 当我们用自定义对象作为 key 来输出时，就必须要实现 WritableComparable 接口，重写其中的 compareTo() 方法
+    - 部分排序：对最终输出的每一个文件进行内部排序
+    - 全排序：对所有数据进行排序，通常只有一个 Reduce
+    - 二次排序：排序条件有两个
+
+5. Join
+
+    - 前提：不影响最终业务逻辑
+    - 提前聚合解决数据倾斜
+
+6. Reducer
+
+    用户根据业务需求实现其中的三个方法：map() setup() cleanup()
+
+7. OutputFormat
+
+    - 默认是 TextOutputFormat 按行输出到文件
+    - 自定义 OutputFormat
 
 ### 4.4 数据压缩
 
