@@ -2387,6 +2387,26 @@ __压缩方式选择__
         - 如果数据永久保存，考虑压缩率比较高的 Bzip2 和 Gzip
         - 如果作为下一个 MapReduce 输入，需要考虑数据量和是否支持切片
 
+__压缩参数设置__ 
+
+编解码器
+
+| 压缩格式 | 编解码器                                   |
+| -------- | ------------------------------------------ |
+| DEFLATE  | org.apache.hadoop.io.compress.DefaultCodec |
+| gzip     | org.apache.hadoop.io.compress.GzipCodec    |
+| bzip2    | org.apache.hadoop.io.compress.BZip2Codec   |
+| LZO      | com.hadoop.compression.lzo.LzopCodec       |
+| Snappy   | org.apache.hadoop.io.compress.SnappyCodec  |
+
+参数配置
+
+| 参数                                  | 默认值                         | 阶段     | 建议                                          |
+| ------------------------------------- | ------------------------------ | -------- | --------------------------------------------- |
+| io.compression.codecs (core-site.xml) | 无，用 hadoop checknative 查看 | 输入压缩 | Hadoop 通过文件扩展名判断是否支持某种编解码器 |
+
+
+
 __特点__ 
 
 __生产环境使用__ 
