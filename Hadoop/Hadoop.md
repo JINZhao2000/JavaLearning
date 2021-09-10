@@ -2401,17 +2401,39 @@ __压缩参数设置__
 
 参数配置
 
-| 参数                                  | 默认值                         | 阶段     | 建议                                          |
-| ------------------------------------- | ------------------------------ | -------- | --------------------------------------------- |
-| io.compression.codecs (core-site.xml) | 无，用 hadoop checknative 查看 | 输入压缩 | Hadoop 通过文件扩展名判断是否支持某种编解码器 |
+| 参数                                                         | 默认值                                     | 阶段         | 建议                                              |
+| ------------------------------------------------------------ | ------------------------------------------ | ------------ | ------------------------------------------------- |
+| io.compression.codecs (core-site.xml)                        | 无，用 hadoop checknative 查看             | 输入压缩     | Hadoop 通过文件扩展名判断是否支持某种编解码器     |
+| mapreduce.map.output.compress（mapred-site.xml）             | false                                      | mapper 输出  | true 为启用压缩                                   |
+| mapreduce.map.output.compress.codec（mapred-site.xml）       | org.apache.hadoop.io.compress.DefaultCodec | mapper 输出  | 企业多使用 LZO 或 Snappy 编解码器在此阶段压缩数据 |
+| mapreduce.output.fileoutputformat.compress（mapred-site.xml） | false                                      | reducer 输出 | true 为启用压缩                                   |
+| mapreduce.output.fileoutputformat.compress.codec（mapred-site.xml） | org.apache.hadoop.io.compress.DefaultCodec | reducer 输出 | 使用标准工具或者编解码器，如 gzip 和 bzip2        |
 
+Map 阶段
 
+```java
+Configuration conf = new Configuration();
+conf.setBoolean("mapreduce.map.output.compress", true);
+conf.setClass("mapreduce.map.output.compress.codec", BZip2Codec.class, CompressionCodec.class);
+```
 
-__特点__ 
+Reduce 阶段
 
-__生产环境使用__ 
-
-### 4.5 常见错误与解决方案
+```java
+FileOutputFormat.setCompressOutput(job, true);
+FileOutputFormat.setOutputCompressorClass(job, BZip2Codec.class);
+```
 
 ## 5. Yarn
 
+### 5.1 Yarn 基础架构
+
+### 5.2 Yarn 工作机制
+
+### 5.3 作业提交过程
+
+### 5.4 Yarn 调度器和调度算法
+
+### 5.5 Yarn 生产环境配置参数
+
+### 5.6 Yarn 常用命令
