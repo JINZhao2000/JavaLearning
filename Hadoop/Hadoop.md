@@ -2428,9 +2428,43 @@ FileOutputFormat.setOutputCompressorClass(job, BZip2Codec.class);
 
 ### 5.1 Yarn 基础架构
 
+YARN 由 ResourceManager，NodeManager，ApplicationMaster 和 COntainer 组成
+
+- ResourceManager
+    - 处理客户请求
+    - 监控 NodeManager
+    - 启动或监控 ApplicationMaster
+    - 资源的分配与调度
+- NodeManager
+    - 管理单个节点上的资源
+    - 处理来自 ResourceManager 的命令
+    - 处理来自 ApplicationMaster 的命令
+- ApplicationMaster
+    - 为应用程序申请资源并分配给内部任务
+    - 任务的监控与容错
+- Container
+    - Container 是 YARN 中资源的抽象，封装了某个节点上的多维度资源，比如内存，CPU，磁盘，网络等
+
 ### 5.2 Yarn 工作机制
 
-### 5.3 作业提交过程
+YARN 工作机制
+
+1. 申请一个 Application
+2. Application 资源提交路径 hdfs:// 以及 `application_id` 
+3. 提交 Job 运行所需资源
+4. 资源提交完毕，申请运行 MRAppMaster
+5. 将用户的请求初始化成一个 Task（FIFO 队列）
+6. （NodeManager）领取 Task 任务
+7. 创建容器 Container
+8. 下载 Job 资源到本地
+9. 申请运行 MapTask 容器
+10. （NodeManager）领取任务，创建容器
+11. （MRAppMaster）发送程序启动脚本（YarnChild）
+12. 向 ResourceManager 申请 2 个容器，运行 ReduceTask 程序
+13. Reduce 向 Map 获取相应分区的数据
+14. 程序运行完后，MR 会向 ResourceManager 注销自己
+
+### 5.3 Job 提交过程
 
 ### 5.4 Yarn 调度器和调度算法
 
