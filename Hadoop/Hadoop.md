@@ -2586,3 +2586,73 @@ YARN 工作机制
 ### 5.4 Yarn 生产环境配置参数
 
 ### 5.5 Yarn 常用命令
+
+以 WordCount 为例
+
+- yarn application 查看任务
+
+    ```bash
+    # 列出所有 Application
+    yarn application -list
+    # 根据 Application 状态过滤：yarn application -list -appStates
+    yarn application -list -appStates xxx
+    # 所有状态
+    # ALL
+    # NEW
+    # NEW_SAVING
+    # SUBMITTED
+    # ACCEPTED
+    # RUNNING
+    # FINISHED
+    # FAILED
+    # KILLED
+    # kill 掉 Application
+    yarn application -kill <appid>
+    ```
+
+- yarn logs 查看日志
+
+    ```bash
+    # 查看 Application 日志
+    yarn logs -applicationId <appid>
+    # 查看你 Container 日志
+    yarn logs -applicationId <appid> -containerId <containerid>
+    ```
+
+- yarn applicationattempt 查看尝试运行的任务
+
+    ```bash
+    # 列出所有 Application 尝试列表
+    yarn applicationattempt -list <appid>
+    # 打印 Application Attempt 状态
+    yarn applicationattempt -status <attemptid>
+    ```
+
+- yarn container 查看容器
+
+    ```bash
+    # 列出所有 Container
+    yarn container -list <appid?attemptid?>
+    # 打印 container 状态
+    yarn container -status <containerid>
+    ```
+
+- yarn node 查看节点状态
+
+    ```bash
+    # 列出所有节点
+    yarn node -list -all
+    ```
+
+- yarn rmadmin 更新配置
+
+    ```bash
+    # 加载队列配置
+    yarn readmin -refreshQueues
+    ```
+
+- yarn queue 查看队列
+
+    ```bash
+    yarn queue -status <queueName>
+    ```
