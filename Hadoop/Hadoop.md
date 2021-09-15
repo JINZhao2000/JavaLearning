@@ -2585,6 +2585,51 @@ YARN 工作机制
 
 ### 5.4 Yarn 生产环境配置参数
 
+- ResourceManager
+
+    ```bash
+    # 配置调度器 默认为容量调度器
+    yarn.resourcemanager.scheduler.class
+    # ResourceManager 处理调度请求的线程数量 默认 50
+    yarn.resourcemanager.scheduler.client.thread-count
+    ```
+
+- NodeManager
+
+    ```bash
+    # 是否让 yarn 自己检测硬件进行配置 默认 false
+    yarn.nodemanager.resource.detect-hardware-capabilities
+    # 是都将虚拟核数当作 CPU 个数 默认 false
+    yarn.nodemanager.resource.count-logical-processors-as-cores
+    # 虚拟核数和物理核数乘数 默认 1.0 （比如 4 核 8 线程就是 2）
+    yarn.nodemanager.resource.pcores-vcores.multiplier
+    # Node Manager 使用内存 默认 8G
+    yarn.nodemanager.resource.memory-mb
+    # 为系统保留多少内存
+    yarn.nodemanager.resource.system-reserved-memory-mb
+    # Node Manager 使用 CPU 核数 默认 8个
+    yarn.nodemanager.resource.cpu-vcores
+    # 是否开启物理内存检查限制 container 默认 true
+    yarn.nodemanager.pmem-check-enabled
+    # 是否开启虚拟内存检查限制 container 默认 true
+    yarn.nodemanager.vmem-check-enabled
+    # 虚拟内存和物理内存比例 默认 2:1
+    yarn.nodemanager.vmem-pmem-ratio
+    ```
+
+- Container
+
+    ```bash
+    # 容器最小内存 默认 1G
+    yarn.scheduler.minimum-allocation-mb
+    # 容器最大内存 默认 8G
+    yarn.scheduler.maximum-allocation-mb
+    # 容器最小 CPU 核数 默认 1 个
+    yarn.scheduler.minimun-allocation-vcores
+    # 容器最大 CPU 核数 默认 4 个
+    yarn.scheduler.maximun-
+    ```
+
 ### 5.5 Yarn 常用命令
 
 以 WordCount 为例
