@@ -2627,7 +2627,7 @@ YARN 工作机制
     # 容器最小 CPU 核数 默认 1 个
     yarn.scheduler.minimun-allocation-vcores
     # 容器最大 CPU 核数 默认 4 个
-    yarn.scheduler.maximun-
+    yarn.scheduler.maximun-allocation-vcores
     ```
 
 ### 5.5 Yarn 常用命令
@@ -2701,3 +2701,105 @@ YARN 工作机制
     ```bash
     yarn queue -status <queueName>
     ```
+
+### 5.6 Yarn 实操
+
+- 创建队列的好处
+
+    - 防止代码漏洞，把资源全部耗尽
+    - 实现任务降级使用，特殊时期保证重要的任务队列资源充足
+
+- 队列配置文件 `capacity-scheduler.xml` 
+
+    ```xml
+    <property>
+        <!-- 指定多队列 -->
+        <name>yarn.scheduler.capacity.root.queues</name>
+        <value>default,hive</value>
+    </property>
+    <property>
+        <!-- default 队列的容量 % -->
+    	<name>yarn.scheduler.capacity.root.default.capacity</name>
+        <value>40</value>
+    </property>
+    <property>
+    	<!-- hive 队列的容量 % -->
+        <name>yarn.scheduler.capacity.root.hive.capacity</name>
+        <value>60</value>
+    </property>
+    <property>
+        <!-- 占用容量 % 的多少 0.0 - 1.0 -->
+    	<name>yarn.scheduler.capacity.root.default.user-limit-factor</name>
+        <value>1</value>
+    </property>
+    <property>
+        <!-- 占用容量 % 的多少 0.0 - 1.0 -->
+    	<name>yarn.scheduler.capacity.root.hive.user-limit-factor</name>
+        <value>1</value>
+    </property>
+    <property>
+        <!-- 占用 root 的最大 % -->
+    	<name>yarn.scheduler.capacity.root.default.maximun-capacity</name>
+        <value>60</value>
+    </property>
+    <property>
+        <!-- 占用 root 的最大 % -->
+    	<name>yarn.scheduler.capacity.root.hive.maximun-capacity</name>
+        <value>40</value>
+    </property>
+    <property>
+    	<!-- RUNNING STOPPED 队列状态 -->
+        <name>yarn.scheduler.capacity.root.default.state</name>
+        <value>RUNNING</value>
+    </property>
+    <property>
+    	<!-- RUNNING STOPPED 队列状态 -->
+        <name>yarn.scheduler.capacity.hive.default.state</name>
+        <value>RUNNING</value>
+    </property>
+    <property>
+    	<!-- ACL 用户是否能提交任务 -->
+        <name>yarn.scheduler.capacity.root.default.acl_submit_application</name>
+        <value>*</value>
+    </property>
+    <property>
+    	<!-- ACL 用户是否能提交任务 -->
+        <name>yarn.scheduler.capacity.root.hive.acl_submit_application</name>
+        <value>root</value>
+    </property>
+    <property>
+    	<!-- ACL 用户是否能管理任务 -->
+        <name>yarn.scheduler.capacity.root.default.acl_administer_queue</name>
+        <value>*</value>
+    </property>
+    <property>
+    	<!-- ACL 用户是否能操作 Application 优先级 -->
+        <name>yarn.scheduler.capacity.root.default.acl_application_max_priority</name>
+        <value>*</value>
+    </property>
+    <property>
+    	<!-- 最大 application 生命周期 -->
+        <name>yarn.scheduler.capacity.root.default.maximum-application-lifetime</name>
+        <value>-1</value>
+    </property>
+    ```
+
+- 任务超时时间设置
+
+    ```bash
+    yarn application -appId <appId> -updateLifetime <time>
+    ```
+
+- 指定提交队列
+
+    ```bash
+    hadoop jar xxx.jar -D mapreduce.job.queuename=hive /input /output
+    ```
+
+    java
+
+    ```java
+    conf.set("mapreduce.job.queuename",)
+    ```
+
+    
