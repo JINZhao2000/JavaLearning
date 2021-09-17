@@ -2709,7 +2709,7 @@ YARN 工作机制
     - 防止代码漏洞，把资源全部耗尽
     - 实现任务降级使用，特殊时期保证重要的任务队列资源充足
 
-- 队列配置文件 `capacity-scheduler.xml` 
+- 容量调度器队列配置文件 `capacity-scheduler.xml` 
 
     ```xml
     <property>
@@ -2799,7 +2799,83 @@ YARN 工作机制
     java
 
     ```java
-    conf.set("mapreduce.job.queuename",)
+    conf.set("mapreduce.job.queuename", "hive");
+    ```
+
+- 任务优先级
+
+    ```xml
+    <property>
+    	<!-- yarn-site.xml -->
+        <name>yarn.cluster.max-application-priority</name>
+        <value>5</value>
+        <!-- 默认为 0 -->
+    </property>
+    ```
+
+    命令行
+
+    ```bash
+    yarn application -appId <appId> -updatePriority <value>
+    ```
+
+- 公平调度器队列配置文件（fair-scheduler.xml 文件名可以自己定义）
+
+    [配置参考资料](https://hadoop.apache.org/docs/r3.3.1/hadoop-yarn/hadoop-yarn-site/FairScheduler.html) 
+
+    [任务队列放置规则参考资料](https://blog.cloudera.com/untangling-apache-hadoop-yarn-part-4-fair-scheduler-queue-basics/) 
+
+    yarn-site.xml
+
+    ```xml
+    <property>
+    	<name>yarn.resourcemanager.scheduler.class</name>
+        <value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler</value>
+    </property>
+    <property>
+    	<name>yarn.scheduler.fair.allocation.file</name>
+        <value>xxx/fair-scheduler.xml</value>
+    </property>
+    <property>
+    	<name>yarn.scheduler.fair.preemption</name>
+        <value>false</value>
+        <!-- 禁止队列间抢占资源 -->
+    </property>
+    ```
+
+    fair-scheduler.xml
+
+    ```xml
+    <?xml version="1.0"?>
+    <allocations>
+        <!-- 单个队列中 Application Master 占用资源的最大比例，取值 0-1，默认0.8，企业一般为 0.1 -->
+    	<queueMaxAMShareDefault>0.5</queueMaxAMShareDefault>
+        <!-- 单个队列最大资源的默认值 -->
+        <queueMaxResourceDefault>4096mb,4vcores</queueMaxResourceDefault>
+        <!-- 增加一个队列 -->
+        <queue name="test">
+        	<minResource>2048mb,2vcores</minResource>
+            <maxResource>4096mb,4vcores</maxResource>
+            <!-- 队列中最多同时运行应用数，默认 50， -->
+            <maxRunningApps>4</maxRunningApps>
+            <!-- 队列中 Applicaiton Master占用资源的最大比例 -->
+            <maxAMShare>0.5</maxAMShare>
+            <!-- 该队列资源权重，默认值为 1.0 -->
+            <weight>1.0</weight>
+            <!-- 队列内部资源分配策略 -->
+            <schedulingPolicy>fair</schedulingPolicy>
+        </queue>
+        <queuePlacementPolicy>
+            <!-- 提交任务时指定队列，如未指定队列，则继续匹配下一个规则，false 表示：如果指定队列不存在，不允许自动创建 -->
+        	<rule name="specified" create="false"/>
+            <!-- 提交到 root.group.username 队列，若 root.group 不存在，不允许自动创建，若 root.group.user 不存在，允许自动创建 -->
+            <rule name="nestedUserQueue" create="true">
+            	<rule name="primaryGroup" create="false"/>
+           	</rule>
+            <!-- 最后一个规则必为 reject 或 default，Reject 表示拒绝创建创建提交失败，default 表示把任务提交到 default d -->
+            <rule name="reject"/>
+        </queuePlacementPolicy>
+    </allocations>
     ```
 
     
