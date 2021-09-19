@@ -2872,10 +2872,11 @@ YARN 工作机制
             <rule name="nestedUserQueue" create="true">
             	<rule name="primaryGroup" create="false"/>
            	</rule>
-            <!-- 最后一个规则必为 reject 或 default，Reject 表示拒绝创建创建提交失败，default 表示把任务提交到 default d -->
+            <!-- 最后一个规则必为 reject 或 default，Reject 表示拒绝创建创建提交失败，default 表示把任务提交到 default 队列 -->
             <rule name="reject"/>
         </queuePlacementPolicy>
     </allocations>
     ```
 
     
+
