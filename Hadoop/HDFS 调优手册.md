@@ -93,6 +93,40 @@
 
 ## 2. HDFS 集群压测
 
+### 2.1 测试 HDFS 写性能
+
+- 写测试底层原理
+
+    - 测试文件个数 = 集群 CPU 总核数 - 1
+    - 记录每个 Map 的写时间和平均速度
+    - 汇总每个 MapTask 向 HDFS 写入时间和平均速度
+
+    Throughput = 所有数据量累加/总时间
+
+    Average IO Rate = （map1 的平均速度 + ...... + mapN 的平均速度）/ 文件数量
+
+    IO Rate std deviation 方差
+
+- 命令
+
+    ```bash
+    hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-client-jobclient-3.3.1-tests.jar TestDFSIO -write -nrFiles 10 -fileSize 128MB
+    # arg1：jar 运行 jar包
+    # arg2：jar 包名称
+    # arg3：TestDFSIO 测试 HDFS 读写性能
+    # arg4：-write 写性能
+    # arg5：-nrFiles 10 准备文件个数
+    # arg6：-fileSize 128MB 准备文件大小
+    ```
+
+### 2.2 测试 HDFS 读性能
+
+- 命令
+
+    ```bash
+    hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-client-jobclient-3.3.1-tests.jar TestDFSIO -read -nrFiles 10 -fileSize 128MB
+    ```
+
 ## 3. HDFS 多目录
 
 ## 4. HDFS 集群扩容及缩容
