@@ -129,6 +129,68 @@
 
 ## 3. HDFS 多目录
 
+### 3.1 NameNode 多目录配置
+
+- NameNode 的本地目录可以配置成多个，且每个目录存放的内容相同，增加了可靠性
+
+- 配置
+
+    hdfs-site.xml
+
+    ```xml
+    <property>
+    	<name>dfs.namenode.name.dir</name>
+        <value>file://${hadoop.tmp.dir}/dfs/name1, file://${hadoop.tmp.dir}/dfs/name2</value>
+    </property>
+    ```
+
+    然后停止集群，删除每个节点的 data 和 logs 中的数据
+
+    格式化集群并启动
+
+### 3.2 DataNode 多目录配置
+
+- DataNode 可以配置成多个目录，每个目录存储的数据不一样
+
+- 配置
+
+    hdfs-site.xml
+
+    ```xml
+    <property>
+    	<name>dfs.datanode.data.dir</name>
+        <value>file://${hadoop.tmp.dir}/dfs/data1,file://${hadoop.tmp.dir}/dfs/data2</value>
+    </property>
+    ```
+
+    然后重启集群
+
+### 3.3 集群数据均衡 - 磁盘间数据均衡
+
+- 生成均衡计划
+
+    ```bash
+    hdfs diskbalancer -plan <name>
+    ```
+
+- 执行均衡计划
+
+    ```bash
+    hdfs diskbalancer -execute <name>.plan.json
+    ```
+
+- 查看均衡任务执行情况
+
+    ```bash
+    hdfs diskbalancer -query <name>
+    ```
+
+- 取消均衡任务
+
+    ```bash
+    hdfs diskbalancer -cancel <name>.plan.json
+    ```
+
 ## 4. HDFS 集群扩容及缩容
 
 ## 5. HDFS 存储优化
