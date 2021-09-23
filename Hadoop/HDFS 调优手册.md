@@ -193,5 +193,34 @@
 
 ## 4. HDFS 集群扩容及缩容
 
+### 4.1 添加白名单
+
+白名单：表示在白名单的主机 IP 地址可以访问集群，用来存储数据
+
+企业中：配置白名单，可以尽量防止黑客恶意访问攻击
+
+配置白名单步骤：
+
+- 在 NameNode 节点的 `$HADOOP_HOME/etc/hadoop/` 下创建 `whitelist` 和 `blacklist`  
+
+- 在 `hdfs-site.xml` 中增加 `dfs.hosts` 参数
+
+    ```xml
+    <property>
+    	<name>dfs.hosts</name>
+        <value>$HADOOP_HOME/etc/hadoop/whitelist</value>
+    </property>
+    <property>
+    	<name>dfs.hosts.exclude</name>
+        <value>$HADOOP_HOME/etc/hadoop/blacklist</value>
+    </property>
+    ```
+
+- 第一次添加白名单需要重启集群，不是第一次只要刷新 NameNode 即可
+
+    ```bash
+    hdfs dfsadmin -refreshNodes
+    ```
+
 ## 5. HDFS 存储优化
 
