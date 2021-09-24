@@ -222,5 +222,53 @@
     hdfs dfsadmin -refreshNodes
     ```
 
+### 4.2 节点间数据均衡
+
+- 数据均衡命令
+
+    ```bash
+    # 开启数据均衡
+    # 最大相差磁盘空间利用率不超过 10%
+    $HADOOP_HOME/sbin/start-balancer.sh threshold 10
+    # 关闭数据均衡
+    $HADOOP_HOME/sbin/stop-balancer.sh
+    ```
+
+### 4.3 退役旧节点
+
+- 黑名单
+
 ## 5. HDFS 存储优化
 
+### 5.1 纠删码
+
+- 纠删码原理
+
+    HDFS 默认情况下，一个文件有 3 个副本，提高了数据可靠性，但是带来了 2 倍的冗余开销
+
+    Hadoop 3.x 引入纠删码，采用计算的方式，可以节省约 50% 左右的空间
+
+- 纠删码命令
+
+    ```bash
+    hdfs ec
+    # 纠删码策略
+    hdfs ec -listPolicies
+    # 添加纠删码
+    hdfs ec -addPolicies -policyFile <file>
+    # 获取某一路径的纠删码策略
+    hdfs ec -getPolicy -path <path>
+    # 删除策略
+    hdfs ec -removePolicy -policy <policy>
+    # 设置某一路径的纠删策略
+    hdfs ec -setPolicy -path <path>
+    # 取消某一路径策略
+    hdfs ec -unsetPolicy -path <path>
+    # 开启或者关闭某个纠删策略
+    hdfs ec -enablePolicy -policy <policy>
+    hdfs ec -disablePolicy -policy <policy>
+    ```
+
+- 纠删码策略解释
+
+    RS-3-2-1024k：使用 RS 编码，每 3 个数据单元，生成 2 个校验单元，共 5 个单元，只要有任意 3 个单元存在，就可以得到原始数据，每个单元是 1024k
