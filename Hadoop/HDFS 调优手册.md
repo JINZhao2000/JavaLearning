@@ -261,7 +261,7 @@
     # 删除策略
     hdfs ec -removePolicy -policy <policy>
     # 设置某一路径的纠删策略
-    hdfs ec -setPolicy -path <path>
+    hdfs ec -setPolicy -path <path> -policy <policy>
     # 取消某一路径策略
     hdfs ec -unsetPolicy -path <path>
     # 开启或者关闭某个纠删策略
@@ -272,3 +272,75 @@
 - 纠删码策略解释
 
     RS-3-2-1024k：使用 RS 编码，每 3 个数据单元，生成 2 个校验单元，共 5 个单元，只要有任意 3 个单元存在，就可以得到原始数据，每个单元是 1024k
+
+### 5.2 异构存储（冷热数据分离）
+
+异构存储主要解决：不同的数据，存储在不同类型的硬盘中，达到最佳性能的问题
+
+存储类型和存储策略
+
+- 存储类型
+
+    - RAM_DISK（内存镜像文件系统）
+    - SSD（SSD 固态硬盘）
+    - DISK（普通磁盘，在 HDFS 中，如果没有主动声明数据目录存储类型，默认都是 DISK）
+    - ARCHIVE（没有特指哪种存储介质，主要的指的是计算能力比较弱而存储密度比较高的存储介质，用来解决数据的容量扩增的问题，一般用于归档）
+
+- 存储策略
+
+    | 策略 ID | 策略名称      | 副本分布             |
+    | ------- | ------------- | -------------------- |
+    | 15      | Lazy_Persist  | RAM_DISK:1, DISK:n-1 |
+    | 12      | All_SSD       | SSD:n                |
+    | 10      | One_SSD       | SSD:1, DISK:n-1      |
+    | 7       | Hot (default) | DISK:n               |
+    | 5       | Warm          | DISK:1, ARCHIVE:n-1  |
+    | 2       | Cold          | ARCHIVE:n            |
+
+    从 Lazy_Persist 到 Cold，分别代表了设备的访问速度从快到慢
+
+- Shell
+
+    ```bash
+    # 查看可用的存储策略
+    hdfs storagepolicies -listPolicies
+    # 为指定路径设定存储策略
+    hdfs storagepolicies -setStoragePolicy -path <path> -policy <policy>
+    # 获取指定路径的存储策略
+    hdfs storagepolicies -getStoragePolicy -path <path>
+    # 取消存储策略，以上级目录为准，根目录是 HOT
+    hdfs storagepolicies -unsetStoragePolicy -path <path>
+    # 查看文件块分布
+    hdfs fsck xxx -files -blocks -locations
+    # 查看集群节点
+    hadoop dfsadmin -report
+    # 根据存储策略自动移动文件夹
+    hdfs mover <path>
+    ```
+
+- 配置文件 `hdfs-site.xml` 
+
+    ```xml
+    <property>
+    	<name>dfs.datanode.data.dir</name>
+        <value>[SSD]file:///xxx,[RAM_DISK]file:///,[DISK]file:///xxx</value>
+    </property>
+
+- 关于 Lazy_Persist `hdfs-site.xml` 
+
+    ```xml
+    <property>
+    	<name>dfs.datanode.max.locked.memory</name>
+        <value>0</value>
+       	<!-- 当这个值小于 dfs.block.size 时，会写入客户端所在的 DISK 目录，其余会写入其它节点的 DISK 目录 -->
+        <!-- 通过 ulimit -a 查看机器最大可以配置的值 -->
+    </property>
+    <property>
+    	<name>dfs.block.size</name>
+        <value></value>
+    </property>
+    ```
+
+- 关于 Cold
+
+    当目录为 Cold 并且未配置 ARCHIVE 目录情况下会抛出异常
