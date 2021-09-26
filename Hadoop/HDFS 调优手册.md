@@ -344,3 +344,78 @@
 - 关于 Cold
 
     当目录为 Cold 并且未配置 ARCHIVE 目录情况下会抛出异常
+
+## 6. HDFS 故障排除
+
+### 6.1 NameNode 故障排除
+
+可以将 `secondarynamenode` 中的数据拷贝到 `namenode` 中
+
+### 6.2 集群安全模式 & 磁盘修复
+
+- 安全模式
+
+    文件只接受读数据，不接受删除和修改数据
+
+- 进入安全模式场景
+
+    - NameNode 在加载镜像文件和编辑日志期间处于安全模式
+    - NameNode 再接收 DataNode 注册时处于安全模式
+
+- 退出安全模式
+
+    - `dfs.namenode.safemode.min.datanodes` 最小可用 DataNode 数量必须大于的数量，默认 0
+    - `dfs.namenode.safemode.threshold-pct` 副本数达到最小要求的 block 占系统总 block 数的百分比，默认 0.999f（只允许丢一个块）
+    - `dfs.namenode.safemode.extension` 稳定时间，默认 30000 毫秒
+
+- Shell
+
+    ```bash
+    hdfs dfsadmin -safemode get
+    hdfs dfsadmin -safemode enter
+    hdfs dfsadmin -safemode leave
+    hdfs dfsadmin -safemode wait
+    ```
+
+### 6.3 慢磁盘监控
+
+慢磁盘指写入数据非常慢的磁盘，产生数据延时的问题
+
+- 通过心跳未联系时间检测
+
+    一般出现慢磁盘现象，会影响 DataNode 与 NameNode 之间的心跳，正常情况下心跳间隔时间是 3s
+
+- `fio` 命令测试磁盘读写性能
+
+    ```bash
+    # 顺序读测试
+    fio -filename=<file> -direct=1 -iodepth 1 -thread -rw=read -ioengine=psync -bs=16k -size=2G -numjobs=10 -runtime=60 -group_reporting -name=<name>
+    # 顺序写测试
+    fio -filename=<file> -direct=1 -iodepth 1 -thread -rw=write -ioengine=psync -bs=16k -size=2G -numjobs=10 -runtime=60 -group_reporting -name=<name>
+    # 随机写测试
+    fio -filename=<file> -direct=1 -iodepth 1 -thread -rw=randwrite -ioengine=psync -bs=16k -size=2G -numjobs=10 -runtime=60 -group_reporting -name=<name>
+    # 混合随机读写
+    fio -filename=<file> -direct=1 -iodepth 1 -thread -rw=randrw -ioengine=psync -bs=16k -size=2G -numjobs=10 -runtime=60 -group_reporting -name=<name>
+    ```
+
+### 6.4 小文件归档
+
+- HDFS 存小文件的弊端
+
+    每个文件按块存储，每个块的元数据存储再 NameNode 的内存中，因此 HDFS 存储小文件会非常地低效，因为大量小文件会耗尽 NameNode 中的大部分内存，存储小文件所需要的磁盘容量和数据块大小无关
+
+- 解决存储小文件办法
+
+    > HDFS 存档文件或 HAR 文件，它将文件存入 HDFS 块，再减少 NameNode 内存使用同时，允许对文件进行透明的访问，即 HDFS 存档文件对内是一个个独立的文件，对 NameNode 是一个整体，减少了 NameNode 的内存消耗
+
+- 解决方式
+
+    ```bash
+    # 启动 yarn
+    start-yarn.sh
+    hadoop archive -archiveName xxx.har -p /input /output
+    # 查看归档
+    hadoop fs -ls har:///outp
+    ```
+
+    
