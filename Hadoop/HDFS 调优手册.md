@@ -418,4 +418,82 @@
     hadoop fs -ls har:///outp
     ```
 
-    
+
+## 7. HDFS 数据迁移
+
+### 7.1 Apache 和 Apache 集群间数据拷贝
+
+- scp 实现两个远程主机之间的文件复制
+
+    ```bash
+    # push
+    scp -r <local absolute path> user@hostname:<absolute path>
+    # pull
+    scp -r user@hostname:<absolute path> <local absolute path>
+    ```
+
+- 采用 `distcp` 命令实现两个 Hadoop 之间的递归数据复制
+
+    ```bash
+    hadoop distcp hdfs://hostsrc:port/<path> hdfs://hostdest:port/<path>
+    ```
+
+###  7.2 Apache 和 CDH 之间的拷贝
+
+> CDH 官网
+
+## 8. MapReduce 生产经验
+
+### 8.1 MapReduce 慢
+
+- 计算机性能
+
+    CPU，内存，磁盘，网络
+
+- I/O 操作优化
+
+    - 数据倾斜
+    - Map 时间太长，Reduce 等待过久
+    - 小文件过多
+
+### 8.2 MapReduce 调优参数
+
+- 自定义分区，减少数据倾斜
+
+    继承 Partition 接口，重写 `getPartition()` 方法
+
+- 减少溢写次数
+
+    `mapreduce.task.io.sort.mb` Shuffle 环形缓冲区大小，默认 100m
+
+    `mapreduce.map.sort.spill.percent` 环形缓冲区溢出的阈值，默认 80%
+
+- 增加每次 merge 的合并次数
+
+    `mapreduce.task.io.sort.factor` 默认 10（根据内存调整）
+
+- 在不影响业务结果的情况下，可以提前采用 Combiner
+
+    `job.setCombinerClass(xxxReducer.class);` 
+
+- 为了减少磁盘 I/O，可以采用 Snappy 或者 LZO 压缩
+
+    `conf.setBoolean("mapreduce.map.output.compress", true);` 
+
+    `conf.setClass("mapreduce.map.output.compress.codec", SnappyCodec.class/CompressionCodec.class);` 
+
+- 调整 MapTask 内存大小
+
+    `mapreduce.map.memory.mb` 默认MapTask 内存上限 1024 MB，可以根据 128m 数据对应 1G 内存
+
+- 控制 MapTask 堆大小
+
+    `mapreduce.map.java.opts` （如果内存不够会报 OOM）
+
+- 调整 Task 的 CPU 核数
+
+    `mapreduce.map.cpu.vcores` 默认为 1，计算密集型任务可以增加 CPU 核数
+
+- 异常充实
+
+    `mapreduce.map.maxattempts` 每个 MapTask 最大重试次数，一旦重试超过该次数，则认为 MapTask 运行失败，默认值 4
