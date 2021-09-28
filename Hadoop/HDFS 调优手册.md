@@ -494,6 +494,45 @@
 
     `mapreduce.map.cpu.vcores` 默认为 1，计算密集型任务可以增加 CPU 核数
 
-- 异常充实
+- 异常重试
 
     `mapreduce.map.maxattempts` 每个 MapTask 最大重试次数，一旦重试超过该次数，则认为 MapTask 运行失败，默认值 4
+
+- 设置 Reduce 从 Map 中 pull 的数据并行数
+
+    `mapreduce.reduce.shuffle.parallelcopies` 默认为 5
+
+- Buffer 大小占 Reduce 可用内存
+
+    `mapreduce.reduce.shuffle.input.buffer.percent` 默认 0,7
+
+- Buffer 数据写入磁盘的阈值
+
+    `mapreduce.reduce.shuffle.merge.percent` 默认 0,66
+
+- ReduceTask 内存上限
+
+    `mapreduce.reduce.memory.mb` 默认 1024MB，根据 128m 数据 1G 内存原则
+
+- ReduceTask 堆内存大小
+
+    `mapreduce.reduce.java.opts` 控制 ReduceTask 大小（如果内存不够会报 OOM）
+
+- ReduceTask CPU 核数
+
+    `mapreduce.reduce.cpu.vcores` 默认为 1
+
+- 最大重试次数
+
+    `mapreduce.reduce.maxattempts` 每个 ReduceTask 重试次数
+
+- 当 MapTask 完成比例达到该值申请 ReduceTask 资源
+
+    `mapreduce.job.reduce.slowstart.completedmaps` 默认 0,05
+
+- 如果一个 Task 在一定时间没有任何进入，即不会读取新数据，也没有输出数据，则认为该 Task 处于 Block 状态，为了防止永远 Block，设置超时时间
+
+    `mapreduce.task.timeout` 默认 600000 秒
+
+- 如果可以不用 Reduce Task 尽量不要用 Reduce Task
+
