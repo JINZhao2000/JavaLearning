@@ -536,3 +536,72 @@
 
 - 如果可以不用 Reduce Task 尽量不要用 Reduce Task
 
+### 8.3 MapReduce 数据倾斜
+
+- 数据倾斜现象
+
+    - 数据频率倾斜 - 某一个区域的数据量要远远大于其他区域
+    - 数据大小倾斜 - 部分记录的大小远远大小平均值
+
+- 减少数据倾斜的方法
+
+    - 检查是否空值过多造成数据倾斜
+
+        生产环境，可以直接过滤掉空值，就自定义分区，将空值加随机数打散，最后再二次聚合
+
+    - 能在 map 阶段提前处理，最好先在 Map 阶段处理：Combiner，MapJoin
+
+    - 设置多个 Reduce 个数
+
+## 9. Hadoop - YARN 生产经验
+
+### 9.1 常用的调优参数
+
+调优参数列表
+
+- ResourceManager 相关
+
+    ```bash
+    # 处理调度请求的线程数量
+    yarn.resourcemanager.scheduler.client.thread-count ResourceManager
+    # 配置调度器
+    yarn.resourcemanager.scheduler.class
+    ```
+
+- NodeManager 相关
+
+    ```bash
+    # NodeManager 使用内存数
+    yarn.nodemanager.resource.memory-mb
+    # NodeManager 为系统保留多少内存，和上一个参数二者选一
+    yarn.nodemanager.resource,system-reserved-memory-mb
+    # NodeManager 使用 CPU 核数
+    yarn.nodemanager.resource.cpu-vcores
+    # 是否将虚拟核数当作 CPU 核数
+    yarn.nodemanager.resource.count-logical-processors-as-cores
+    # 虚拟核数核物理核数乘数
+    yarn.nodemanager.resource.pcores-vcores-multiplier
+    # 是否让 yarn 自己检测硬件进行配置
+    yarn.nodemanager.resource.detect-hardware-capabilities
+    # 是否开启物理内存检查限制 container
+    yarn.nodemanager.pmem-check-enabled
+    # 是否开启虚拟内存检查限制 container
+    yarn.nodemanager.vmem-check-enabled
+    # 虚拟内存物理内存比例
+    yarn.nodemanager.vmem-pmem-ratio
+    ```
+
+- Container 相关
+
+    ```bash
+    # 容器最小内存
+    yarn.scheduler.minimum-allocation-mb
+    # 容器最大内存
+    yarn.scheduler.maximum-allocation-mb
+    # 容器最小核数
+    yarn.scheduler.minimum-allocation-vcores
+    # 容器最大核数
+    yarn.scheduler.maimum-allocation-vcores
+    ```
+
+    
