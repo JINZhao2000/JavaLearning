@@ -601,7 +601,83 @@
     # 容器最小核数
     yarn.scheduler.minimum-allocation-vcores
     # 容器最大核数
-    yarn.scheduler.maimum-allocation-vcores
+    yarn.scheduler.maximum-allocation-vcores
     ```
 
-    
+## 10. Hadoop 综合调优
+
+### 10.1 Hadoop 小文件优化方法
+
+- Hadoop 小文件弊端
+
+    HDFS 上每个文件都要在 NameNode 上创建对应的元数据，这个元数据的大小约为 150 byte，这样当小文件比较多的时候，就会产生很多的元数据文件，一方面会大量占用 NameNode 的内存空间，另一方面就是元数据过多，使得寻址索引速度变慢
+
+    小文件过多，在进行 MR 计算的时候，会生成过多的切片，需要启动过多的 MapTask，每个 MapTask 处理的数据量小，导致 MapTask 的处理时间比启动时间还小，消耗资源
+
+- Hadoop 小文件解决方案
+
+    - 在数据采集的时候，就将小文件或小批数据合成大文件再上传 HDFS（数据源头）
+
+    - Hadoop Archive（存储方向）
+
+        HA 是一个高效的将小文件放入 HDFS 块中的文件存档工具，能够将多个小文件打包成一个 HAR 文件，从而达到减少 NameNode 的内存使用
+
+    - CombineTextInputFormat（计算方向）
+
+        CombineTextInputFormat 用于将多个小文件在切片过程中生成一个单独的切片或者少量的切片
+
+    - 开启 uber 模式，实现 JVM 重用（计算方向）
+
+        默认情况下，每个 Task 任务都需要启动一个 JVM 来运行，如果 Task 任务计算的数据量很小，我们可以让同一个 Job 的多个 Task 运行在一个 JVM 中
+
+        - mapred-site.xml
+
+            ```xml
+            <property>
+                <!-- 开启 uber 模式 -->
+            	<name>mapreduce.job.ubertask.enable</name>
+                <value>true</value>
+            </property>
+            <property>
+                <!-- uber 模式中最大的 mapTask 数量，可以向下修改 -->
+            	<name>mapreduce.job.ubertask.maxmaps</name>
+                <value>9</value>
+            </property>
+            <property>
+                <!-- uber 模式中最大的 reduce 数量，可以向下修改 -->
+            	<name>mapreduce.job.ubertask.maxreduces</name>
+            	<value>1</value> 
+            </property>
+            <property>
+                <!-- uber 模式中最大的输入数据量，默尔用 dfs.blocksize 的值，可以向下修改 -->
+            	<name>mapreduce.job.ubertask.maxbytes</name>
+                <value></value>
+            </property>
+            ```
+
+    ### 10.2 测试 MapReduce 计算性能
+
+    使用 Sort 程序评测 MapReduce
+
+    （一个虚拟机不超过 150G 磁盘尽量不要执行这段代码）
+
+    - 使用 RandomWriter 来产生随机数，每个节点运行 10 个 Map 任务，每个任务产生大约 1G 大小的二进制数
+
+        ```bash
+        hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.1.jar randomwriter random-data
+        ```
+
+    - 执行 sort 程序
+
+        ```bash
+        hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.1.jar sort random-data sorted-data
+        ```
+
+    - 验证数据是否排好序
+
+        ```bash
+        hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.3.1.jar testmapredsort -sortInput random-data -sortOuput sorted-data
+        ```
+
+        
+
