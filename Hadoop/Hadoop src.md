@@ -612,9 +612,715 @@ public interface HdfsClientConfigKeys {
 
 ## 2. DataNode 启动源码解析
 
+- DataNode 工作机制
+
+    1. DataNode 启动后向 NameNode 注册
+    2. DataNode 注册成功
+    3. 每周期（6 小时）上报所有块信息
+    4. 每 3 秒一次心跳，返回结果带有 NameNode 给 DataNode 的命令
+    5. 超过 10 分钟 + 30 秒没有收到心跳，则认为该节点不可用
+
+- DataNode 位置
+
+    ```java
+    package org.apache.hadoop.hdfs.server.datanode;
+    
+    @InterfaceAudience.Private
+    public class DataNode extends ReconfigurableBase
+        implements InterDatanodeProtocol, ClientDatanodeProtocol,
+            TraceAdminProtocol, DataNodeMXBean, ReconfigurationProtocol {}
+    ```
+
+### 2.1 初始化 DataXceivierServer
+
+```java
+@InterfaceAudience.Private
+public class DataNode extends ReconfigurableBase
+    implements InterDatanodeProtocol, ClientDatanodeProtocol, 
+TraceAdminProtocol, DataNodeMXBean, ReconfigurationProtocol {
+    public static void main(String args[]) {
+        if (DFSUtil.parseHelpArgument(args, DataNode.USAGE, System.out, true)) {
+            System.exit(0);
+        }
+        secureMain(args, null);
+    }
+
+    public static void secureMain(String args[], SecureResources resources) {
+        int errorCode = 0;
+        try {
+            StringUtils.startupShutdownMessage(DataNode.class, args, LOG);
+            DataNode datanode = createDataNode(args, null, resources);
+            // ...
+        } catch (Throwable e) {
+            LOG.error("Exception in secureMain", e);
+            terminate(1, e);
+        } finally {
+            // ...
+        }
+    }
+
+    @VisibleForTesting
+    @InterfaceAudience.Private
+    public static DataNode createDataNode(String args[], Configuration conf, 
+                                          SecureResources resources) throws IOException {
+        DataNode dn = instantiateDataNode(args, conf, resources);
+        if (dn != null) {
+            dn.runDatanodeDaemon();
+        }
+        return dn;
+    }
+    
+    public static DataNode instantiateDataNode(String args [], Configuration conf, 
+                                               SecureResources resources) throws IOException {
+        // ...
+        return makeInstance(dataLocations, conf, resources);
+    }
+    
+    static DataNode makeInstance(Collection<StorageLocation> dataDirs, 
+                                 Configuration conf, SecureResources resources) throws IOException {
+        // ...
+        return new DataNode(conf, locations, storageLocationChecker, resources);
+    }
+    
+    DataNode(final Configuration conf,
+           final List<StorageLocation> dataDirs,
+           final StorageLocationChecker storageLocationChecker,
+           final SecureResources resources) throws IOException {
+        // ...
+        try {
+            hostName = getHostName(conf);
+            LOG.info("Configured hostname is {}", hostName);
+            startDataNode(dataDirs, resources);
+        } catch (IOException ie) {
+            shutdown();
+            throw ie;
+        }
+        // ...
+    }
+    
+    void startDataNode(List<StorageLocation> dataDirectories, SecureResources resources) throws IOException {
+        // ...
+        initDataXceiver();
+        // ...
+    }
+    
+    private void initDataXceiver() throws IOException {
+        // 上传 Daemon
+    }
+}
+```
+
+### 2.2 初始化 HTTP 服务
+
+```java
+@InterfaceAudience.Private
+public class DataNode extends ReconfigurableBase
+    implements InterDatanodeProtocol, ClientDatanodeProtocol, 
+TraceAdminProtocol, DataNodeMXBean, ReconfigurationProtocol {
+    void startDataNode(List<StorageLocation> dataDirectories, SecureResources resources) throws IOException {
+        // ...
+        initDataXceiver();
+        startInfoServer();
+        // ...
+    }
+    
+    private void startInfoServer() throws IOException {
+        ServerSocketChannel httpServerChannel = secureResources != null ?
+            secureResources.getHttpServerChannel() : null;
+
+        httpServer = new DatanodeHttpServer(getConf(), this, httpServerChannel);
+        httpServer.start();
+        if (httpServer.getHttpAddress() != null) {
+            infoPort = httpServer.getHttpAddress().getPort();
+        }
+        if (httpServer.getHttpsAddress() != null) {
+            infoSecurePort = httpServer.getHttpsAddress().getPort();
+        }
+    }
+}
+
+public class DatanodeHttpServer implements Closeable {
+    public DatanodeHttpServer(final Configuration conf,
+                              final DataNode datanode,
+                              final ServerSocketChannel externalHttpChannel) throws IOException {
+        // ...
+        HttpServer2.Builder builder = new HttpServer2.Builder()
+            .setName("datanode")
+            .setConf(confForInfoServer)
+            .setACL(new AccessControlList(conf.get(DFS_ADMIN, " ")))
+            .hostName(getHostnameForSpnegoPrincipal(confForInfoServer))
+            .addEndpoint(URI.create("http://localhost:" + proxyPort))
+            .setFindPort(true);
+        // ...
+    }
+}
+```
+
+### 2.3 初始化 DataNode 的 RPC 服务器
+
+```java
+@InterfaceAudience.Private
+public class DataNode extends ReconfigurableBase
+    implements InterDatanodeProtocol, ClientDatanodeProtocol, 
+TraceAdminProtocol, DataNodeMXBean, ReconfigurationProtocol {
+    void startDataNode(List<StorageLocation> dataDirectories, SecureResources resources) throws IOException {
+        // ...
+        startInfoServer();
+        // ...
+        initIpcServer();
+    }
+    
+    public RPC.Server ipcServer;
+    
+    private void initIpcServer() throws IOException {
+        // ...
+        ipcServer = new RPC.Builder(getConf())
+            .setProtocol(ClientDatanodeProtocolPB.class)
+            .setInstance(service)
+            .setBindAddress(ipcAddr.getHostName())
+            .setPort(ipcAddr.getPort())
+            .setNumHandlers(
+            getConf().getInt(DFS_DATANODE_HANDLER_COUNT_KEY,
+                             DFS_DATANODE_HANDLER_COUNT_DEFAULT)).setVerbose(false)
+            .setSecretManager(blockPoolTokenSecretManager).build();
+        // ...
+    }
+}
+```
+
+### 2.4 DataNode 向 NameNode 注册
+
+```java
+@InterfaceAudience.Private
+public class DataNode extends ReconfigurableBase
+    implements InterDatanodeProtocol, ClientDatanodeProtocol, 
+TraceAdminProtocol, DataNodeMXBean, ReconfigurationProtocol {
+    void startDataNode(List<StorageLocation> dataDirectories, SecureResources resources) throws IOException {
+        // ...
+        initIpcServer();
+        // ...
+        blockPoolManager.refreshNamenodes(getConf());
+        // ...
+    }
+    
+    DatanodeProtocolClientSideTranslatorPB connectToNN(
+        InetSocketAddress nnAddr) throws IOException {
+        return new DatanodeProtocolClientSideTranslatorPB(nnAddr, getConf());
+    }
+}
+
+@InterfaceAudience.Private
+class BlockPoolManager {
+    void refreshNamenodes(Configuration conf) throws IOException {
+        // ...
+        synchronized (refreshNamenodesLock) {
+            doRefreshNamenodes(newAddressMap, newLifelineAddressMap);
+        }
+    }
+    
+    private void doRefreshNamenodes(
+        Map<String, Map<String, InetSocketAddress>> addrMap,
+        Map<String, Map<String, InetSocketAddress>> lifelineAddrMap)
+        throws IOException {
+        // ...
+		synchronized (this) {
+            // ...
+            if (!toAdd.isEmpty()) {
+                // ...
+                for (String nsToAdd : toAdd) {
+                    // ...
+                    BPOfferService bpos = createBPOS(nsToAdd, nnIds, addrs, lifelineAddrs);
+                    // ...
+                }
+                // ...
+            }
+            startAll();
+        }
+    }
+    
+    protected BPOfferService createBPOS(
+        final String nameserviceId,
+        List<String> nnIds,
+        List<InetSocketAddress> nnAddrs,
+        List<InetSocketAddress> lifelineNnAddrs) {
+        return new BPOfferService(nameserviceId, nnIds, nnAddrs, lifelineNnAddrs, dn);
+    }
+    
+    synchronized void startAll() throws IOException {
+        try {
+            UserGroupInformation.getLoginUser().doAs(
+                new PrivilegedExceptionAction<Object>() {
+                    @Override
+                    public Object run() throws Exception {
+                        for (BPOfferService bpos : offerServices) {
+                            bpos.start();
+                        }
+                        return null;
+                    }
+                });
+        } catch (InterruptedException ex) {
+            IOException ioe = new IOException();
+            ioe.initCause(ex.getCause());
+            throw ioe;
+        }
+    }
+}
+
+@InterfaceAudience.Private
+class BPOfferService {
+    BPOfferService(
+        final String nameserviceId, List<String> nnIds,
+        List<InetSocketAddress> nnAddrs,
+        List<InetSocketAddress> lifelineNnAddrs,
+        DataNode dn) {
+		// ...
+        for (int i = 0; i < nnAddrs.size(); ++i) {
+            this.bpServices.add(new BPServiceActor(nameserviceId, nnIds.get(i),
+                                                   nnAddrs.get(i), lifelineNnAddrs.get(i), this));
+        }
+    }
+    
+    void start() {
+        for (BPServiceActor actor : bpServices) {
+            actor.start();
+        }
+    }
+}
+
+@InterfaceAudience.Private
+class BPServiceActor implements Runnable {
+    void start() {
+        if ((bpThread != null) && (bpThread.isAlive())) {
+            //Thread is started already
+            return;
+        }
+        bpThread = new Thread(this);
+        bpThread.setDaemon(true); // needed for JUnit testing
+
+        if (lifelineSender != null) {
+            lifelineSender.start();
+        }
+        bpThread.start();
+    }
+    
+    @Override
+    public void run() {
+		// ...
+        try {
+            while (true) {
+                try {
+                    connectToNNAndHandshake();
+                    break;
+                } catch (IOException ioe) {
+					// ...                    
+                }
+            }
+            // ...
+        }catch (Throwable ex) {
+            LOG.warn("Unexpected exception in block pool " + this, ex);
+            runningState = RunningState.FAILED;
+        } finally {
+            LOG.warn("Ending block pool service for: " + this);
+            cleanUp();
+        }
+    }
+    
+    private void connectToNNAndHandshake() throws IOException {
+        // get NN proxy
+        bpNamenode = dn.connectToNN(nnAddr); // method in DataNode class
+        // ...
+        register(nsInfo);
+    }
+    
+    void register(NamespaceInfo nsInfo) throws IOException {
+        while (shouldRun()) {
+            try {
+                // Use returned registration from namenode with updated fields
+                newBpRegistration = bpNamenode.registerDatanode(newBpRegistration);
+                newBpRegistration.setNamespaceInfo(nsInfo);
+                bpRegistration = newBpRegistration;
+                break;
+            } catch(Exception e) {
+                // ...
+            }
+            sleepAndLogInterrupts(1000, "connecting to server");
+        }
+    }
+}
+
+@InterfaceAudience.Private
+@InterfaceStability.Stable
+public class DatanodeProtocolClientSideTranslatorPB implements
+    ProtocolMetaInterface, DatanodeProtocol, Closeable {
+    public DatanodeProtocolClientSideTranslatorPB(InetSocketAddress nameNodeAddr,
+                                                  Configuration conf) throws IOException {
+        RPC.setProtocolEngine(conf, DatanodeProtocolPB.class, ProtobufRpcEngine2.class);
+        UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+        rpcProxy = createNamenode(nameNodeAddr, conf, ugi);
+    }
+    
+    private static DatanodeProtocolPB createNamenode(
+        InetSocketAddress nameNodeAddr, Configuration conf,
+        UserGroupInformation ugi) throws IOException {
+        return RPC.getProxy(DatanodeProtocolPB.class,
+                            RPC.getProtocolVersion(DatanodeProtocolPB.class), 
+                            nameNodeAddr, 
+                            ugi,
+                            conf, 
+                            NetUtils.getSocketFactory(conf, DatanodeProtocolPB.class));
+    }
+    
+    @Override
+    public DatanodeRegistration registerDatanode(DatanodeRegistration registration) throws IOException {
+        // ...
+        try {
+            resp = rpcProxy.registerDatanode(NULL_CONTROLLER, builder.build());
+        } catch (ServiceException se) {
+            throw ProtobufHelper.getRemoteException(se);
+        }
+        // ...
+    }
+}
+
+@InterfaceAudience.Private
+@VisibleForTesting
+public class NameNodeRpcServer implements NamenodeProtocols {
+    @Override // DatanodeProtocol
+    public DatanodeRegistration registerDatanode(DatanodeRegistration nodeReg)
+        throws IOException {
+        checkNNStartup();
+        verifySoftwareVersion(nodeReg);
+        namesystem.registerDatanode(nodeReg);
+        return nodeReg;
+    }
+}
+
+@InterfaceAudience.Private
+@Metrics(context="dfs")
+public class FSNamesystem implements 
+    Namesystem, FSNamesystemMBean, NameNodeMXBean, ReplicatedBlocksMBean, ECBlockGroupsMBean {
+    void registerDatanode(DatanodeRegistration nodeReg) throws IOException {
+        writeLock();
+        try {
+            blockManager.registerDatanode(nodeReg);
+        } finally {
+            writeUnlock("registerDatanode");
+        }
+    }
+}
+
+@InterfaceAudience.Private
+public class BlockManager implements BlockStatsMXBean {
+    public void registerDatanode(DatanodeRegistration nodeReg)
+        throws IOException {
+        assert namesystem.hasWriteLock();
+        datanodeManager.registerDatanode(nodeReg);
+        bmSafeMode.checkSafeMode();
+    }
+}
+
+@InterfaceAudience.Private
+@InterfaceStability.Evolving
+public class DatanodeManager {
+    public void registerDatanode(DatanodeRegistration nodeReg)
+      throws DisallowedDatanodeException, UnresolvedTopologyException {
+        // ...
+        try {
+            // ...
+            try {
+                // ...
+                addDatanode(nodeDescr);
+                blockManager.getBlockReportLeaseManager().register(nodeDescr);
+                // also treat the registration message as a heartbeat
+                // no need to update its timestamp
+                // because its is done when the descriptor is created
+                heartbeatManager.addDatanode(nodeDescr);
+                heartbeatManager.updateDnStat(nodeDescr);
+            } finally {
+                // ...
+            }
+        } catch (InvalidTopologyException e) {
+            // ...
+            throw e;
+        }
+    }
+}
+```
+
+### 2.5 向 NameNode 发送心跳
+
+```java
+@InterfaceAudience.Private
+public class DataNode extends ReconfigurableBase
+    implements InterDatanodeProtocol, ClientDatanodeProtocol, 
+TraceAdminProtocol, DataNodeMXBean, ReconfigurationProtocol {
+    void startDataNode(List<StorageLocation> dataDirectories, SecureResources resources) throws IOException {
+        // ...
+        blockPoolManager.refreshNamenodes(getConf());
+        // ...
+    }
+}
+
+@InterfaceAudience.Private
+class BlockPoolManager {
+    void refreshNamenodes(Configuration conf) throws IOException {
+        // ...
+        synchronized (refreshNamenodesLock) {
+            doRefreshNamenodes(newAddressMap, newLifelineAddressMap);
+        }
+    }
+    
+    private void doRefreshNamenodes(
+        Map<String, Map<String, InetSocketAddress>> addrMap,
+        Map<String, Map<String, InetSocketAddress>> lifelineAddrMap)
+        throws IOException {
+        // ...
+		synchronized (this) {
+            // ...
+            startAll();
+        }
+    }
+    
+    synchronized void startAll() throws IOException {
+        try {
+            UserGroupInformation.getLoginUser().doAs(
+                new PrivilegedExceptionAction<Object>() {
+                    @Override
+                    public Object run() throws Exception {
+                        for (BPOfferService bpos : offerServices) {
+                            bpos.start();
+                        }
+                        return null;
+                    }
+                });
+        } catch (InterruptedException ex) {
+            IOException ioe = new IOException();
+            ioe.initCause(ex.getCause());
+            throw ioe;
+        }
+    }
+}
+
+@InterfaceAudience.Private
+class BPOfferService {
+    BPOfferService(
+        final String nameserviceId, List<String> nnIds,
+        List<InetSocketAddress> nnAddrs,
+        List<InetSocketAddress> lifelineNnAddrs,
+        DataNode dn) {
+		// ...
+        for (int i = 0; i < nnAddrs.size(); ++i) {
+            this.bpServices.add(new BPServiceActor(nameserviceId, nnIds.get(i),
+                                                   nnAddrs.get(i), lifelineNnAddrs.get(i), this));
+        }
+    }
+    
+    void start() {
+        for (BPServiceActor actor : bpServices) {
+            actor.start();
+        }
+    }
+}
+
+@InterfaceAudience.Private
+class BPServiceActor implements Runnable {
+    void start() {
+        if ((bpThread != null) && (bpThread.isAlive())) {
+            //Thread is started already
+            return;
+        }
+        bpThread = new Thread(this);
+        bpThread.setDaemon(true); // needed for JUnit testing
+
+        if (lifelineSender != null) {
+            lifelineSender.start();
+        }
+        bpThread.start();
+    }
+    
+    @Override
+    public void run() {
+		// ...
+        try {
+            while (true) {
+                try {
+                    connectToNNAndHandshake();
+                    break;
+                } catch (IOException ioe) {
+					// ...                    
+                }
+            }
+            // ...
+            while (shouldRun()) {
+                try {
+                    offerService();
+                } catch (Exception ex) {
+                    LOG.error("Exception in BPOfferService for " + this, ex);
+                    sleepAndLogInterrupts(5000, "offering service");
+                }
+            }
+            runningState = RunningState.EXITED;
+        }catch (Throwable ex) {
+            LOG.warn("Unexpected exception in block pool " + this, ex);
+            runningState = RunningState.FAILED;
+        } finally {
+            LOG.warn("Ending block pool service for: " + this);
+            cleanUp();
+        }
+    }
+    
+    private void offerService() throws Exception {
+        while (shouldRun()) {
+            try {
+                // ...
+                if (sendHeartbeat) {
+                    if (!dn.areHeartbeatsDisabledForTests()) {
+                        resp = sendHeartBeat(requestBlockReportLease);
+                        // ...
+                    }
+                    // ...
+                }
+                // ...
+            } catch (Exception e) {
+                // ...
+            } finally {
+                // ...
+            }
+        }
+    }
+    
+    HeartbeatResponse sendHeartBeat(boolean requestBlockReportLease) throws IOException {
+        // ...
+        HeartbeatResponse response = bpNamenode.sendHeartbeat(bpRegistration,
+                                                              reports,
+                                                              dn.getFSDataset().getCacheCapacity(),
+                                                              dn.getFSDataset().getCacheUsed(),
+                                                              dn.getXmitsInProgress(),
+                                                              dn.getActiveTransferThreadCount(),
+                                                              numFailedVolumes,
+                                                              volumeFailureSummary,
+                                                              requestBlockReportLease,
+                                                              slowPeers,
+                                                              slowDisks);
+    }
+}
+
+@InterfaceAudience.Private
+@VisibleForTesting
+public class NameNodeRpcServer implements NamenodeProtocols {
+    @Override // DatanodeProtocol
+    public HeartbeatResponse sendHeartbeat(DatanodeRegistration nodeReg,
+                                           StorageReport[] report, long dnCacheCapacity, long dnCacheUsed,
+                                           int xmitsInProgress, int xceiverCount,
+                                           int failedVolumes, VolumeFailureSummary volumeFailureSummary,
+                                           boolean requestFullBlockReportLease,
+                                           @Nonnull SlowPeerReports slowPeers,
+                                           @Nonnull SlowDiskReports slowDisks)
+        throws IOException {
+        checkNNStartup();
+        verifyRequest(nodeReg);
+        return namesystem.handleHeartbeat(nodeReg, report,
+                                          dnCacheCapacity, dnCacheUsed, xceiverCount, xmitsInProgress,
+                                          failedVolumes, volumeFailureSummary, requestFullBlockReportLease,
+                                          slowPeers, slowDisks);
+    }
+}
+
+@InterfaceAudience.Private
+@Metrics(context="dfs")
+public class FSNamesystem implements 
+    Namesystem, FSNamesystemMBean, NameNodeMXBean, ReplicatedBlocksMBean, ECBlockGroupsMBean {
+    HeartbeatResponse handleHeartbeat(DatanodeRegistration nodeReg,
+                                      StorageReport[] reports, long cacheCapacity, long cacheUsed,
+                                      int xceiverCount, int xmitsInProgress, int failedVolumes,
+                                      VolumeFailureSummary volumeFailureSummary,
+                                      boolean requestFullBlockReportLease,
+                                      @Nonnull SlowPeerReports slowPeers,
+                                      @Nonnull SlowDiskReports slowDisks)
+        throws IOException {
+        readLock();
+        try {
+			// ...
+            DatanodeCommand[] cmds = blockManager.getDatanodeManager().handleHeartbeat(
+                nodeReg, reports, getBlockPoolId(), cacheCapacity, cacheUsed,
+                xceiverCount, maxTransfer, failedVolumes, volumeFailureSummary,
+                slowPeers, slowDisks);
+            // ...
+            return new HeartbeatResponse(cmds, haState, rollingUpgradeInfo, blockReportLeaseId);
+        } finally {
+            readUnlock("handleHeartbeat");
+        }
+    }
+}
+
+@InterfaceAudience.Private
+@InterfaceStability.Evolving
+public class DatanodeManager {
+    public DatanodeCommand[] handleHeartbeat(DatanodeRegistration nodeReg,
+                                             StorageReport[] reports, final String blockPoolId,
+                                             long cacheCapacity, long cacheUsed, int xceiverCount, 
+                                             int maxTransfers, int failedVolumes,
+                                             VolumeFailureSummary volumeFailureSummary,
+                                             @Nonnull SlowPeerReports slowPeers,
+                                             @Nonnull SlowDiskReports slowDisks) throws IOException {
+        // ...
+        heartbeatManager.updateHeartbeat(nodeinfo, reports, cacheCapacity,
+                                         cacheUsed, xceiverCount, failedVolumes, volumeFailureSummary);
+        // ...
+    }
+}
+
+class HeartbeatManager implements DatanodeStatistics {
+    synchronized void updateHeartbeat(final DatanodeDescriptor node,
+                                      StorageReport[] reports, long cacheCapacity, long cacheUsed,
+                                      int xceiverCount, int failedVolumes,
+                                      VolumeFailureSummary volumeFailureSummary) {
+        stats.subtract(node);
+        blockManager.updateHeartbeat(node, reports, cacheCapacity, cacheUsed,
+                                     xceiverCount, failedVolumes, volumeFailureSummary);
+        stats.add(node);
+    }
+}
+
+@InterfaceAudience.Private
+public class BlockManager implements BlockStatsMXBean {
+    void updateHeartbeat(DatanodeDescriptor node, StorageReport[] reports,
+                         long cacheCapacity, long cacheUsed, int xceiverCount, int failedVolumes,
+                         VolumeFailureSummary volumeFailureSummary) {
+        for (StorageReport report: reports) {
+            providedStorageMap.updateStorage(node, report.getStorage());
+        }
+        node.updateHeartbeat(reports, cacheCapacity, cacheUsed, xceiverCount,
+                             failedVolumes, volumeFailureSummary);
+    }
+}
+
+@InterfaceAudience.Private
+@InterfaceStability.Evolving
+public class DatanodeDescriptor extends DatanodeInfo {
+    void updateHeartbeat(StorageReport[] reports, long cacheCapacity,
+                         long cacheUsed, int xceiverCount, int volFailures,
+                         VolumeFailureSummary volumeFailureSummary) {
+        updateHeartbeatState(reports, cacheCapacity, cacheUsed, xceiverCount,
+                             volFailures, volumeFailureSummary);
+        heartbeatedSinceRegistration = true;
+    }
+    
+    void updateHeartbeatState(StorageReport[] reports, long cacheCapacity,
+                              long cacheUsed, int xceiverCount, int volFailures,
+                              VolumeFailureSummary volumeFailureSummary) {
+        updateStorageStats(reports, cacheCapacity, cacheUsed, xceiverCount,
+                           volFailures, volumeFailureSummary);
+        setLastUpdate(Time.now());
+        setLastUpdateMonotonic(Time.monotonicNow());
+        rollBlocksScheduled(getLastUpdateMonotonic());
+    }
+}
+```
+
 ## 3. HDFS 启动源码解析
 
-### 4. Yarn 源码解析
+## 4. Yarn 源码解析
 
 ## 5. MapReduce 源码解析
 
