@@ -1320,6 +1320,380 @@ public class DatanodeDescriptor extends DatanodeInfo {
 
 ## 3. HDFS 启动源码解析
 
+- HDFS 写数据流程
+    1. 向 NameNode 请求上传文件
+    2. 响应可以上传文件
+    3. 请求上传第一个 Block，请求返回 DataNode
+    4. 返回 DataNode 节点
+    5. 请求建立 Block 传输通道（FSDataOutputStream）
+    6. DataNode 应答成功
+    7. 传输数据 packet（64k）
+
+### 3.1 Create
+
+#### 3.1.1 DN 向 NN 发起创建请求以及 NN 处理 DN 的创建请求
+
+```java
+public class Demo {
+    private static FileSystem fs = null;
+    
+    static {
+        try {
+            URI uri = new URI("hdfs://hadoop01:8020");
+
+            Configuration cfg = new Configuration();
+            String user = "root";
+
+            fs = FileSystem.get(uri, cfg, user);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new AssertionError("Init Error");
+        }
+    }
+        
+    public static void main(String[] args) {
+		FSDataOutputStream fos = fs.create(new Path("/input"));
+        fos.write("hello world".getBytes());
+    }   
+}
+```
+
+hadoop-hdfs-client
+
+```java
+package org.apache.hadoop.hdfs;
+
+@InterfaceAudience.LimitedPrivate({ "MapReduce", "HBase" })
+@InterfaceStability.Unstable
+public class DistributedFileSystem extends FileSystem
+    implements KeyProviderTokenIssuer, BatchListingOperations {
+    @Override
+    public FSDataOutputStream create(final Path f, final FsPermission permission,
+                                     final EnumSet<CreateFlag> cflags, final int bufferSize,
+                                     final short replication, final long blockSize,
+                                     final Progressable progress, final ChecksumOpt checksumOpt)
+        throws IOException {
+		// ...
+        return new FileSystemLinkResolver<FSDataOutputStream>() {
+            @Override
+            public FSDataOutputStream doCall(final Path p) throws IOException {
+                final DFSOutputStream dfsos = dfs.create(getPathName(p), permission,
+                                                         cflags, replication, blockSize, progress, bufferSize,
+                                                         checksumOpt);
+                return safelyCreateWrappedOutputStream(dfsos);
+            }
+            @Override
+            public FSDataOutputStream next(final FileSystem fs, final Path p)
+                throws IOException {
+                return fs.create(p, permission, cflags, bufferSize,
+                                 replication, blockSize, progress, checksumOpt);
+            }
+        }.resolve(this, absF);
+    }
+}
+
+@InterfaceAudience.Private
+public class DFSClient implements 
+    java.io.Closeable, RemotePeerFactory, DataEncryptionKeyFactory, KeyProviderTokenIssuer {
+    public DFSOutputStream create(String src, FsPermission permission,
+                                  EnumSet<CreateFlag> flag, boolean createParent, short replication,
+                                  long blockSize, Progressable progress, int buffersize,
+                                  ChecksumOpt checksumOpt, InetSocketAddress[] favoredNodes,
+                                  String ecPolicyName, String storagePolicy)
+        throws IOException {
+		// ...
+        final DFSOutputStream result = 
+            DFSOutputStream.newStreamForCreate(this, 
+                                               src, 
+                                               masked, 
+                                               flag, 
+                                               createParent, 
+                                               replication, 
+                                               blockSize, 
+                                               progress,
+                                               dfsClientConf.createChecksum(checksumOpt),
+                                               getFavoredNodesStr(favoredNodes), 
+                                               ecPolicyName, 
+                                               storagePolicy);
+        // ...
+    }
+}
+
+@InterfaceAudience.Private
+public class DFSOutputStream extends FSOutputSummer 
+    implements Syncable, CanSetDropBehind, StreamCapabilities {
+    static DFSOutputStream newStreamForCreate(DFSClient dfsClient, String src,
+                                              FsPermission masked, EnumSet<CreateFlag> flag, boolean createParent,
+                                              short replication, long blockSize, Progressable progress,
+                                              DataChecksum checksum, String[] favoredNodes, String ecPolicyName,
+                                              String storagePolicy)
+        throws IOException {
+        try (TraceScope ignored =
+             dfsClient.newPathTraceScope("newStreamForCreate", src)) {
+            // ...
+            while (shouldRetry) {
+                try {
+                    stat = dfsClient.namenode.create(src, masked, dfsClient.clientName,
+                                                     new EnumSetWritable<>(flag), createParent, replication,
+                                                     blockSize, SUPPORTED_CRYPTO_VERSIONS, ecPolicyName,
+                                                     storagePolicy);
+                } catch (RemoteException re) {
+                    // ...
+                }
+            }
+        }
+    }
+}
+
+@InterfaceAudience.Private
+@VisibleForTesting
+public class NameNodeRpcServer implements NamenodeProtocols {
+    @Override // ClientProtocol
+    public HdfsFileStatus create(String src, FsPermission masked,
+                                 String clientName, EnumSetWritable<CreateFlag> flag,
+                                 boolean createParent, short replication, long blockSize,
+                                 CryptoProtocolVersion[] supportedVersions, String ecPolicyName,
+                                 String storagePolicy)
+        throws IOException {
+        // ...
+        try {
+            PermissionStatus perm = new PermissionStatus(getRemoteUser()
+                                                         .getShortUserName(), null, masked);
+            status = namesystem.startFile(src, perm, clientName, clientMachine,
+                                          flag.get(), createParent, replication, blockSize, supportedVersions,
+                                          ecPolicyName, storagePolicy, cacheEntry != null);
+        } finally {
+            RetryCache.setState(cacheEntry, status != null, status);
+        }
+    }
+}
+
+@InterfaceAudience.Private
+@Metrics(context="dfs")
+public class FSNamesystem implements 
+    Namesystem, FSNamesystemMBean, NameNodeMXBean, ReplicatedBlocksMBean, ECBlockGroupsMBean {
+    HdfsFileStatus startFile(String src, PermissionStatus permissions,
+                             String holder, String clientMachine, EnumSet<CreateFlag> flag,
+                             boolean createParent, short replication, long blockSize,
+                             CryptoProtocolVersion[] supportedVersions, String ecPolicyName,
+                             String storagePolicy, boolean logRetryCache) throws IOException {
+        HdfsFileStatus status;
+        try {
+            status = startFileInt(src, permissions, holder, clientMachine, flag,
+                                  createParent, replication, blockSize, supportedVersions, ecPolicyName,
+                                  storagePolicy, logRetryCache);
+        } catch (AccessControlException e) {
+            logAuditEvent(false, "create", src);
+            throw e;
+        }
+        logAuditEvent(true, "create", src, status);
+        return status;
+    }
+    
+    private HdfsFileStatus startFileInt(String src,
+                                        PermissionStatus permissions, String holder, String clientMachine,
+                                        EnumSet<CreateFlag> flag, boolean createParent, short replication,
+                                        long blockSize, CryptoProtocolVersion[] supportedVersions,
+                                        String ecPolicyName, String storagePolicy, boolean logRetryCache)
+        throws IOException {
+		// ...
+        try {
+            // ...
+            try {
+                stat = FSDirWriteFileOp.startFile(this, iip, permissions, holder,
+                                                  clientMachine, flag, createParent, replication, blockSize, feInfo,
+                                                  toRemoveBlocks, shouldReplicate, ecPolicyName, storagePolicy,
+                                                  logRetryCache);
+            } catch (IOException e) {
+                skipSync = e instanceof StandbyException;
+                throw e;
+            } finally {
+                dir.writeUnlock();
+            }
+        } finally {
+            // ...
+        }
+    }
+}
+
+class FSDirWriteFileOp {
+    static HdfsFileStatus startFile(
+        FSNamesystem fsn, INodesInPath iip,
+        PermissionStatus permissions, String holder, String clientMachine,
+        EnumSet<CreateFlag> flag, boolean createParent,
+        short replication, long blockSize,
+        FileEncryptionInfo feInfo, INode.BlocksMapUpdateInfo toRemoveBlocks,
+        boolean shouldReplicate, String ecPolicyName, String storagePolicy,
+        boolean logRetryEntry)
+        throws IOException {
+        // ...
+        if (parent != null) {
+            iip = addFile(fsd, parent, iip.getLastLocalName(), permissions,
+                          replication, blockSize, holder, clientMachine, shouldReplicate,
+                          ecPolicyName, storagePolicy);
+            newNode = iip != null ? iip.getLastINode().asFile() : null;
+        }
+        // ...
+    }
+    
+    private static INodesInPath addFile(
+        FSDirectory fsd, INodesInPath existing, byte[] localName,
+        PermissionStatus permissions, short replication, long preferredBlockSize,
+        String clientName, String clientMachine, boolean shouldReplicate,
+        String ecPolicyName, String storagePolicy) throws IOException {
+        // ...
+		try {
+            INodeFile newNode = newINodeFile(fsd.allocateNewInodeId(), permissions,
+                                             modTime, modTime, replicationFactor, ecPolicyID, preferredBlockSize,
+                                             storagepolicyid, blockType);
+            newNode.setLocalName(localName);
+            newNode.toUnderConstruction(clientName, clientMachine);
+            newiip = fsd.addINode(existing, newNode, permissions.getPermission());
+        } finally {
+            // ...
+        }
+        // ...
+    }
+}
+
+@InterfaceAudience.Private
+public class FSDirectory implements Closeable {    
+    INodesInPath addINode(INodesInPath existing, INode child, FsPermission modes) 
+        throws QuotaExceededException, UnresolvedLinkException {
+        cacheName(child);
+        writeLock();
+        try {
+            return addLastINode(existing, child, modes, true);
+        } finally {
+            writeUnlock();
+        }
+    }
+}
+```
+
+#### 3.1.2 DateStreamer 启动流程
+
+```java
+@InterfaceAudience.Private
+public class DFSClient implements 
+    java.io.Closeable, RemotePeerFactory, DataEncryptionKeyFactory, KeyProviderTokenIssuer {
+    public DFSOutputStream create(String src, FsPermission permission,
+                                  EnumSet<CreateFlag> flag, boolean createParent, short replication,
+                                  long blockSize, Progressable progress, int buffersize,
+                                  ChecksumOpt checksumOpt, InetSocketAddress[] favoredNodes,
+                                  String ecPolicyName, String storagePolicy)
+        throws IOException {
+		// ...
+        final DFSOutputStream result = 
+            DFSOutputStream.newStreamForCreate(this, 
+                                               src, 
+                                               masked, 
+                                               flag, 
+                                               createParent, 
+                                               replication, 
+                                               blockSize, 
+                                               progress,
+                                               dfsClientConf.createChecksum(checksumOpt),
+                                               getFavoredNodesStr(favoredNodes), 
+                                               ecPolicyName, 
+                                               storagePolicy);
+    }
+}
+
+@InterfaceAudience.Private
+public class DFSOutputStream extends FSOutputSummer
+    implements Syncable, CanSetDropBehind, StreamCapabilities {
+    static DFSOutputStream newStreamForCreate(DFSClient dfsClient, String src,
+                                              FsPermission masked, EnumSet<CreateFlag> flag, boolean createParent,
+                                              short replication, long blockSize, Progressable progress,
+                                              DataChecksum checksum, String[] favoredNodes, String ecPolicyName,
+                                              String storagePolicy)
+        throws IOException {
+        // ...
+        if(stat.getErasureCodingPolicy() != null) {
+            out = new DFSStripedOutputStream(dfsClient, src, stat,
+                                             flag, progress, checksum, favoredNodes);
+        } else {
+            out = new DFSOutputStream(dfsClient, src, stat,
+                                      flag, progress, checksum, favoredNodes, true);
+        }
+        out.start();
+        return out;
+    }
+    
+    protected DFSOutputStream(DFSClient dfsClient, String src,
+                              HdfsFileStatus stat, EnumSet<CreateFlag> flag, Progressable progress,
+                              DataChecksum checksum, String[] favoredNodes, boolean createStreamer) {
+        this(dfsClient, src, flag, progress, stat, checksum);
+        this.shouldSyncBlock = flag.contains(CreateFlag.SYNC_BLOCK);
+        computePacketChunkSize(dfsClient.getConf().getWritePacketSize(),
+                               bytesPerChecksum);
+        if (createStreamer) {
+            streamer = new DataStreamer(stat, null, dfsClient, src, progress,
+                                        checksum, cachingStrategy, byteArrayManager, favoredNodes,
+                                        addBlockFlags);
+        }
+    }
+    
+    protected void computePacketChunkSize(int psize, int csize) {
+        final int bodySize = psize - PacketHeader.PKT_MAX_HEADER_LEN;
+        final int chunkSize = csize + getChecksumSize();
+        chunksPerPacket = Math.max(bodySize/chunkSize, 1);
+        packetSize = chunkSize*chunksPerPacket;
+        DFSClient.LOG.debug("computePacketChunkSize: src={}, chunkSize={}, "
+                            + "chunksPerPacket={}, packetSize={}",
+                            src, chunkSize, chunksPerPacket, packetSize);
+    }
+    
+    protected synchronized void start() {
+        getStreamer().start();
+    }
+}
+
+@InterfaceAudience.Private
+class DataStreamer extends Daemon {
+    @Override
+    public void run() {
+		while (!streamerClosed && dfsClient.clientRunning) {
+            try {
+                synchronized (dataQueue) {
+                    while ((!shouldStop() && dataQueue.isEmpty()) || doSleep) {
+                        long timeout = 1000;
+                        if (stage == BlockConstructionStage.DATA_STREAMING) {
+                            timeout = sendHeartbeat();
+                        }
+                        try {
+                            dataQueue.wait(timeout);
+                        } catch (InterruptedException  e) {
+                            LOG.debug("Thread interrupted", e);
+                        }
+                        doSleep = false;
+                    }
+                    // ...
+                }
+            } catch (Throwable e) {
+                // ...
+            } finally {
+                // ...
+            }
+        }
+        closeInternal();
+    }
+}
+```
+
+### 3.2 Write
+
+#### 3.2.1 向 DataStreamer 的队列里面写数据
+
+#### 3.2.2 建立管道 - 机架感知
+
+#### 3.2.3 建立管道 - Socket 发送
+
+#### 3.2.4 建立管道 - Socket 接收
+
+#### 3.2.5 客户端接收 DN 写数据应答 Response
+
 ## 4. Yarn 源码解析
 
 ## 5. MapReduce 源码解析
