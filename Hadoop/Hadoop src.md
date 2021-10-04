@@ -1684,15 +1684,863 @@ class DataStreamer extends Daemon {
 
 ### 3.2 Write
 
+```java
+public class Demo {
+    private static FileSystem fs = null;
+    
+    static {
+        try {
+            URI uri = new URI("hdfs://hadoop01:8020");
+
+            Configuration cfg = new Configuration();
+            String user = "root";
+
+            fs = FileSystem.get(uri, cfg, user);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new AssertionError("Init Error");
+        }
+    }
+        
+    public static void main(String[] args) {
+		FSDataOutputStream fos = fs.create(new Path("/input"));
+        fos.write("hello world".getBytes());
+    }   
+}
+```
+
 #### 3.2.1 向 DataStreamer 的队列里面写数据
+
+```java
+@InterfaceAudience.LimitedPrivate({"HDFS"})
+@InterfaceStability.Unstable
+abstract public class FSOutputSummer extends OutputStream implements StreamCapabilities {
+    @Override
+    public synchronized void write(int b) throws IOException {
+        buf[count++] = (byte)b;
+        if(count == buf.length) {
+            flushBuffer();
+        }
+    }
+    
+    protected synchronized void flushBuffer() throws IOException {
+        flushBuffer(false, true);
+    }
+    
+    protected synchronized int flushBuffer(boolean keep,
+                                           boolean flushPartial) throws IOException {
+        int bufLen = count;
+        int partialLen = bufLen % sum.getBytesPerChecksum();
+        int lenToFlush = flushPartial ? bufLen : bufLen - partialLen;
+        if (lenToFlush != 0) {
+            writeChecksumChunks(buf, 0, lenToFlush);
+            if (!flushPartial || keep) {
+                count = partialLen;
+                System.arraycopy(buf, bufLen - count, buf, 0, count);
+            } else {
+                count = 0;
+            }
+        }
+
+        // total bytes left minus unflushed bytes left
+        return count - (bufLen - lenToFlush);
+    }
+    
+    private void writeChecksumChunks(byte b[], int off, int len) throws IOException {
+        sum.calculateChunkedSums(b, off, len, checksum, 0);
+        TraceScope scope = createWriteTraceScope();
+        try {
+            for (int i = 0; i < len; i += sum.getBytesPerChecksum()) {
+                int chunkLen = Math.min(sum.getBytesPerChecksum(), len - i);
+                int ckOffset = i / sum.getBytesPerChecksum() * getChecksumSize();
+                writeChunk(b, off + i, chunkLen, checksum, ckOffset,
+                           getChecksumSize());
+            }
+        } finally {
+            if (scope != null) {
+                scope.close();
+            }
+        }
+    }
+}
+
+@InterfaceAudience.Private
+public class DFSOutputStream extends FSOutputSummer implements Syncable, CanSetDropBehind, StreamCapabilities {
+    @Override
+    protected synchronized void writeChunk(byte[] b, int offset, int len,
+                                           byte[] checksum, int ckoff, int cklen) throws IOException {
+        writeChunkPrepare(len, ckoff, cklen);
+
+        currentPacket.writeChecksum(checksum, ckoff, cklen);
+        currentPacket.writeData(b, offset, len);
+        currentPacket.incNumChunks();
+        getStreamer().incBytesCurBlock(len);
+
+        // If packet is full, enqueue it for transmission
+        if (currentPacket.getNumChunks() == currentPacket.getMaxChunks() ||
+            getStreamer().getBytesCurBlock() == blockSize) {
+            enqueueCurrentPacketFull();
+        }
+    }
+    
+    synchronized void enqueueCurrentPacketFull() throws IOException {
+        LOG.debug("enqueue full {}, src={}, bytesCurBlock={}, blockSize={},"
+                  + " appendChunk={}, {}", currentPacket, src, getStreamer()
+                  .getBytesCurBlock(), blockSize, getStreamer().getAppendChunk(),
+                  getStreamer());
+        enqueueCurrentPacket();
+        adjustChunkBoundary();
+        endBlock();
+    }
+    
+    void enqueueCurrentPacket() throws IOException {
+        getStreamer().waitAndQueuePacket(currentPacket);
+        currentPacket = null;
+    }
+}
+
+@InterfaceAudience.Private
+class DataStreamer extends Daemon {
+    void waitAndQueuePacket(DFSPacket packet) throws IOException {
+        synchronized (dataQueue) {
+            try {
+                // If queue is full, then wait till we have enough space
+                boolean firstWait = true;
+                try {
+                    while (!streamerClosed && dataQueue.size() + ackQueue.size() >
+                           dfsClient.getConf().getWriteMaxPackets()) {
+                        if (firstWait) {
+                            Span span = Tracer.getCurrentSpan();
+                            if (span != null) {
+                                span.addTimelineAnnotation("dataQueue.wait");
+                            }
+                            firstWait = false;
+                        }
+                        try {
+                            dataQueue.wait();
+                        } catch (InterruptedException e) {
+                            // ...
+                        }
+                    }
+                } finally {
+                    Span span = Tracer.getCurrentSpan();
+                    if ((span != null) && (!firstWait)) {
+                        span.addTimelineAnnotation("end.wait");
+                    }
+                }
+                checkClosed();
+                queuePacket(packet);
+            } catch (ClosedChannelException cce) {
+                LOG.debug("Closed channel exception", cce);
+            }
+        }
+    }
+    
+    void queuePacket(DFSPacket packet) {
+        synchronized (dataQueue) {
+            if (packet == null) return;
+            packet.addTraceParent(Tracer.getCurrentSpanId());
+            dataQueue.addLast(packet);
+            lastQueuedSeqno = packet.getSeqno();
+            LOG.debug("Queued {}, {}", packet, this);
+            dataQueue.notifyAll();
+        }
+    }
+}
+```
 
 #### 3.2.2 建立管道 - 机架感知
 
+```java
+@InterfaceAudience.Private
+class DataStreamer extends Daemon {
+    @Override
+    public void run() {
+        TraceScope scope = null;
+        while (!streamerClosed && dfsClient.clientRunning) {
+            // ...
+            try {
+                // ...
+                synchronized (dataQueue) {
+                    // wait for a packet to be sent.
+                    while ((!shouldStop() && dataQueue.isEmpty()) || doSleep) {
+                        // ...
+                        try {
+                            dataQueue.wait(timeout);
+                        } catch (InterruptedException  e) {
+                            LOG.debug("Thread interrupted", e);
+                        }
+                        doSleep = false;
+                    }
+                    // ...
+                    one = dataQueue.getFirst(); // regular data packet
+                    SpanId[] parents = one.getTraceParents();
+                    if (parents.length > 0) {
+                        scope = dfsClient.getTracer().
+                            newScope("dataStreamer", parents[0]);
+                        scope.getSpan().setParents(parents);
+                    }
+                }
+                // ...
+                if (stage == BlockConstructionStage.PIPELINE_SETUP_CREATE) {
+                    LOG.debug("Allocating new block: {}", this);
+                    setPipeline(nextBlockOutputStream());
+                    initDataStreaming();
+                } else if (stage == BlockConstructionStage.PIPELINE_SETUP_APPEND) {
+                    LOG.debug("Append to block {}", block);
+                    setupPipelineForAppendOrRecovery();
+                    if (streamerClosed) {
+                        continue;
+                    }
+                    initDataStreaming();
+                }
+                // ...
+            } finally {
+                // ...
+            }
+        }
+        closeInternal();
+    }
+    
+    protected LocatedBlock nextBlockOutputStream() throws IOException {
+        // ...
+        do {
+           	// ...
+            lb = locateFollowingBlock(
+                excluded.length > 0 ? excluded : null, oldBlock);
+            block.setCurrentBlock(lb.getBlock());
+            block.setNumBytes(0);
+            bytesSent = 0;
+            accessToken = lb.getBlockToken();
+            nodes = lb.getLocations();
+            nextStorageTypes = lb.getStorageTypes();
+            nextStorageIDs = lb.getStorageIDs();
+
+            // Connect to first DataNode in the list.
+            success = createBlockOutputStream(nodes, nextStorageTypes, nextStorageIDs, 0L, false);
+            // ...
+        } while (!success && --count >= 0);
+    }
+    
+    private LocatedBlock locateFollowingBlock(DatanodeInfo[] excluded,
+                                              ExtendedBlock oldBlock) throws IOException {
+        return DFSOutputStream.addBlock(excluded, dfsClient, src, oldBlock,
+                                        stat.getFileId(), favoredNodes, addBlockFlags);
+    }
+}
+
+@InterfaceAudience.Private
+public class DFSOutputStream extends FSOutputSummer implements Syncable, CanSetDropBehind, StreamCapabilities {
+    static LocatedBlock addBlock(DatanodeInfo[] excludedNodes,
+                                 DFSClient dfsClient, String src, ExtendedBlock prevBlock, long fileId,
+                                 String[] favoredNodes, EnumSet<AddBlockFlag> allocFlags)
+        throws IOException {
+        // ...
+        while (true) {
+            try {
+                return dfsClient.namenode.addBlock(src, dfsClient.clientName, prevBlock,
+                                                   excludedNodes, fileId, favoredNodes, allocFlags);
+            } catch (RemoteException e) {
+                // ...
+            }
+        }
+    }
+}
+
+@InterfaceAudience.Private
+@VisibleForTesting
+public class NameNodeRpcServer implements NamenodeProtocols {
+    @Override
+    public LocatedBlock addBlock(String src, String clientName,
+                                 ExtendedBlock previous, DatanodeInfo[] excludedNodes, long fileId,
+                                 String[] favoredNodes, EnumSet<AddBlockFlag> addBlockFlags)
+        throws IOException {
+        checkNNStartup();
+        LocatedBlock locatedBlock = namesystem.getAdditionalBlock(src, fileId,
+                                                                  clientName, previous, 
+                                                                  excludedNodes, favoredNodes, addBlockFlags);
+        // ...
+    }
+    
+    LocatedBlock getAdditionalBlock(
+        String src, long fileId, String clientName, ExtendedBlock previous,
+        DatanodeInfo[] excludedNodes, String[] favoredNodes,
+        EnumSet<AddBlockFlag> flags) throws IOException {
+        // ...
+        DatanodeStorageInfo[] targets = FSDirWriteFileOp.chooseTargetForNewBlock(
+            blockManager, src, excludedNodes, favoredNodes, flags, r);
+		// ...
+    }
+    
+    static DatanodeStorageInfo[] chooseTargetForNewBlock(
+        // ...
+        return bm.chooseTarget4NewBlock(src, r.numTargets, clientNode,
+                                        excludedNodesSet, r.blockSize,
+                                        favoredNodesList, r.storagePolicyID,
+                                        r.blockType, r.ecPolicy, flags);
+    }
+}
+        
+@InterfaceAudience.Private
+public class BlockManager implements BlockStatsMXBean {
+    public DatanodeStorageInfo[] chooseTarget4NewBlock(final String src,
+                                                       final int numOfReplicas, final Node client,
+                                                       final Set<Node> excludedNodes,
+                                                       final long blocksize,
+                                                       final List<String> favoredNodes,
+                                                       final byte storagePolicyID,
+                                                       final BlockType blockType,
+                                                       final ErasureCodingPolicy ecPolicy,
+                                                       final EnumSet<AddBlockFlag> flags) throws IOException {
+        // ...
+        final DatanodeStorageInfo[] targets = blockplacement.chooseTarget(src,
+                                                                          numOfReplicas, client, excludedNodes, blocksize, 
+                                                                          favoredDatanodeDescriptors, storagePolicy, flags);
+
+        // ...
+    }
+}
+        
+@InterfaceAudience.Private
+public abstract class BlockPlacementPolicy {
+    DatanodeStorageInfo[] chooseTarget(String src,
+                                       int numOfReplicas, Node writer,
+                                       Set<Node> excludedNodes,
+                                       long blocksize,
+                                       List<DatanodeDescriptor> favoredNodes,
+                                       BlockStoragePolicy storagePolicy,
+                                       EnumSet<AddBlockFlag> flags) {
+        // This class does not provide the functionality of placing
+        // a block in favored datanodes. The implementations of this class
+        // are expected to provide this functionality
+
+        return chooseTarget(src, numOfReplicas, writer, 
+                            new ArrayList<DatanodeStorageInfo>(numOfReplicas), false,
+                            excludedNodes, blocksize, storagePolicy, flags);
+    }
+}
+        
+@InterfaceAudience.Private
+public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
+    @Override
+    public DatanodeStorageInfo[] chooseTarget(String srcPath,
+                                              int numOfReplicas,
+                                              Node writer,
+                                              List<DatanodeStorageInfo> chosenNodes,
+                                              boolean returnChosenNodes,
+                                              Set<Node> excludedNodes,
+                                              long blocksize,
+                                              final BlockStoragePolicy storagePolicy,
+                                              EnumSet<AddBlockFlag> flags) {
+        return chooseTarget(numOfReplicas, writer, chosenNodes, returnChosenNodes,
+                            excludedNodes, blocksize, storagePolicy, flags, null);
+    }
+    
+    private DatanodeStorageInfo[] chooseTarget(int numOfReplicas,
+                                               Node writer,
+                                               List<DatanodeStorageInfo> chosenStorage,
+                                               boolean returnChosenNodes,
+                                               Set<Node> excludedNodes,
+                                               long blocksize,
+                                               final BlockStoragePolicy storagePolicy,
+                                               EnumSet<AddBlockFlag> addBlockFlags,
+                                               EnumMap<StorageType, Integer> sTypes) {
+        // ...
+        if (results == null) {
+            results = new ArrayList<>(chosenStorage);
+            localNode = chooseTarget(numOfReplicas, writer, excludedNodes,
+                                     blocksize, maxNodesPerRack, results, avoidStaleNodes,
+                                     storagePolicy, EnumSet.noneOf(StorageType.class), results.isEmpty(),
+                                     sTypes);
+        }
+        // ...
+    }
+    
+    private Node chooseTarget(int numOfReplicas,
+                              Node writer,
+                              final Set<Node> excludedNodes,
+                              final long blocksize,
+                              final int maxNodesPerRack,
+                              final List<DatanodeStorageInfo> results,
+                              final boolean avoidStaleNodes,
+                              final BlockStoragePolicy storagePolicy,
+                              final EnumSet<StorageType> unavailableStorages,
+                              final boolean newBlock,
+                              EnumMap<StorageType, Integer> storageTypes) {
+        // ...
+        try {
+            // ...
+            writer = chooseTargetInOrder(numOfReplicas, writer, excludedNodes, blocksize,
+                                         maxNodesPerRack, results, avoidStaleNodes, newBlock, storageTypes);
+        } catch (NotEnoughReplicasException e) {
+            // ...
+        }
+        return writer;
+    }
+    
+    protected Node chooseTargetInOrder(int numOfReplicas, 
+                                       Node writer,
+                                       final Set<Node> excludedNodes,
+                                       final long blocksize,
+                                       final int maxNodesPerRack,
+                                       final List<DatanodeStorageInfo> results,
+                                       final boolean avoidStaleNodes,
+                                       final boolean newBlock,
+                                       EnumMap<StorageType, Integer> storageTypes)
+        throws NotEnoughReplicasException {
+        final int numOfResults = results.size();
+        // 第一块
+        if (numOfResults == 0) {
+            DatanodeStorageInfo storageInfo = chooseLocalStorage(writer,
+                                                                 excludedNodes, blocksize, 
+                                                                 maxNodesPerRack, results, avoidStaleNodes,
+                                                                 storageTypes, true);
+
+            writer = (storageInfo != null) ? storageInfo.getDatanodeDescriptor() : null;
+
+            if (--numOfReplicas == 0) {
+                return writer;
+            }
+        }
+        final DatanodeDescriptor dn0 = results.get(0).getDatanodeDescriptor();
+        // 第二块
+        if (numOfResults <= 1) {
+            chooseRemoteRack(1, dn0, excludedNodes, blocksize, maxNodesPerRack,
+                             results, avoidStaleNodes, storageTypes);
+            if (--numOfReplicas == 0) {
+                return writer;
+            }
+        }
+        // 第三块
+        if (numOfResults <= 2) {
+            final DatanodeDescriptor dn1 = results.get(1).getDatanodeDescriptor();
+            if (clusterMap.isOnSameRack(dn0, dn1)) {
+                chooseRemoteRack(1, dn0, excludedNodes, blocksize, maxNodesPerRack,
+                                 results, avoidStaleNodes, storageTypes);
+            } else if (newBlock){
+                chooseLocalRack(dn1, excludedNodes, blocksize, maxNodesPerRack,
+                                results, avoidStaleNodes, storageTypes);
+            } else {
+                chooseLocalRack(writer, excludedNodes, blocksize, maxNodesPerRack,
+                                results, avoidStaleNodes, storageTypes);
+            }
+            if (--numOfReplicas == 0) {
+                return writer;
+            }
+        }
+        chooseRandom(numOfReplicas, NodeBase.ROOT, excludedNodes, blocksize,
+                     maxNodesPerRack, results, avoidStaleNodes, storageTypes);
+        return writer;
+    }
+}
+```
+
 #### 3.2.3 建立管道 - Socket 发送
+
+```java
+@InterfaceAudience.Private
+class DataStreamer extends Daemon {
+    @Override
+    public void run() {
+        TraceScope scope = null;
+        while (!streamerClosed && dfsClient.clientRunning) {
+            // ...
+            try {
+                // ...
+                if (stage == BlockConstructionStage.PIPELINE_SETUP_CREATE) {
+                    LOG.debug("Allocating new block: {}", this);
+                    setPipeline(nextBlockOutputStream());
+                    initDataStreaming();
+                } else if (stage == BlockConstructionStage.PIPELINE_SETUP_APPEND) {
+                    // ...
+                }
+				// ...
+            } catch (Throwable e) {
+                // ...
+            } finally {
+                // ...
+            }
+        }
+        closeInternal();
+    }
+    
+    protected LocatedBlock nextBlockOutputStream() throws IOException {
+        // ...
+        do {
+            success = createBlockOutputStream(nodes, nextStorageTypes, nextStorageIDs, 0L, false);
+            // ...
+        } while (!success && --count >= 0);
+		// ...
+    }
+    
+    boolean createBlockOutputStream(DatanodeInfo[] nodes,
+                                    StorageType[] nodeStorageTypes, String[] nodeStorageIDs,
+                                    long newGS, boolean recoveryFlag) {
+        // ...
+        while (true) {
+            // ...
+            try {
+                // ...
+                new Sender(out).writeBlock(blockCopy, nodeStorageTypes[0], accessToken,
+                                           dfsClient.clientName, nodes, nodeStorageTypes, null, bcs,
+                                           nodes.length, block.getNumBytes(), bytesSent, newGS,
+                                           checksum4WriteBlock, cachingStrategy.get(), isLazyPersistFile,
+                                           (targetPinnings != null && targetPinnings[0]), targetPinnings,
+                                           nodeStorageIDs[0], nodeStorageIDs);
+                // ...
+            } catch (IOException ie) {
+                // ...
+            } finally {
+                // ...
+            }
+            return result;
+        }
+    }
+}
+
+@InterfaceAudience.Private
+@InterfaceStability.Evolving
+public class Sender implements DataTransferProtocol {
+    @Override
+    public void writeBlock(final ExtendedBlock blk,
+                           final StorageType storageType,
+                           final Token<BlockTokenIdentifier> blockToken,
+                           final String clientName,
+                           final DatanodeInfo[] targets,
+                           final StorageType[] targetStorageTypes,
+                           final DatanodeInfo source,
+                           final BlockConstructionStage stage,
+                           final int pipelineSize,
+                           final long minBytesRcvd,
+                           final long maxBytesRcvd,
+                           final long latestGenerationStamp,
+                           DataChecksum requestedChecksum,
+                           final CachingStrategy cachingStrategy,
+                           final boolean allowLazyPersist,
+                           final boolean pinning,
+                           final boolean[] targetPinnings,
+                           final String storageId,
+                           final String[] targetStorageIds) throws IOException {
+		// ...
+        send(out, Op.WRITE_BLOCK, proto.build());
+    }
+}
+```
 
 #### 3.2.4 建立管道 - Socket 接收
 
+```java
+class DataXceiverServer implements Runnable {
+    @Override
+    public void run() {
+        Peer peer = null;
+        while (datanode.shouldRun && !datanode.shutdownForUpgrade) {
+            try {
+                // ...
+                new Daemon(datanode.threadGroup,
+                           DataXceiver.create(peer, datanode, this)).start();
+            } catch (Throwable te) {
+                // ...
+            }
+        }
+    }
+}
+
+class DataXceiver extends Receiver implements Runnable {
+    @Override
+    public void run() {
+        // ...
+        try {
+            // ...
+            do {
+                try {
+                    // ...
+                    op = readOp();
+                } catch (IOException err) {
+                    // ...
+                }
+                // ...
+                processOp(op);
+                ++opsProcessed;
+            } while ((peer != null) &&
+                     (!peer.isClosed() && dnConf.socketKeepaliveTimeout > 0));
+        } catch (Throwable t) {
+            // ...
+        } finally {
+            // ...
+        }
+    }
+    
+    @Override
+    public void writeBlock(final ExtendedBlock block,
+                           final StorageType storageType, 
+                           final Token<BlockTokenIdentifier> blockToken,
+                           final String clientname,
+                           final DatanodeInfo[] targets,
+                           final StorageType[] targetStorageTypes,
+                           final DatanodeInfo srcDataNode,
+                           final BlockConstructionStage stage,
+                           final int pipelineSize,
+                           final long minBytesRcvd,
+                           final long maxBytesRcvd,
+                           final long latestGenerationStamp,
+                           DataChecksum requestedChecksum,
+                           CachingStrategy cachingStrategy,
+                           boolean allowLazyPersist,
+                           final boolean pinning,
+                           final boolean[] targetPinnings,
+                           final String storageId,
+                           final String[] targetStorageIds) throws IOException {
+        // ...
+        try {
+            final Replica replica;
+            if (isDatanode || 
+                stage != BlockConstructionStage.PIPELINE_CLOSE_RECOVERY) {
+                // open a block receiver
+                setCurrentBlockReceiver(getBlockReceiver(block, storageType, in,
+                                                         peer.getRemoteAddressString(),
+                                                         peer.getLocalAddressString(),
+                                                         stage, latestGenerationStamp, minBytesRcvd, maxBytesRcvd,
+                                                         clientname, srcDataNode, datanode, requestedChecksum,
+                                                         cachingStrategy, allowLazyPersist, pinning, storageId));
+                replica = blockReceiver.getReplica();
+            } else {
+                replica = datanode.data.recoverClose(
+                    block, latestGenerationStamp, minBytesRcvd);
+            }
+            // ...
+            if (targets.length > 0) {
+                // ...
+                try {
+                    // ...
+                    if (targetPinnings != null && targetPinnings.length > 0) {
+                        new Sender(mirrorOut).writeBlock(originalBlock, targetStorageTypes[0],
+                                                         blockToken, clientname, targets, targetStorageTypes,
+                                                         srcDataNode, stage, pipelineSize, minBytesRcvd, maxBytesRcvd,
+                                                         latestGenerationStamp, requestedChecksum, cachingStrategy,
+                                                         allowLazyPersist, targetPinnings[0], targetPinnings,
+                                                         targetStorageId, targetStorageIds);
+                    } else {
+                        new Sender(mirrorOut).writeBlock(originalBlock, targetStorageTypes[0],
+                                                         blockToken, clientname, targets, targetStorageTypes,
+                                                         srcDataNode, stage, pipelineSize, minBytesRcvd, maxBytesRcvd,
+                                                         latestGenerationStamp, requestedChecksum, cachingStrategy,
+                                                         allowLazyPersist, false, targetPinnings,
+                                                         targetStorageId, targetStorageIds);
+                    }
+                    // ...
+                } catch (IOException e) {
+                    // ...
+                }
+            }
+        } catch (IOException ioe) {
+            // ...
+        } finally {
+            // ...
+        }
+        // ...
+    }
+    
+    @VisibleForTesting
+    BlockReceiver getBlockReceiver(
+        final ExtendedBlock block, final StorageType storageType,
+        final DataInputStream in,
+        final String inAddr, final String myAddr,
+        final BlockConstructionStage stage,
+        final long newGs, final long minBytesRcvd, final long maxBytesRcvd,
+        final String clientname, final DatanodeInfo srcDataNode,
+        final DataNode dn, DataChecksum requestedChecksum,
+        CachingStrategy cachingStrategy,
+        final boolean allowLazyPersist,
+        final boolean pinning,
+        final String storageId) throws IOException {
+        return new BlockReceiver(block, storageType, in,
+                                 inAddr, myAddr, stage, newGs, minBytesRcvd, maxBytesRcvd,
+                                 clientname, srcDataNode, dn, requestedChecksum,
+                                 cachingStrategy, allowLazyPersist, pinning, storageId);
+    }
+}
+
+@InterfaceAudience.Private
+@InterfaceStability.Evolving
+public abstract class Receiver implements DataTransferProtocol {
+    protected final void processOp(Op op) throws IOException {
+        switch(op) {
+            // ...
+            case WRITE_BLOCK:
+                opWriteBlock(in);
+                break;
+            default:
+                throw new IOException("Unknown op " + op + " in data stream"); 
+        }
+    }
+    
+    private void opWriteBlock(DataInputStream in) throws IOException {
+        final OpWriteBlockProto proto = OpWriteBlockProto.parseFrom(vintPrefixed(in));
+        final DatanodeInfo[] targets = PBHelperClient.convert(proto.getTargetsList());
+        TraceScope traceScope = continueTraceSpan(proto.getHeader(),
+                                                  proto.getClass().getSimpleName());
+        try {
+            writeBlock(/* ... */);
+        } finally {
+            if (traceScope != null) traceScope.close();
+        }
+    }
+}
+
+class BlockReceiver implements Closeable {
+    BlockReceiver(final ExtendedBlock block, final StorageType storageType,
+                  final DataInputStream in,
+                  final String inAddr, final String myAddr,
+                  final BlockConstructionStage stage, 
+                  final long newGs, final long minBytesRcvd, final long maxBytesRcvd, 
+                  final String clientname, final DatanodeInfo srcDataNode,
+                  final DataNode datanode, DataChecksum requestedChecksum,
+                  CachingStrategy cachingStrategy,
+                  final boolean allowLazyPersist,
+                  final boolean pinning,
+                  final String storageId) throws IOException {
+        try{
+            // ...
+            if (isDatanode) { //replication or move
+                replicaHandler = datanode.data.createTemporary(storageType, storageId, block, false);
+            } else {
+                switch (stage) {
+                    case PIPELINE_SETUP_CREATE:
+                        replicaHandler = datanode.data.createRbw(storageType, storageId,
+                                                                 block, allowLazyPersist);
+                        // ...
+                    // ...
+                }
+            }
+            // ...
+        } catch(IOException ioe) {
+            // ...
+        }
+    }
+}
+
+@InterfaceAudience.Private
+class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
+    @Override // FsDatasetSpi
+    public ReplicaHandler createRbw(
+        StorageType storageType, String storageId, ExtendedBlock b,
+        boolean allowLazyPersist) throws IOException {
+        try (AutoCloseableLock lock = datasetWriteLock.acquire()) {
+            // ...
+            if (allowLazyPersist &&
+                lazyWriter != null &&
+                b.getNumBytes() % cacheManager.getOsPageSize() == 0 &&
+                reserveLockedMemory(b.getNumBytes())) {
+                try {
+                    // First try to place the block on a transient volume.
+                    ref = volumes.getNextTransientVolume(b.getNumBytes());
+                    datanode.getMetrics().incrRamDiskBlocksWrite();
+                } catch (DiskOutOfSpaceException de) {
+                    // ...
+                } finally {
+                    // ...
+                }
+            }
+            //...
+        }
+    }
+}
+```
+
 #### 3.2.5 客户端接收 DN 写数据应答 Response
+
+```java
+@InterfaceAudience.Private
+class DataStreamer extends Daemon {
+    @Override
+    public void run() {
+        TraceScope scope = null;
+        while (!streamerClosed && dfsClient.clientRunning) {
+            // ...
+            try {
+                // ...
+                if (stage == BlockConstructionStage.PIPELINE_SETUP_CREATE) {
+                    LOG.debug("Allocating new block: {}", this);
+                    setPipeline(nextBlockOutputStream());
+                    initDataStreaming();
+                } else if (stage == BlockConstructionStage.PIPELINE_SETUP_APPEND) {
+                    // ...
+                }
+                // ...
+                synchronized (dataQueue) {
+                    // move packet from dataQueue to ackQueue
+                    if (!one.isHeartbeatPacket()) {
+                        if (scope != null) {
+                            spanId = scope.getSpanId();
+                            scope.detach();
+                            one.setTraceScope(scope);
+                        }
+                        scope = null;
+                        dataQueue.removeFirst();
+                        ackQueue.addLast(one);
+                        packetSendTime.put(one.getSeqno(), Time.monotonicNow());
+                        dataQueue.notifyAll();
+                    }
+                }
+                // ...
+                try (TraceScope ignored = dfsClient.getTracer().newScope("DataStreamer#writeTo", spanId)) {
+                    // z
+                    sendPacket(one);
+                } catch (IOException e) {
+                    // HDFS-3398 treat primary DN is down since client is unable to
+                    // write to primary DN. If a failed or restarting node has already
+                    // been recorded by the responder, the following call will have no
+                    // effect. Pipeline recovery can handle only one node error at a
+                    // time. If the primary node fails again during the recovery, it
+                    // will be taken out then.
+                    errorState.markFirstNodeIfNotMarked();
+                    throw e;
+                }
+				// ...
+            } catch (Throwable e) {
+                // ...
+            } finally {
+                // ...
+            }
+        }
+        closeInternal();
+    }
+    
+    private void initDataStreaming() {
+        // ...
+        response = new ResponseProcessor(nodes);
+        response.start();
+        stage = BlockConstructionStage.DATA_STREAMING;
+        lastPacket = Time.monotonicNow();
+    }
+    
+    private class ResponseProcessor extends Daemon {
+        @Override
+        public void run() {
+            // ...
+            while (!responderClosed && dfsClient.clientRunning && !isLastPacketInBlock) {
+                // process responses from datanodes.
+                try {
+                    // ...
+                    synchronized (dataQueue) {
+                        // ...
+                        ackQueue.removeFirst();
+                        packetSendTime.remove(seqno);
+                        dataQueue.notifyAll();
+
+                        one.releaseBuffer(byteArrayManager);
+                    }
+                } catch (Throwable e) {
+                    // ...
+                } finally {
+                    // ...
+                }
+            }
+        }
+    }
+}
+```
 
 ## 4. Yarn 源码解析
 
