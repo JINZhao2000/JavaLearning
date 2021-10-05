@@ -2485,7 +2485,7 @@ class DataStreamer extends Daemon {
                 }
                 // ...
                 try (TraceScope ignored = dfsClient.getTracer().newScope("DataStreamer#writeTo", spanId)) {
-                    // z
+                    // 正式写出数据
                     sendPacket(one);
                 } catch (IOException e) {
                     // HDFS-3398 treat primary DN is down since client is unable to
@@ -2543,6 +2543,286 @@ class DataStreamer extends Daemon {
 ```
 
 ## 4. Yarn 源码解析
+
+- Yarn 工作机制
+
+    0. MR 程序提交到客户端所在节点
+
+    1. 申请一个 Application
+    2. Application 资源提交路径 `hdfs://.../.staging` 以及 `application_id` 
+    3. 提交 job 运行所需资源
+    4. 资源提交完毕，申请运行 MRAppMaster
+    5. 将用户的请求初始化成一个 Task
+    6. 领取到任务
+    7. 创建容器 Container
+    8. 下载 job 资源到本地
+    9. 申请运行 MapTask 容器
+    10. 领取到任务，创建容器
+    11. 发送启动脚本
+    12. 向 RM 申请 2 个容器，运行 ReduceTask 程序
+    13. Reduce 向 Map 获取相应数据
+    14. 程序运行完后 MR 会向 RM 注销自己
+
+### 4.1 Yarn 客户端向 RM 提交作业
+
+```java
+package org.apache.hadoop.mapreduce;
+
+@InterfaceAudience.Public
+@InterfaceStability.Evolving
+public class Job extends JobContextImpl implements JobContext, AutoCloseable {
+    public boolean waitForCompletion(boolean verbose) 
+        throws IOException, InterruptedException, ClassNotFoundException {
+        if (state == JobState.DEFINE) {
+            submit();
+        }
+        // ...
+    }
+    
+    public void submit() throws IOException, InterruptedException, ClassNotFoundException {
+        ensureState(JobState.DEFINE);
+        setUseNewAPI();
+        connect();
+        final JobSubmitter submitter = 
+            getJobSubmitter(cluster.getFileSystem(), cluster.getClient());
+        status = ugi.doAs(new PrivilegedExceptionAction<JobStatus>() {
+            public JobStatus run() throws IOException, InterruptedException, 
+            ClassNotFoundException {
+                return submitter.submitJobInternal(Job.this, cluster);
+            }
+        });
+        state = JobState.RUNNING;
+        LOG.info("The url to track the job: " + getTrackingURL());
+    }
+}
+
+@InterfaceAudience.Private
+@InterfaceStability.Unstable
+class JobSubmitter {
+    JobStatus submitJobInternal(Job job, Cluster cluster) 
+        throws ClassNotFoundException, InterruptedException, IOException {
+        // ...
+        try {
+            // ...
+            status = submitClient.submitJob(
+                jobId, submitJobDir.toString(), job.getCredentials());
+            // ...
+        } finally {
+            // ...
+        }
+    }
+}
+
+public class YARNRunner implements ClientProtocol {
+    public JobStatus submitJob(JobID jobId, String jobSubmitDir, Credentials ts)
+        throws IOException, InterruptedException {
+        // ...
+        ApplicationSubmissionContext appContext =
+            createApplicationSubmissionContext(conf, jobSubmitDir, ts);
+
+        // Submit to ResourceManager
+        try {
+            ApplicationId applicationId =
+                resMgrDelegate.submitApplication(appContext);
+
+            ApplicationReport appMaster = resMgrDelegate
+                .getApplicationReport(applicationId);
+            String diagnostics =
+                (appMaster == null ?
+                 "application report is null" : appMaster.getDiagnostics());
+            if (appMaster == null
+                || appMaster.getYarnApplicationState() == YarnApplicationState.FAILED
+                || appMaster.getYarnApplicationState() == YarnApplicationState.KILLED) {
+                throw new IOException("Failed to run job : " +
+                                      diagnostics);
+            }
+            return clientCache.getClient(jobId).getJobStatus(jobId);
+        } catch (YarnException e) {
+            throw new IOException(e);
+        }
+    }
+    
+    public ApplicationSubmissionContext createApplicationSubmissionContext(
+        Configuration jobConf, String jobSubmitDir, Credentials ts)
+        throws IOException {
+        // ...
+        List<String> vargs = setupAMCommand(jobConf);
+        ContainerLaunchContext amContainer = setupContainerLaunchContextForAM(
+            jobConf, localResources, securityTokens, vargs);
+        // ...
+    }
+    
+    private List<String> setupAMCommand(Configuration jobConf) {
+        List<String> vargs = new ArrayList<>(8);
+        vargs.add(MRApps.crossPlatformifyMREnv(jobConf, Environment.JAVA_HOME) + "/bin/java");
+		// ...
+        vargs.add(MRJobConfig.APPLICATION_MASTER_CLASS);
+        // ...
+        return vargs;
+    }
+}
+
+@InterfaceAudience.Private
+@InterfaceStability.Evolving
+public interface MRJobConfig {
+    public static final String APPLICATION_MASTER_CLASS =
+        "org.apache.hadoop.mapreduce.v2.app.MRAppMaster";
+}
+
+public class ResourceMgrDelegate extends YarnClient {
+    @Override
+    public ApplicationId submitApplication(ApplicationSubmissionContext appContext) 
+        throws YarnException, IOException {
+        return client.submitApplication(appContext);
+    }
+}
+
+@Private
+@Unstable
+public class YarnClientImpl extends YarnClient {
+    @Override
+    public ApplicationId submitApplication(ApplicationSubmissionContext appContext)
+        throws YarnException, IOException {
+        // ...
+        //TODO: YARN-1763:Handle RM failovers during the submitApplication call.
+        rmClient.submitApplication(request);
+        // ...
+    }
+}
+
+public class ClientRMService extends AbstractService implements ApplicationClientProtocol {
+    @Override
+    public SubmitApplicationResponse submitApplication(
+        // ...
+        if (submissionContext.getQueue() == null) {
+            submissionContext.setQueue(YarnConfiguration.DEFAULT_QUEUE_NAME);
+        }
+        if (submissionContext.getApplicationName() == null) {
+            submissionContext.setApplicationName(
+                YarnConfiguration.DEFAULT_APPLICATION_NAME);
+        }
+        if (submissionContext.getApplicationType() == null) {
+            submissionContext
+                .setApplicationType(YarnConfiguration.DEFAULT_APPLICATION_TYPE);
+        } else {
+            if (submissionContext.getApplicationType().length() > YarnConfiguration.APPLICATION_TYPE_LENGTH) {
+                submissionContext.setApplicationType(
+                    submissionContext
+                    .getApplicationType().substring(0, YarnConfiguration.APPLICATION_TYPE_LENGTH));
+            }
+        }
+        // ...
+    }
+}
+```
+
+### 4.2 RM 启动 MRAppMaster
+
+```java
+public class MRAppMaster extends CompositeService {
+    public static void main(String[] args) {
+        try {
+            // ...
+            initAndStartAppMaster(appMaster, conf, jobUserName);
+        } catch (Throwable t) {
+            // ...
+        }
+    }
+    
+    protected static void initAndStartAppMaster(final MRAppMaster appMaster,
+                                                final JobConf conf, String jobUserName) 
+        throws IOException, InterruptedException {
+        // ...
+        appMasterUgi.doAs(new PrivilegedExceptionAction<Object>() {
+            @Override
+            public Object run() throws Exception {
+                appMaster.init(conf);
+                appMaster.start();
+                // ...
+            }
+        });
+    }
+    
+    @Override
+    protected void serviceInit(final Configuration conf) throws Exception {
+        // ...
+        dispatcher = createDispatcher();
+        // ...
+    }
+    
+    @Override
+    protected void serviceStart() throws Exception {
+        if (initFailed) {
+            JobEvent initFailedEvent = new JobEvent(job.getID(), JobEventType.JOB_INIT_FAILED);
+            jobEventDispatcher.handle(initFailedEvent);
+        } else {
+            // All components have started, start the job.
+            startJobs();
+        }
+    }
+    
+    protected void startJobs() {
+        /** create a job-start event to get this ball rolling */
+        JobEvent startJobEvent = new JobStartEvent(job.getID(), recoveredJobStartTime);
+        /** send the job-start event. this triggers the job execution. */
+        dispatcher.getEventHandler().handle(startJobEvent);
+    }
+}
+
+@Public
+@Evolving
+public abstract class AbstractService implements Service {
+    @Override
+    public void init(Configuration conf) {
+        // ...
+        synchronized (stateChangeLock) {
+            if (enterState(STATE.INITED) != STATE.INITED) {
+                setConfig(conf);
+                try {
+                    serviceInit(config);
+                    // ...
+                } catch (Exception e) {
+                    // ...
+                }
+            }
+        }
+    }
+    
+    @Override
+    public void start() {
+        // ...
+        synchronized (stateChangeLock) {
+            if (stateModel.enterState(STATE.STARTED) != STATE.STARTED) {
+                try {
+                    startTime = System.currentTimeMillis();
+                    serviceStart();
+                    // ...
+                } catch (Exception e) {
+                    // ...
+                }
+            }
+        }
+    }
+}
+
+@Public
+@Evolving
+public class AsyncDispatcher extends AbstractService implements Dispatcher {
+    class GenericEventHandler implements EventHandler<Event> {
+        public void handle(Event event) {
+            // ...
+            try {
+                // ...
+                eventQueue.put(event);
+                // ...
+            } catch (InterruptedException e) {
+                // ...
+            }
+    }
+}
+```
+
+### 4.3 调度器任务执行（YarnChild）
 
 ## 5. MapReduce 源码解析
 
