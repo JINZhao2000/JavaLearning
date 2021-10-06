@@ -2824,7 +2824,117 @@ public class AsyncDispatcher extends AbstractService implements Dispatcher {
 
 ### 4.3 调度器任务执行（YarnChild）
 
-## 5. MapReduce 源码解析
+```java
+class YarnChild {
+    public static void main(String[] args) throws Throwable {
+        // ...
+        try {
+            // ...
+            // Create a final reference to the task for the doAs block
+            final Task taskFinal = task;
+            childUGI.doAs(new PrivilegedExceptionAction<Object>() {
+                @Override
+                public Object run() throws Exception {
+                    // ...
+                    taskFinal.run(job, umbilical); // run the task
+                    return null;
+                }
+            });
+        } catch (Throwable throwable) {
+            // ...
+        } finally {
+            // ...
+        }
+    }
+}
 
-## 6. Hadoop 源码解析
+@InterfaceAudience.LimitedPrivate({"MapReduce"})
+@InterfaceStability.Unstable
+public class MapTask extends Task {
+    @Override
+    public void run(final JobConf job, final TaskUmbilicalProtocol umbilical)
+        throws IOException, ClassNotFoundException, InterruptedException {
+        this.umbilical = umbilical;
+
+        if (isMapTask()) {
+            // If there are no reducers then there won't be any sort. Hence the map 
+            // phase will govern the entire attempt's progress.
+            if (conf.getNumReduceTasks() == 0) {
+                mapPhase = getProgress().addPhase("map", 1.0f);
+            } else {
+                // If there are reducers then the entire attempt's progress will be 
+                // split between the map phase (67%) and the sort phase (33%).
+                mapPhase = getProgress().addPhase("map", 0.667f);
+                sortPhase  = getProgress().addPhase("sort", 0.333f);
+            }
+        }
+        // ...
+        if (useNewApi) {
+            runNewMapper(job, splitMetaInfo, umbilical, reporter);
+        } else {
+            runOldMapper(job, splitMetaInfo, umbilical, reporter);
+        }
+        done(umbilical, reporter);
+    }
+
+    private <INKEY,INVALUE,OUTKEY,OUTVALUE> void runNewMapper(
+        final JobConf job,
+        final TaskSplitIndex splitIndex,
+        final TaskUmbilicalProtocol umbilical,
+        TaskReporter reporter)
+        throws IOException, ClassNotFoundException, InterruptedException {
+        // ...
+        try {
+            // ...
+            // Mapper
+            mapper.run(mapperContext);
+            // ...
+        } finally {
+            closeQuietly(input);
+            closeQuietly(output, mapperContext);
+        }
+    }
+}
+
+@InterfaceAudience.Private
+@InterfaceStability.Unstable
+public class ReduceTask extends Task {
+    @Override
+    @SuppressWarnings("unchecked")
+    public void run(JobConf job, final TaskUmbilicalProtocol umbilical)
+        throws IOException, InterruptedException, ClassNotFoundException {
+        // ...
+        if (useNewApi) {
+            runNewReducer(job, umbilical, reporter, rIter, comparator, 
+                          keyClass, valueClass);
+        } else {
+            runOldReducer(job, umbilical, reporter, rIter, comparator, 
+                          keyClass, valueClass);
+        }
+        // ...
+    }
+    
+    private <INKEY,INVALUE,OUTKEY,OUTVALUE>
+        void runNewReducer(JobConf job,
+                           final TaskUmbilicalProtocol umbilical,
+                           final TaskReporter reporter,
+                           RawKeyValueIterator rIter,
+                           RawComparator<INKEY> comparator,
+                           Class<INKEY> keyClass,
+                           Class<INVALUE> valueClass) 
+        throws IOException,InterruptedException, ClassNotFoundException {
+        // ...
+        try {
+            // ...
+            // Reducer
+            reducer.run(reducerContext);
+            // ...
+        } finally {
+            trackedRW.close(reducerContext);
+        }
+    }
+}
+```
+
+
 
