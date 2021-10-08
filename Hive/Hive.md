@@ -92,3 +92,60 @@ Hive 的运行机制
 - 将 SQL 语言解析成对应的 MapReduce 程序，并生成相应的 jar 包到 Hive 中的解析器
 - 解析器查询输入文件的 path
 - 最后通过 Hive 中的解析器传到 MapReduce 体系架构
+
+### 1.4 Hive 和数据库比较
+
+- 查询语言
+
+    Hive 拥有类 SQL 语言 HQL，熟悉 SQL 可以方便地使用 Hive 开发
+
+- 数据更新
+
+    Hive 中不建议对数据地改写，所有数据都是在加载的时候确定好的，而数据库中的数据通常是需要经常进行修改的，因此可以使用 `insert` 和 `update` 修改数据
+
+- 执行延迟
+
+    Hive 在查询数据的时候，由于没有索引，需要扫描整个表，因此延迟较高，此外 Hive 依赖于 MapReduce，MapReduce 本身就是一个延迟较高的框架，相对地数据库地执行延迟较低（数据规模小），当数据规模大到超过数据库处理能力的时候，Hive 地并行计算才能体现出优势
+
+- 数据规模
+
+    Hive 建立在集群上可以利用 MapReduce 进行并行计算，可以支持很大规模的数据，而数据库的数据规模较小
+
+## 2. Hive 安装
+
+- export
+
+- 解决 jar 冲突
+
+    ```bash
+    mv $HIVE_HOME/lib/log4j-slf4j-impl-2.10.0.jar $HIVE_HOME/lib/log4j-slf4j-impl-2.10.0.bak
+    ```
+
+- 初始化元数据
+
+    ```bash
+    bin/schematool -dbType derby -initSchema
+    ```
+
+- 启动
+
+    ```bash
+    bin/hive
+    # 启动的目录必须和初始化 schema 的目录一致
+    # Hive 默认使用的元数据库为 derby，开启 Hive 之后就会占用元数据库，
+    ```
+
+## 3. Hive 使用
+
+- 基本使用
+
+    ```hql
+    show databases;
+    show tables;
+    create table <name>(id string);
+    insert into <table> values(...);
+    -- /user/hive/warehouse/<table>
+    select * from <table>;
+    ```
+
+    
