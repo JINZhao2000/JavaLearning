@@ -148,4 +148,53 @@ Hive 的运行机制
     select * from <table>;
     ```
 
+- MySQL 配置（目的是多个客户端同时访问）
+
+    先将 mysql 的 jdbc 拷贝到 `$HIVE_HOME/lib` 下
+
+    然后在 `$HIVE_HOME/conf` 下创建 `hive-site.xml` 
+
+    ```xml
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+    <configuration>
+        <property>
+            <name>javax.jdo.option.ConnectionURL</name>
+            <value>jdbc:mysql://xxx:3306/hadoop?useSSL=false</value>
+        </property>
+        <property>
+            <name>javax.jdo.option.ConnectionDriverName</name>
+            <value>com.mysql.cj.jdbc.Driver</value>
+        </property>
+        <property>
+            <name>javax.jdo.option.ConnectionUserName</name>
+            <value>hadoop</value>
+        </property>
+        <property>
+            <name>javax.jdo.option.ConnectionPassword</name>
+            <value>Hadoop2021</value>
+        </property>
+        <property>
+            <name>hive.metastore.schema.verification</name>
+            <value>false</value>
+        </property>
+        <property>
+            <name>hive.metastore.event.db.notification.api.auth</name>
+            <value>false</value>
+        </property>
+        <property>
+            <name>hive.metastore.warehouse.dir</name>
+            <value>/user/hive/warehouse</value>
+        </property>
+    </configuration>
+    ```
+
+- 再次初始化带有 MySQL 的 Hive
+
+    ```bash
+    schematool -initSchema -dbType mysql -verbose
+    ```
+
+    
+
     
