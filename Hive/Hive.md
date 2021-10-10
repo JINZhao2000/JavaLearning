@@ -195,6 +195,62 @@ Hive 的运行机制
     schematool -initSchema -dbType mysql -verbose
     ```
 
-    
+
+### 3.1 使用元数据服务访问 Hive
+
+1. 在 hives-site.xml 中添加配置
+
+    ```xml
+    <property>
+    	<name>hive.metastore.uris</name>
+        <value>thrift://hadoop01:9803</value>
+    </property>
+    ```
+
+2. 开启服务
+
+    ```bash
+    hive --service metastore
+    ```
+
+### 3.2 使用 JDBC 访问 Hive
+
+1. 在 hive-site.xml 中添加配置
+
+    ```xml
+    <property>
+    	<name>hive.server2.thrift.bind.host</name>
+        <value>hadoop01</value>
+    </property>
+    <property>
+    	<name>hive.server2.thrift.port</name>
+        <value>10000</value>
+    </property>
+    ```
+
+    防止连接被拒绝在 core-site.xml 中配置并重启 hadoop
+
+    ```xml
+    <property>
+    	<name>hadoop.proxyuser.root.hosts</name>
+    	<value>*</value>
+    </property>
+    <property>
+    	<name>hadoop.proxyuser.root.groups</name>
+    	<value>*</value>
+    </property>
+    ```
+
+2. 启动 hiveserver2
+
+    ```bash
+    hive --service hiveserver2
+    ```
+
+3. 启动客户端
+
+    ```bash
+    beeline -u jdbc:hive2://hadoop01:10000 -n root
+    ```
 
     
