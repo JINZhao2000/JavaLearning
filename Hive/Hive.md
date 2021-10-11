@@ -253,4 +253,58 @@ Hive 的运行机制
     beeline -u jdbc:hive2://hadoop01:10000 -n root
     ```
 
-    
+### 3.3 Hive 启动脚本
+
+```shell
+#!/bin/bash
+HIVE_LOG_DIR=$HIVE_HOME/logs
+if [ ! -d $HIVE_LOG_DIR ];then
+	mkdir -p $HIVE_LOG_DIR
+fi
+
+function check_process() {
+	pid=$(ps -ef 2>/dev/null | grep -v grep | grep -i $i | awk '{print $2}')
+	ppid=$(netstat -nltp 2>/dev/null | grep $2 | awk '{print $7}' | cut -d '/' -f 1)
+	echo $pid
+	[[ "$pid" =~ "$ppid" ]] && [ "$ppid" ] && return 0 || return 1
+}
+
+function hive_start() {
+	metapid=$(check_process HiveMetastore 9083)
+	cmd="nohup hive --service metastore >$HIVE_LOG_DIR/metastore.log 2>&! &"
+	[ -z "$metapid" ] && eval $cmd || echo "Metastore start"
+	server2pid=$(check_process HiveServer2 10000)
+	cmd="nohup hive --service hiveserver2 >$HIVE_LOG_DIR/hiveServer2.log 2>&1 &"
+	[ -z "$server2pid" ] && eval $cmd || echo "HiveServer2 start"
+}
+
+function hive_stop() {
+	metapid=$(check_process HiveMetastore 9083)
+	[ "$metapid" ] && kill $metapid || echo "Metastore stop"
+	server2pid=$(check_process HiveServer2 10000)
+	[ "$server2pid" ] && kill $server2pid || echo "HiveServer2 stop"
+}
+
+case $1 in
+"start")
+	hive_start()
+	;;
+"stop")
+	hive_stop()
+	;;
+"restart")
+	hive_stop()
+	sleep 2
+	hive_start()
+	;;
+"status")
+	check_process HiveMetastore 9083 >/dev/null && echo "Metastore is running" || echo "Metastore is not running"
+	check_process HiveServer2 10000 >/dev/null && echo "HiveServer2 is running" || echo "HiveServer2 i"
+	;;
+*)
+	echo "Invalid Args"
+	echo "Usage : '$(basename $0)' start | stop | restart | status"
+	;;
+esac
+```
+
