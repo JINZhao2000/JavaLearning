@@ -263,7 +263,7 @@ if [ ! -d $HIVE_LOG_DIR ];then
 fi
 
 function check_process() {
-	pid=$(ps -ef 2>/dev/null | grep -v grep | grep -i $i | awk '{print $2}')
+	pid=$(ps -ef 2>/dev/null | grep -v grep | grep -i $1 | awk '{print $2}')
 	ppid=$(netstat -nltp 2>/dev/null | grep $2 | awk '{print $7}' | cut -d '/' -f 1)
 	echo $pid
 	[[ "$pid" =~ "$ppid" ]] && [ "$ppid" ] && return 0 || return 1
@@ -271,7 +271,7 @@ function check_process() {
 
 function hive_start() {
 	metapid=$(check_process HiveMetastore 9083)
-	cmd="nohup hive --service metastore >$HIVE_LOG_DIR/metastore.log 2>&! &"
+	cmd="nohup hive --service metastore >$HIVE_LOG_DIR/metastore.log 2>&1 &"
 	[ -z "$metapid" ] && eval $cmd || echo "Metastore start"
 	server2pid=$(check_process HiveServer2 10000)
 	cmd="nohup hive --service hiveserver2 >$HIVE_LOG_DIR/hiveServer2.log 2>&1 &"
@@ -287,19 +287,19 @@ function hive_stop() {
 
 case $1 in
 "start")
-	hive_start()
+	hive_start
 	;;
 "stop")
-	hive_stop()
+	hive_stop
 	;;
 "restart")
-	hive_stop()
+	hive_stop
 	sleep 2
-	hive_start()
+	hive_start
 	;;
 "status")
 	check_process HiveMetastore 9083 >/dev/null && echo "Metastore is running" || echo "Metastore is not running"
-	check_process HiveServer2 10000 >/dev/null && echo "HiveServer2 is running" || echo "HiveServer2 i"
+	check_process HiveServer2 10000 >/dev/null && echo "HiveServer2 is running" || echo "HiveServer2 is not running"
 	;;
 *)
 	echo "Invalid Args"
@@ -308,3 +308,58 @@ case $1 in
 esac
 ```
 
+### 3.4 其它交互方式
+
+- command
+
+    ```bash
+    hive -e <sql in command>
+    hive -f <sql file>
+    ```
+
+- 查看 hdfs 系统
+
+    ```bash
+    hive> dfs -ls /;
+    ```
+
+- 历史命令路径：`.hivehistory` 
+
+### 3.5 Hive 配置文件
+
+- Log 默认在 `/tmp/user/hive.log` 下
+
+    修改 `hive-log4j2.properties` 
+
+    ```properties
+    hive.log.dir = /xxxxx
+    ```
+
+- 打印库和表头
+
+    ```xml
+    <property>
+    	<name>hive.cli.print.header</name>
+        <value>true</value>
+    </property>
+    <property>
+    	<name>hive.cli.print.current.db</name>
+        <value>true</value>
+    </property>
+    ```
+
+- 修改配置文件的 3 种方法
+
+    - 全局参数修改 `hive-site.xml` 
+
+    - 启动客户端前参数
+
+        ```bash
+        hive --hiveconf xxx=xxx;
+        ```
+
+    - 在启动客户端后修改
+
+        ```hql
+        set xxx=xxx;
+        ```
