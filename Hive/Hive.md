@@ -363,3 +363,48 @@ esac
         ```hql
         set xxx=xxx;
         ```
+
+## 4. Hive 数据类型
+
+### 4.1 基本数据类型
+
+| Hive 数据类型 | Java 数据类型 | 长度   | 例子               |
+| ------------- | ------------- | ------ | ------------------ |
+| TINYINY       | byte          | 1 byte | 20                 |
+| SMALLINT      | short         | 2 byte | 20                 |
+| INT           | int           | 4 byte | 20                 |
+| BIGINT        | long          | 8 byte | 20                 |
+| BOOLEAN       | boolean       | 1 bit  | TRUE, FALSE        |
+| FLOAT         | float         | 4 byte | 3.14               |
+| DOUBLE        | double        | 8 byte | 3.14               |
+| STRING        | string        |        | 'string', "string" |
+| TIMESTAMP     |               |        |                    |
+| BINARY        |               |        |                    |
+
+### 4.2 集合数据类型
+
+| 数据类型 | 描述          | 语法                                      |
+| -------- | ------------- | ----------------------------------------- |
+| STRUCT   | 与 C 语言类似 | struct() <br>struct<name:string, age:int> |
+| MAP      | K -> V        | map() <br>map<string, int>                |
+| ARRAY    | [...]         | Array() <br>array\<string>                |
+
+举例
+
+```hql
+create table test(
+	name string,
+	relations array<string>,
+	properties map<string, int>
+	action struct<name:string, time:int>
+)
+row format delimited fields terminated by ','
+collection items terminated by '_'
+map keys terminated by ';'
+lines terminated by '\n';
+
+select relations[0] from test;
+select properties['key'] from test;
+select action.n
+```
+
