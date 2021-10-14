@@ -408,3 +408,65 @@ select properties['key'] from test;
 select action.n
 ```
 
+### 4.3 类型转化
+
+Hive 的原子数据类型是可以进行隐式转换的，类似于 Java 的类型转换，例如 TINYINT 会自动转换为 INT 类型，但是 Hive 不会进行反向转化，除非用 CAST
+
+- 隐式类型转换规则
+
+    1. 任何整数类型都可以隐式转换为一个范围更广的类型，如 TINYINT 可以转换成 INT，INT 可以转换成 BIGINT
+    2. 所有整数类型，FLOAT 和 STRING 类型都可以隐式转换成 DOUBLE
+    3. TINYINT，SMALLINT，INT 都可以转换为 FLOAT
+    4. BOOLEAN 类型不可以转换为任何其它的类型
+
+- 可以使用 CAST 操作显示进行数据类型转换
+
+    ```hql
+    CAST('1' AS INT) -- 1
+    CAST('X' AS INT) -- NULL
+    ```
+
+## 5. DDL 数据定义
+
+### 5.1 创建数据库
+
+```hql
+CREATE DATABASE [IF NOT EXISTS] <db_name>
+[COMMENT <db_comment>]
+[LOCATION <hdfs_path>]
+[WITH DBPROPERTIES (<property_name>=<property_value>, ... )];
+```
+
+默认数据库创建在 /user/hive/warehouse/*.db
+
+### 5.2 查询数据库
+
+```hql
+-- 显示数据库
+show databases;
+-- 过滤显示数据库
+show databases like 'xxx';
+-- 显示数据库信息
+desc database <db_name>;
+-- 显示数据库详细信息
+desc database extended <db_name>;
+-- 切换数据库
+use <db_name>;
+```
+
+### 5.3 修改数据库
+
+```hql
+-- 修改 properties
+alter database <db_name> set dbproperties('createtime'='20210101');
+```
+
+### 5.4 删除数据库
+
+```hql
+-- 删除空数据库
+drop database <db_name>
+drop database if exists <db_name>
+-- 数据库不为空
+drop database <db_name> cascade;
+```
