@@ -470,3 +470,69 @@ drop database if exists <db_name>
 -- 数据库不为空
 drop database <db_name> cascade;
 ```
+
+### 5.5 创建表
+
+```hql
+CREATE [EXTERNAL] TABLE [IF NOT EXISTS] <table_name>
+[(<col_name> <data_type> [COMMENT <comment>], ...)]
+[COMMENT <table_comment>]
+[PARTITIONED BY (<col_name> <data_type> [COMMENT <col_comment>], ...)]
+[
+CLUSTERED BY (<col_name>, <col_name2>, ....)
+[SORTED BY (<col_name> [ASC|DESC], ...)] INTO <num_buckets> BUCKETS
+]
+[ROW FORMAT <row_format>]
+[STORED AS <file_format>]
+[LOCATION <hdfs_path>]
+[TBLPROPERTIES (<property_name>=<property_value>, ...)]
+[AS <select_statement>];
+```
+
+- EXTERNAL：外部表
+
+    - 管理表
+
+        - 默认创建的都是管理表，也就是内部表，因为这种表，Hive 会控制着数据的生命周期，Hive 默认情况下会将这些表的数据存储在由配置项 `hive.metastore.warehouse.dir` 所定义的目录的子目录下
+        - 当删除管理表时，Hive 会删除这个表中的数据，不适合和其他工具共享数据
+
+    - 外部表
+
+        - 因为表是外部表，Hive 不认为完全拥有这份数据，删除该表不会删除掉这份数据，不过描述表的元数据信息会被删除掉
+
+    - 相互转换
+
+        ```hql
+        -- 查询表的类型
+        desc formatted <table_name>;
+        -- 修改内部表的类型
+        alter table <table_name> set tblproperties('EXTERNAL'='TRUE');
+        -- 修改外部表的类型
+        alter table <table_name> set tblproperties('EXTERNAL'='FALSE');
+        ```
+
+- IF NOT EXISTS：是否存在，不存在才创建
+
+- COMMENT：注释
+
+- PARTITIONED BY：分区表
+
+- CLUSTERED BY：分桶表
+
+- SORTED BY：-> 分桶表
+
+- ROW FORMAT：行格式（connected by）
+
+    ```hql
+    CREATE TABLE xxx (xxx ...)
+    ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+    ```
+
+- STORED AS：压缩方式（默认 text）
+
+- LOCATION：指定表的存储位置
+
+- TBLPROPERTIES：表属性
+
+- AS：查询方式建表
+
