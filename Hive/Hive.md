@@ -536,3 +536,35 @@ CLUSTERED BY (<col_name>, <col_name2>, ....)
 
 - AS：查询方式建表
 
+### 5.6 修改表
+
+```hql
+-- 重命名表
+ALTER TABLE <table_name> RENAME TO <table_name_new>;
+-- 增加/修改/替换列信息
+ALTER TABLE <table_name> CHANGE [COLUMN] <col_old_name> <col_new_name>;
+ALTER TABLE <table_name> ADD | REPLACE COLUMNS (<col_name> <data_type> [COMMENT <col_comment>], ...);
+```
+
+### 5.7 删除表
+
+```hql
+DROP TABLE <table_name>;
+```
+
+## 6. DML 数据操作
+
+### 6.1 数据导入
+
+- 向表中装载数据（Load）
+
+    ```hql
+    load data [local] inpath '<src_path>' [overwrite] into table <table_name> [partition (<part_col1>=<val1>, ...)];
+    ```
+
+    - load data：表示加载数据
+    - local：表示从本地加载数据到 hive 表，否则从 HDFS 加载数据到 hive 表
+    - inpath：表示加载数据的路径
+    - overwrite：表示覆盖表中已有数据，否则就是追加
+    - into table：表示加载到哪张表
+    - partition：上传到指定分区
