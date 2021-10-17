@@ -568,3 +568,39 @@ DROP TABLE <table_name>;
     - overwrite：表示覆盖表中已有数据，否则就是追加
     - into table：表示加载到哪张表
     - partition：上传到指定分区
+    
+- 通过查询语句向表中插入数据（Insert）
+
+    ```hql
+    insert into table <table_name> values(<value1>)[, (value2), ...];
+    insert overwrite table <table_name> select ....;
+    from <table_name>
+    insert overwrite table <table_name> partition(<name>=<value>)
+    select xxxxx
+    insert overwrite table <table_name> partition(<name>=<value>)
+    select xxxxx;
+    ```
+
+- 查询语句中创建表并加载数据
+
+    ```hql
+    create table <table_name> as select xxx;
+    ```
+
+- 创建表时通过 Location 指定加载数据路径
+
+    ```hql
+    create external table <table_name> ()
+    row format delimited fields terminated by <delimited>
+    location <hdfs_path>;
+    ```
+
+- 第三方框架 import
+
+    ```hql
+    import table <table_name> from <location>;
+    -- 要先 export z
+    ```
+
+    
+
