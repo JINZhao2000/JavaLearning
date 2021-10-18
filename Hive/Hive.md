@@ -602,5 +602,77 @@ DROP TABLE <table_name>;
     -- 要先 export z
     ```
 
+
+### 6.2 数据导出
+
+- Insert 导出
+
+    - 查询结果导出到本地
+
+    	```hql
+    	insert overwrite local directory <local_location> select xxx;
+    	```
+    	
+    - 查询结果格式化导出到本地
     
+        ```hql
+        insert overwrite local directory <local_location>
+        row format dilimited fields terminated by '\t'
+        select xxx;
+        ```
+    
+    - 将查询的结果导出到 HDFS 上（没发 local）
+    
+        ```hql
+        insert overwrite directory <hdfs_path>
+        row format delimited fields terminated by '\t'
+        select xxx;
+        ```
+    
+ - Hadoop 命令导出到本地
+   
+   ```hql
+   dfs -get <hdfs_path> <local_path>
+   ```
+   
+
+- Hive Shell
+
+    ```shell
+    hive -e 'select xxx;' >> <file_name>
+    ```
+
+- Export 导出到 HDFS 上
+
+    ```hq;
+    export table <database_name>.<table_name> to <hdfs_location>;
+    ```
+
+- Sqoop 导出
+
+- 清除表中数据
+
+    ```hql
+    truncate table <table_name>;
+    -- 仅限管理表
+    ```
+
+## 7. 查询
+
+查询语句语法
+
+[Manual](https://cwiki.apache.org/confluence/display/Hive/LanguageManual+Select) 
+
+```hql
+[WITH CommonTableExpression (, CommonTableExpression)*]
+SELECT [ALL | DISTINCT] select_expr, select_expr, ...
+  FROM table_reference
+  [WHERE where_condition]
+  [GROUP BY col_list]
+  [ORDER BY col_list]
+  [CLUSTER BY col_list
+    | [DISTRIBUTE BY col_list] [SORT BY col_list]
+  ]
+ [LIMIT [offset,] rows]
+```
 
