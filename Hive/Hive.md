@@ -635,7 +635,6 @@ DROP TABLE <table_name>;
    dfs -get <hdfs_path> <local_path>
    ```
    
-
 - Hive Shell
 
     ```shell
@@ -676,3 +675,46 @@ SELECT [ALL | DISTINCT] select_expr, select_expr, ...
  [LIMIT [offset,] rows]
 ```
 
+注意
+
+1. SQL 语言大小写不敏感（Linux 中？）
+2. SQL 可以写在一行或多行
+3. 关键字不能被缩写也不能分行
+4. 各子句一般分行写
+5. 使用缩进提升可读性（建议）
+
+### 7.1 运算符
+
+A+B, A-B, A*B, A/B, A%B. A&B, A|B, A^B, ~A
+
+### 7.2 常用函数
+
+- 总行数（count）
+- 最大值（max）
+- 最小值（min）
+- 总和（sum）
+- 平均值（avg）
+
+### 7.3 比较运算符
+
+A=B, A<=>B (都为 NULL 返回 TRUE，一边为 NULL 返回 FALSE), A<>B, A!=B, A<B, A<=B, A>B, A>=B, A [NOT] BETWEEN B AND C
+
+A IS [NOT] NULL, IN (value1, value2, ...), A [NOT] LIKE B, A RLIKE B, A REGEXP B
+
+### 7.4 Like 和 RLike
+
+- 使用 Like 运算选择类似的值
+
+- 选择条件可以包含字符或数字
+
+    % 代表零个或多个字符
+
+    _ 代表一个字符
+
+- RLIKE
+
+    可以通过 Java 正则表达式来指定匹配条件
+
+### 7.5 逻辑运算符
+
+AND, OR, NOT
