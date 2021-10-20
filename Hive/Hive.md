@@ -718,3 +718,74 @@ A IS [NOT] NULL, IN (value1, value2, ...), A [NOT] LIKE B, A RLIKE B, A REGEXP B
 ### 7.5 逻辑运算符
 
 AND, OR, NOT
+
+### 7.6 JOIN
+
+- 等值连接
+
+    ```hql
+    select ... from <tableA> join <tableB> on <tableA>.<fieldA> = <tableB>.<fieldA>;
+    ```
+
+- 内连接
+
+    只有进行连接的两个表中都存在与连接条件相匹配的数据才会被保留下来
+
+    ```hql
+    select ... from <tableA> inner join <tableB> on <tableA>.<fieldA> = <tableB>.<fieldA>;
+    ```
+
+- 左外连接
+
+    ```hql
+    select ... from <tableA> left join <tableB> on <tableA>.<fieldA> = <tableB>.<fieldA>;
+    ```
+
+- 右外连接
+
+    ```hql
+    select ... from <tableA> right join <tableB> on <tableA>.<fieldA> = <tableB>.<fieldA>;
+    ```
+
+- 满外连接
+
+    ```hql
+    select ... from <tableA> full join <tableB> on <tableA>.<fieldA> = <tableB>.<fieldA>;
+    ```
+
+- 左内连接
+
+    ```hql
+    select ... from <tableA> left join <tableB> on <tableA>.<fieldA> = <tableB>.<fieldA> where <tableB>.<fieldA> is NULL;
+    select ... frmo <tableA>
+    where <tableA>.<fieldA> not in (
+    	select <fieldA>
+    	from <tableB>
+    );
+    ```
+
+- 右内连接
+
+    ```hql
+    select ... from <tableA> r join <tableB> on <tableA>.<fieldA> = <tableB>.<fieldA> where <tableB>.<fieldA> is NULL;
+    ```
+
+- $(A \bigcup B)\setminus(A \bigcap B)$ 
+
+    ```hql
+    select xxx from <tableA> full join <tableB> on <tableA>.<fieldA> = <tableB>.<fieldA> 
+    where <tableA>.<fieldA> is null or <tableB>.<fieldA> is null;
+    ```
+
+- `union` 去重
+
+- `union all` 不去重
+
+- 笛卡尔积
+
+    ```hql
+    select xxx from <tableA>, <tableB>;
+    ```
+
+
+
