@@ -787,5 +787,28 @@ AND, OR, NOT
     select xxx from <tableA>, <tableB>;
     ```
 
+## 8. 排序
 
+- 全局排序（order by，只有一个 Reducer）
 
+    ```hql
+    select xxx order by xxx [ASC | DESC];
+    ```
+
+- 每个 Reduce 内部排序（sort by）
+
+    每个 Reducer 产生一个排序文件，每个 Reducer 内部进行排序，对全局结果集来说不是排序
+
+    - 设置 reduce 个数
+
+        ```bash
+        set mapreduce.job.reduce=x;
+        ```
+
+    - 查看 reduce 个数
+
+        ```bash
+        set mapreduce.job.reduces;
+        ```
+
+- 分区（distributed by）
