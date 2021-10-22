@@ -812,3 +812,18 @@ AND, OR, NOT
         ```
 
 - 分区（distributed by）
+
+    有些情况下，需要控制某个特定行应该到哪个 reducer，通常是为了进行后续的聚集操作，distributed by 类似 MR 中 partition（自定义分区）进行分区，结合 sort by 使用（对于 distributed by，一定要分配多 reduce 进行处理，否则无法看到 distributed by 的效果）
+
+    - distributed by 的分区规则是根据分区字段的 hash 码与 reduce 的个数进行模除后，余数相同的分到一个区
+    - Hive 要求 distributed by 语句要写在 sort by 语句之前
+
+- cluster by
+
+    当 distributed by 和 sort by 的字段相同时，可以用 cluster by 的方式（排序只是升序排序）
+
+## 9. 分区表与分桶表
+
+### 9.1 分区表
+
+分区表实际上就是对应一个 HDFS 文件系统上的独立的文件夹，该文件夹下是该分区所有的数据文件。Hive 中分区就是分目录，把一个大的数据集根据业务需要分割成小的数据集，在查询时通过 where 子句中的表达式选择查询所需要的指定的分区来提升效率
