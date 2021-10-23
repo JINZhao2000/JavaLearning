@@ -827,3 +827,54 @@ AND, OR, NOT
 ### 9.1 分区表
 
 分区表实际上就是对应一个 HDFS 文件系统上的独立的文件夹，该文件夹下是该分区所有的数据文件。Hive 中分区就是分目录，把一个大的数据集根据业务需要分割成小的数据集，在查询时通过 where 子句中的表达式选择查询所需要的指定的分区来提升效率
+
+- 创建分区表
+
+    ```hql
+    create table <table>(...)
+    partitioned by (<field> <type>)
+    row format delimited fields terminated by '\t';
+    ```
+
+- 读取数据
+
+    ```hql
+    load data local inpath '<path>' into table <table> partition(<field>='<value>');
+    ```
+
+- 查询数据
+
+    ```hql
+    select * from <table> where <field>=<value>
+    ```
+
+- 二级分区
+
+    ```hql
+    create table <table>(...)
+    partitioned by (<field1> <type1>, <field2> <type2>);
+    ```
+
+- 动态分区调整
+
+    关系型数据库中，对分区表 insert 数据的时候，数据库自动会根据分区字段的值，将数据插入到相应的分区中，Hive 也提供了类似的机制，即动态分区，只不过使用 Hive 的动态分区，需要进行相应的配置
+
+    - 开启动态分区参数配置
+
+        ```shell
+        # 开启动态分区功能（默认 true）
+        hive.exec.dynamic.partition=true
+        # 设置为非严格模式（动态分区的模式，默认 strict，表示必须指定至少一个分区为静态分区，notstrict 模式表示允许所有的分区字段都可以使用动态分区）
+        hive.exec.dynamic.partition=nonstrict
+        # 在所有执行 MR 的节点上，最大一共可以创建多少个动态分区，默认 1000
+        hive.exec.max.dynamic.partitions=1000
+        # 在每个执行 MR 的节点上，最大可以创建多少个动态分区。该参数需要根据实际数据来确定
+        # 比如：源数据中包含了一年的数据，即 day 字段有 365/366 个值，那么该参数就需要设置成大于 365， 如果使用默认值 100，就会报错
+        hive.exec.max.dynamic.partitions.pernode=100
+        # 整个 MR Job 中，最大可以创建多少个 HDFS 文件，默认 100 000
+        hive.exec.max.created.files=100000
+        # 当有空的分区生成的时候，是否抛出异常。默认 false
+        hive.error.on.empty.partition
+        ```
+
+        
