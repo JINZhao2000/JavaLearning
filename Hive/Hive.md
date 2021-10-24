@@ -877,4 +877,40 @@ AND, OR, NOT
         hive.error.on.empty.partition
         ```
 
-        
+
+### 9.2 分桶表
+
+分区提供一个隔离数据和优化查询的便利方式。不过，并非所有的数据集都可形成合理的分区，对于一张表或者分区，Hive 可以进一步组织成桶，也就是更为细粒度的数据范围划分
+
+> 分桶是将数据集分解成更容易管理的若干部分的另一个技术
+>
+> 分区针对的是数据的存储路径，分桶是针对的数据文件
+
+- 建表
+
+    ```hql
+    create table <table>(...)
+    clustered by(<col>)
+    into to <num> buckets
+    row format delimited fields terminated by '\t';
+    -- 分区表的字段不能与表中字段相同，而分桶可以
+    ```
+
+- 分桶规则
+
+    Hive 分桶采用对分桶字段的值进行 Hash，然后除以桶的个数求余的方式决定该条记录存放在哪个桶中
+
+- 注意事项
+
+    - reduce 的个数设置为 -1，让 job 自行决定需要用多少个 reduce 或将 reduce 的个数设置为大于等于分桶表的个数
+    - 从 hdfs 中 load 数据到分桶表中，避免本地文件找不到问题
+    - 不要使用本地模式
+
+### 9.3 抽样查询
+
+对于非常大的数据集，有时用户需要使用的是一个具有代表性的查询结果，而不是全部的结果，Hive 可以通过对表进行抽样查询来满足需求
+
+```hql
+select xxx from tablesample(bucket <number bucket/numerator> out of <number sdenominator>);
+```
+
