@@ -914,3 +914,65 @@ AND, OR, NOT
 select xxx from tablesample(bucket <number bucket/numerator> out of <number sdenominator>);
 ```
 
+## 10. 函数
+
+### 10.1 系统内置函数
+
+- 查看系统自带函数
+
+    ```hql
+    show functions;
+    ```
+
+- 显示自带函数
+
+    ```hql
+    desc function <func_name>;
+    ```
+
+- 详细显示自带的函数用法
+
+    ```hql
+    desc function extended <func_name>;
+    ```
+
+- Hive 中函数分为 UDF，UDAF，UDTF
+
+    > UDF 一个输入一个输出
+    >
+    > UDAF 多个输入一个输出
+    >
+    > UDTF 一个输入多个输出
+    >
+    > 
+    >
+    > 一和多指的是输入数据的行数，所以 NVL 也是 UDF
+
+### 10.2 常用内置函数
+
+- 空字段赋值（NVL）
+
+    给值为 NULL 的数据赋值，格式是 `NVL(value, default_value)`，它的功能是如果 value 为 NULL，则 NVL 函数返回 default_value 的值，如果两个参数
+
+- CASE WHEN THEN ELSE END
+
+    ```hql
+    case <field> when <field_value1> then <display_value1> else <display_value2> end;
+    ```
+
+- IF
+
+    ```hql
+    if(<condition>, <condition=true => value>, <condition=false => value>);
+    ```
+
+- 行转列
+
+    `CONCAT(string A/col, string B/col, ...)`：返回输入字符串连接后的结果，支持输入任意个字符串
+
+    `CONCAT_WS(separator, str1, str2, ...)`：它是一个特殊形式的 `CONCAT()`，第一个参数剩余参数间的分隔符，分隔符可以是与剩余参数一样的字符串，如果分隔符是 NULL，返回值也将为 NULL，这个函数会跳过分隔符后的任何 NULL 和空字符串，分隔符将被加到被连接的字符串之间
+
+    > concat_ws must be "string" or "array\<string>"
+
+    `COLLECT_SET(col)`：函数只接受基本数据类型，它的主要作用是将某个字段的值进行去重汇总，产生 Array 类型的字段
+
