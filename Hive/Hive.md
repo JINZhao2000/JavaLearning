@@ -975,4 +975,47 @@ select xxx from tablesample(bucket <number bucket/numerator> out of <number sden
     > concat_ws must be "string" or "array\<string>"
 
     `COLLECT_SET(col)`：函数只接受基本数据类型，它的主要作用是将某个字段的值进行去重汇总，产生 Array 类型的字段
+    
+- 列转行
+
+    `EXPLODE(col)`：将 Hive 一列中复杂的 Array 或者 Map 结构拆分成多行
+
+    `LATERAL VIEW`：`LATERAL VIEW udtf(expression) tableAlias AS columnAlias` 用于 split，explode 等 UDTF 一起使用，它能够将一列数据拆分成多行数据，在此基础上可以对拆分后的数据进行聚合
+
+    ```hql
+    select fieldA, fieldB_exploded
+    from tableA
+    lateral view explode(split(field_str, ",")) table_tmp as fieldB_exploded
+    ```
+
+- 窗口函数（开窗函数）
+
+    - `OVER()`：指定分析函数的工作的数据窗口大小，这个数据窗口大小可能会随着行的变化而变化
+
+        ```hql
+        select
+        	fieldA
+        	count(*) over()
+        from
+        	table
+        group by fieldA;
+        -- group by 之后先有 fieldA，再对 fieldA 中的数据进行 count(*)
+        ```
+
+    - `CURRENT ROW`：当前行
+
+    - `N PRECEDING`：往前 n 行数据
+
+    - `N FOLLOWING`：往后 n 行数据
+
+    - `UNBOUNDED`：起点
+
+        - `UNBOUNDED PRECEDING`：表示从前面的起点
+        - `UNBOUNDED FOLLOWING`：表示到后面的终点
+
+    - `LAG(col, n. default_val)`：往前第 n 行数据
+
+    - `LEAD(col, n, default_val)`：往后第 n 行数据
+
+    - `NTILE(n)`：把有序窗口的行分发到指定数据的组中，各个组有编号，编号从 1 开始，对于每一行，NLITE 返回此行所属的组的编号（n 必须为 int 类型）
 
