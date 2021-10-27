@@ -1000,22 +1000,46 @@ select xxx from tablesample(bucket <number bucket/numerator> out of <number sden
         	table
         group by fieldA;
         -- group by 之后先有 fieldA，再对 fieldA 中的数据进行 count(*)
+        
+        select
+        	fieldA
+        	fieldB
+        	fieldC
+        	sum(fieldC) over(partition by fieldA, fieldB)
+        from tableA;
+        
+        select
+        	fieldA
+        	fieldB
+        	fieldC over(partition by fieldA order by fieldB
+        		rows between UNBOUNDED PRECEDING and current row
+        	)
+        from tableA;
         ```
 
     - `CURRENT ROW`：当前行
-
+    
     - `N PRECEDING`：往前 n 行数据
-
+    
     - `N FOLLOWING`：往后 n 行数据
-
+    
     - `UNBOUNDED`：起点
-
+    
         - `UNBOUNDED PRECEDING`：表示从前面的起点
         - `UNBOUNDED FOLLOWING`：表示到后面的终点
-
+    
     - `LAG(col, n. default_val)`：往前第 n 行数据
-
+    
+        ```hql
+        select
+        	fieldA
+        	fieldB
+        	lag(fieldB, 1) over(partition by fieldA order by fieldB)
+        from
+        	tableA;
+        ```
+    
     - `LEAD(col, n, default_val)`：往后第 n 行数据
-
+    
     - `NTILE(n)`：把有序窗口的行分发到指定数据的组中，各个组有编号，编号从 1 开始，对于每一行，NLITE 返回此行所属的组的编号（n 必须为 int 类型）
 
