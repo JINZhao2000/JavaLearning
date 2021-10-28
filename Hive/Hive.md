@@ -994,7 +994,7 @@ select xxx from tablesample(bucket <number bucket/numerator> out of <number sden
 
         ```hql
         select
-        	fieldA
+        	fieldA,
         	count(*) over()
         from
         	table
@@ -1002,15 +1002,15 @@ select xxx from tablesample(bucket <number bucket/numerator> out of <number sden
         -- group by 之后先有 fieldA，再对 fieldA 中的数据进行 count(*)
         
         select
-        	fieldA
-        	fieldB
-        	fieldC
+        	fieldA,
+        	fieldB,
+        	fieldC,
         	sum(fieldC) over(partition by fieldA, fieldB)
         from tableA;
         
         select
-        	fieldA
-        	fieldB
+        	fieldA,
+        	fieldB,
         	fieldC over(partition by fieldA order by fieldB
         		rows between UNBOUNDED PRECEDING and current row
         	)
@@ -1032,8 +1032,8 @@ select xxx from tablesample(bucket <number bucket/numerator> out of <number sden
     
         ```hql
         select
-        	fieldA
-        	fieldB
+        	fieldA,
+        	fieldB,
         	lag(fieldB, 1) over(partition by fieldA order by fieldB)
         from
         	tableA;
@@ -1042,4 +1042,70 @@ select xxx from tablesample(bucket <number bucket/numerator> out of <number sden
     - `LEAD(col, n, default_val)`：往后第 n 行数据
     
     - `NTILE(n)`：把有序窗口的行分发到指定数据的组中，各个组有编号，编号从 1 开始，对于每一行，NLITE 返回此行所属的组的编号（n 必须为 int 类型）
+    
+        ```hql
+        select
+        	fieldA,
+        	fieldB,
+        	fieldC,
+        	nlite(5) over(order by fieldB) other_name
+        from
+        	tableA
+        where
+        	other_name=int;
+        ```
+    
+    - Rank：`rank_func() over(order by xxx)` 
+    
+        - `RANK()`：排序相同时会重复，总数不会变 1 1 3
+        - `DENSE_RANK()`：排序相同时会重复，总数会减少 1 1 2
+        - `ROW_NUMBER()`：会根据顺序计算 1 2 3
+
+- 其它常用函数
+
+    ```hql
+    unix_timestamp：返回当前或指定时间的时间戳(deprecated: current_timestamp)
+    	select unix_timestamp();
+    	select unix_timestamp("2021-01-01", "yyyy-MM-dd");
+    from_unixtime：将时间戳转换为日期格式
+    current_date：当前日期
+    current_timestamp：当前的日期加时间
+    to_date：抽取日期部分
+    year：获取年
+    month：获取月
+    day：获取日
+    hour：获取时
+    minute：获取分
+    second：获取秒
+    weekofyear：当前时间是一年中的第几周
+    dayofmonth：当前时间是一个月中的第几天
+    months_between：两个日期之间的月份
+    add_months：日期加减月
+    datediff：两个日期相差的天数
+    date_add：日期加天数
+    date_sub：日期减天数
+    last_day：日期的当月的最后一天
+    date_format()：格式化日期
+    
+    取整函数
+    round
+    ceil
+    floor
+    
+    字符串函数
+    upper
+    lower
+    length
+    trim
+    lpad：向左补齐，到指定长度
+    rpad：向右补齐，到指定长度
+    regexp_replace
+    
+    集合操作
+    size
+    map_keys：返回 map 中的 key
+    map_values：返回 map 中的 value
+    array_contains
+    sort_array
+    ```
 
