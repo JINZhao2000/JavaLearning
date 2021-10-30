@@ -1107,5 +1107,89 @@ select xxx from tablesample(bucket <number bucket/numerator> out of <number sden
     map_values：返回 map 中的 value
     array_contains
     sort_array
+    
+    grouping sets：多维分析
+    
+    select a, b sum(c) from tab1 group by a, b grouping sets((a,b), a)
+    ===
+    select a, b sum(c) from tab1 group by a, b
+    union
+    select a, b sum(c) from tab1 group by a
     ```
 
+### 10.3 用户自定义函数
+
+> UDF - User Defined Function
+>
+> UDAF - User Defined Aggregation Function
+>
+> UDTF - User Defined Table-Generating Function
+
+- 读取 jar 包
+
+    ```hql
+    add jar <local_file_path>;
+    create temporary function <function_name> as "<full_class_name>";
+    ```
+
+## 11. 压缩和存储
+
+=> Hadoop 压缩
+
+- 文件存储格式
+
+    > TEXTFILE ROW
+    >
+    > SEQUENCEFILE ROW
+    >
+    > ORC COLUMN
+    >
+    > PARQUET COLUMN
+
+- 列式存储和行式存储
+
+    > 行存储的特点
+    >
+    > 查询满足条件的一整行数据的时候列存储则需要每个聚集字段找到对应的列的值，行存储只需要找到其中一个值，其余的值都在相邻的地方没所以此时行查询速度比较快
+
+- TEXTFILE
+
+    默认格式，数据不做压缩，磁盘开销大，数据解析开销大，可结合 Gzip，Bzip2 使用，但使用 Gzip 这种方式，hive 不会对数据进行切分，从而无法对数据进行并行操作
+
+- ORC（Optimized Row Colimnar）
+
+    每个 ORC 文件由一个或者多个 stripe 组成，每个 stripe 一般为 HDFS 的块大小，每一个 stripe 包含多条记录，这些记录按照列进行独立存储，对应到 Parquet 中的 row group 的概念，，每个 stripe 里有三部分组成，分别是 Index Data，Row Data，Stripe Footer
+
+    - Index Data
+
+        一个轻量级 Index，默认是每隔 1w 行做一个索引，这里做的索引应该只是记录某行的各字段在 Row Data 中的 offset
+
+    - Row Data
+
+        存的是具体数据，先取部分行，然后对这些列按列进行存储，对每个列进行了编码分成多个 Stream 来存储
+
+    - Stripe Footer
+
+        存的是各个 Stream 的类型，长度等信息
+
+        每个文件有一个 File Footer，这里面存的是每个 Stripe 的行数，每个 Column 的数据类型信息等，每个文件的尾部是一个 PostScript，这里面记录了整个文件的压缩类型以及 File Footer 的长度信息等，在读取文件时，会 seek 到文件尾部读 PostScript，从里面解析到 File Footer 的长度，再读 File Footer，从里面解析到各个 Stripe 的信息，再读各个 Stripe，即从前往后读
+
+- Parquet
+
+    Parquet 的文件是以二进制方式存储的，所以是不可以直接读取的，文件中包括该文件的数据和元数据，因此 Parquet 格式的文件是自解析的
+
+    - 行组（Row Group）
+
+        每一个行组都包含一定的行数，在一个 HDFS 文件中至少存储一个行组，类似于 ORC 的 stripe 的概念
+
+    - 列块（Column Chunk）
+
+        在一个行组中每一列保存在一个列块中，行组中的所有列连续的存储在这个行组文件中，一个列块中的值都是相同类型的，不同的列块可能使用不同的算法进行压缩
+
+    - 页（Page）
+
+        每一个列块划分为多个页，一个也是最小的编码的单位，在同一个列块的不同页可能使用不同的编码方式
+
+    通常情况下，在存储 Parquet 数据的时候会按照 Block 大小设置行组的大小，由于一般情况下，每一个 Mapper 任务处理数据的最小单位是一个 Block，这样可以把每一个行组由一个 Mapper 任务处理，增大任务执行的并行度，
+
+- 存储对比 ORC > Parquet > TextFile
