@@ -1193,3 +1193,30 @@ select xxx from tablesample(bucket <number bucket/numerator> out of <number sden
     通常情况下，在存储 Parquet 数据的时候会按照 Block 大小设置行组的大小，由于一般情况下，每一个 Mapper 任务处理数据的最小单位是一个 Block，这样可以把每一个行组由一个 Mapper 任务处理，增大任务执行的并行度，
 
 - 存储对比 ORC > Parquet > TextFile
+
+## 11. 调优
+
+### 11.1 执行计划（Explain）
+
+- 语法
+
+    ```hql
+    EXPLAIN [EXTENDED|DEPENDENCY|AUTHORIZATION] query
+    ```
+
+### 11.2 Fetch 抓取
+
+Fetch 抓取是指，Hive 中对某些情况的查询可以不必使用 MapReduce 计算，例如 `select * from tab`，在这种情况下，Hive 可以简单读取 employee 对应的存储目录文件，然后输出查询结果到控制台
+
+在 `hive-default.xml.template` 文件中 `hive.fetch.task.conversion` 默认是 more，老版本 Hive 默认是 minimal，该属性修改为 more 之后，在全局查找，字段查找，limit 查找等都不走 MapReduce
+
+### 11.3 本地模式
+
+大多数 Hadoop Job 是需要 Hadoop 提供完整的可扩展性来处理大数据集的，不过有时的 Hive 的输入数据量是非常小的，在这种情况下，为查询触发执行任务消耗的时间可能会比实际 job 执行的时间要多得多，对于大多数这种情况，Hive 可以通过本地模式在单台机器上处理所有的任务，对于小数据集，执行时间可以明显被缩短
+
+`hive.exec.mode.local.auto=true`：开启本地 MR，默认 false
+
+`hive.exec.mode.local.auto.inputbytes.max=50000000`：最大输入数据量，小于这个值采用 local MR，默认值：134217728（128M）
+
+`hive.exec.mode.local.auto.input.files.max=10`：最大输入文件个数，默认为 4
+
