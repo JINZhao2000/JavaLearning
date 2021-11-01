@@ -1220,3 +1220,36 @@ Fetch 抓取是指，Hive 中对某些情况的查询可以不必使用 MapReduc
 
 `hive.exec.mode.local.auto.input.files.max=10`：最大输入文件个数，默认为 4
 
+### 11.4 表的优化
+
+- 小表 Join 大表（MapJoin）
+
+    将 key 相对分散，并且数据集较小的表放在 join 的左边，可以使用 map join 让小的维度的表先进内存，在 map 端完成 join（当前版本 Hive 已经对 join 进行了优化，放左边右边已经没有区别）
+
+    - MapJoin 参数设置
+
+        ```hql
+        -- 设置自动选择 MapJoin，默认为 true
+        set hive.auto.convert.join = true
+        -- 大表小表的阈值设置（默认 25M 以下认为是小表）
+        set hive,mapjoin.smalltable.filesize = 25000000
+        ```
+
+    - MapJoin 机制
+
+        <img src="./images/mapjoin.png"/> 
+
+        - Task A，它是一个 Local Task（在客户端本地执行的 Task），负责扫描小表 b 的数据，将其转换成一个 HashTable 的数据结构，并写入本地文件中，之后将该文件加载到 DistributeCache 中
+        - Task B，该任务是一个没有 Reduce 的 MR，启动 MapTask 扫描大表 a，在 Map 阶段，根据 a 的每一条记录去和 DistributedCache 中的 b 表对应的 HashTable 关联，并直接输出结果
+        - 由于 MapJoin 没有 Reduce，所以由 Map 将直接输出结果文件，有多少个 Map Task，就有多少个结果文件
+
+- 大表 Join 大表
+
+    - 空 key 过滤
+
+        有时 join 超时是因为某些 key 对应的数据太多，而相同的 key 对应的数据都会发送到相同的 reducer 上，从而导致内存不够，很多情况下，这些 key 对应的数据是异常数据，需要在 SQL 中进行过滤，例如 key 对应的字段为空（非 inner join 不需要数据为 null 的）
+
+    - 空 key 转换
+
+        有时虽然某个 key 为空对应的数据很多，但是相应的数据不是异常数据，必须要包含在 join 结果中，此时可以表 a 中 key 为空的字段赋一个随机的值，使得数据随机均匀地分到不同地 reducer 上
+
