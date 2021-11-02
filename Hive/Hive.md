@@ -1252,4 +1252,43 @@ Fetch 抓取是指，Hive 中对某些情况的查询可以不必使用 MapReduc
     - 空 key 转换
 
         有时虽然某个 key 为空对应的数据很多，但是相应的数据不是异常数据，必须要包含在 join 结果中，此时可以表 a 中 key 为空的字段赋一个随机的值，使得数据随机均匀地分到不同地 reducer 上
+        
+    - SMB（Sorted Merge Bucket Join）
+    
+- Group by
+
+    默认情况下，Map 阶段同一 key 数据分发给一个 reduce，当一个 key 数据过大时就会发生数据倾斜
+
+    并不是所有的聚合操作都需要在 reduce 端完成，很多聚合操作都可以现在 Map 端运行部分聚合，最后在 reduce 端得出结果
+
+    - 开启 Map 端集合参数设置
+
+        ```hql
+        -- 是否在 Map 端进行聚合 默认为 true
+        set hive.map.aggr = true
+        -- 在 Map 端进行聚合操作的条目个数
+        set hive.groupby.mapaggr.checkinterval = 100000
+        -- 有数据倾斜的时候进行负载均衡，默认为 false
+        set hive.groupby.skewindata = true
+        ```
+
+        当 skewindata 设定为 true 时，生成的查询计划会生成两个 MR Job，第一个 MR Job 中，Map 的输出结果会随机分配到 Reduce 中，每个 Reduce 做部分聚集操作，并输出结果，这样处理的结果是相同的 Group By Key 有可能被分到不同的 Reduce 中，从而达到均衡的目的，第二个 MR Job 再根据预处理的数据结果按照 Group By Key 分到 Reduce 中（这个过程可以保证相同的 Group By Key 被分到同一个 Reduce 中），最后完成聚合操作
+
+- Count（Distinct）去重统计
+
+    数据量大的时候，由于 COUNT 和 DISTINCT 操作需要用一个 Reduce Task 来完成，这一个 Reduce 需要处理的数据量太大，就会导致整个 Job 很难完成，一般 COUNT DISTINCT 使用先 GROUP BY 再 COUNT 的方式替换，但是要注意 GROUP BY 造成的数据倾斜的问题
+
+- 笛卡尔积
+
+    尽量避免笛卡尔积，join 的时候不加 on 条件，或者无效的 on 条件，Hive 只能使用 1 个 reducer 来完成笛卡尔积
+
+- 行列过滤
+
+    列处理：在 SELECT 中，只拿需要的列，如果有分区，尽量使用分区过滤，少用 SELECT *
+
+    行处理：在分区裁剪中，当使用外联时，如果将副表的过滤条件写在 where 后面，那么就会先全表关联，然后再过滤
+
+- 分区 => 9
+
+- 分桶 => 9
 
