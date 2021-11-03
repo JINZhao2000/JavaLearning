@@ -1252,4 +1252,106 @@ Fetch 抓取是指，Hive 中对某些情况的查询可以不必使用 MapReduc
     - 空 key 转换
 
         有时虽然某个 key 为空对应的数据很多，但是相应的数据不是异常数据，必须要包含在 join 结果中，此时可以表 a 中 key 为空的字段赋一个随机的值，使得数据随机均匀地分到不同地 reducer 上
+        
+    - SMB（Sorted Merge Bucket Join）
+    
+- Group by
+
+    默认情况下，Map 阶段同一 key 数据分发给一个 reduce，当一个 key 数据过大时就会发生数据倾斜
+
+    并不是所有的聚合操作都需要在 reduce 端完成，很多聚合操作都可以现在 Map 端运行部分聚合，最后在 reduce 端得出结果
+
+    - 开启 Map 端集合参数设置
+
+        ```hql
+        -- 是否在 Map 端进行聚合 默认为 true
+        set hive.map.aggr = true
+        -- 在 Map 端进行聚合操作的条目个数
+        set hive.groupby.mapaggr.checkinterval = 100000
+        -- 有数据倾斜的时候进行负载均衡，默认为 false
+        set hive.groupby.skewindata = true
+        ```
+
+        当 skewindata 设定为 true 时，生成的查询计划会生成两个 MR Job，第一个 MR Job 中，Map 的输出结果会随机分配到 Reduce 中，每个 Reduce 做部分聚集操作，并输出结果，这样处理的结果是相同的 Group By Key 有可能被分到不同的 Reduce 中，从而达到均衡的目的，第二个 MR Job 再根据预处理的数据结果按照 Group By Key 分到 Reduce 中（这个过程可以保证相同的 Group By Key 被分到同一个 Reduce 中），最后完成聚合操作
+
+- Count（Distinct）去重统计
+
+    数据量大的时候，由于 COUNT 和 DISTINCT 操作需要用一个 Reduce Task 来完成，这一个 Reduce 需要处理的数据量太大，就会导致整个 Job 很难完成，一般 COUNT DISTINCT 使用先 GROUP BY 再 COUNT 的方式替换，但是要注意 GROUP BY 造成的数据倾斜的问题
+
+- 笛卡尔积
+
+    尽量避免笛卡尔积，join 的时候不加 on 条件，或者无效的 on 条件，Hive 只能使用 1 个 reducer 来完成笛卡尔积
+
+- 行列过滤
+
+    列处理：在 SELECT 中，只拿需要的列，如果有分区，尽量使用分区过滤，少用 SELECT *
+
+    行处理：在分区裁剪中，当使用外联时，如果将副表的过滤条件写在 where 后面，那么就会先全表关联，然后再过滤
+
+- 分区 => 9
+
+- 分桶 => 9
+
+### 11.5 合理设置 Map 及 Reduce 数
+
+- 通常情况下，作业会通过 input 的目录产生一个或者多个 map 任务
+
+    主要决定的因素有：input 文件总个数，input 文件的大小，集群设置的文件块大小
+
+- map 并不是越多越好，如果一个任务有很多小文件（远远小于块大小 128M），则每个小文件也会被当成一个块，用一个 map 任务来完成，而一个 map 任务启动和初始化时间远远大于逻辑处理时间，就会造成很大的浪费资源，而且，同时可执行的 map 数是受限的
+
+- 关于 map 处理块的大小，如果有一个 127M 的文件，正常会用一个 map 去完成，但是这个文件只有一个或者两个小字段，却有几千万条记录，如果 map 处理的逻辑比较复杂，用一个 map 任务去做，肯定也比较耗时
+
+#### 11.5.1 复杂文件增加 Map 数
+
+当 input 的文件都很大，任务逻辑复杂，map 执行非常慢的时候，可以考虑增加 map 数，来使得每个 map 处理的数据量减少，从而提高任务的执行效率
+
+map 的个数根据：`computeSliteSize(Math.max(minSize, Math.min(maxSize, blocksize))) = blocksize = 128M` 调整 maxSize 最大值，让 maxSize 最大值低于 blocksize 就可以增加 map 个数
+
+#### 11.5.2 小文件进行合并
+
+- 在 map 执行前合并小文件，减少 map 数：CombineHiveInputFormat 具有对小文件进行合并的功能（系统默认的格式），HiveInputFormat 没有对小文件合并的功能、
+
+- MR 任务结束时合并小文件的配置
+
+    ```hql
+    -- 在 map-only 任务结束时合并小文件，默认 true
+    set hive.merge.mapfiles = true;
+    -- 在 map-reduce 任务结束时合并小文件，默认 false
+    set hive.merge.mapredfiles = true;
+    -- 合并文件的大小，默认 256M
+    set hive.merge.size.per.task = 268435456;
+    -- 当输出文件的平均大小小于该值时，启动一个独立的 map-reduce 任务执行文件 merge
+    set hive.merge.smallfiles.avgsize = 16777216;
+    ```
+
+#### 11.5.3 合理设置 Reduce 个数
+
+- 调整 reduce 个数方法一
+
+    ```hql
+    -- 每个 reduce 处理的数据量默认是 256M
+    hive.exec.reducers.bytes.per.reducer = 256000000
+    -- 每个任务最大的 reduce 数，默认为 1009
+    hive.exec.reducers.max = 1009
+    -- 计算 reducer 数的公式
+    -- N = min(hive.exec.reducers.max, total input/hive.exec.reducers.bytes.per.reducer)
+    ```
+
+- 调整 reducer 个数方法二
+
+    ```hql
+    -- 在 mapred-default.xml 中修改
+    set mapreduce.job.reduces = 15;
+    ```
+
+- reduce 个数并不是越多越好
+
+    - 过多的启动和初始化 reduce 会消耗时间和资源
+    - 有多少个 reduce，就会有多少个输出文件，如果生成了很多个小文件，那么如果这些小文件作为下一个任务的输入，则也会出现小文件过多的情况
+
+    在设置 reduce 个数的时候也需要考虑两个原则
+
+    - 处理大数据量利用合适的 reduce 数
+    - 使单个 reduce 任务处理数据量大小要合适
 
