@@ -1291,6 +1291,7 @@ Fetch 抓取是指，Hive 中对某些情况的查询可以不必使用 MapReduc
 - 分区 => 9
 
 - 分桶 => 9
+<<<<<<< HEAD
 
 ### 11.5 合理设置 Map 及 Reduce 数
 
@@ -1354,4 +1355,35 @@ map 的个数根据：`computeSliteSize(Math.max(minSize, Math.min(maxSize, bloc
 
     - 处理大数据量利用合适的 reduce 数
     - 使单个 reduce 任务处理数据量大小要合适
+
+### 11.6 并行执行
+
+HIve 会将一个查询转化成一个或者多个阶段，这样的阶段可以是 MapReduce 阶段，抽象阶段，合并阶段，limit 阶段，或者 Hive 执行过程中可能需要的其它阶段，默认情况下，Hive 一次只会执行一个阶段，不过某个特定的 job 可能包含众多阶段，而这些阶段可能并非完全互相依赖，可以并行执行，来缩短 job 时间
+
+```hql
+-- 打开任务并行执行
+set hive.exec.parallel = true;
+-- 同一个 sql 允许最大并行度，默认为 8
+set hive.exec.parallel.thread.number = 16;
+```
+
+### 11.7 严格模式
+
+Hive 可以通过设置防止一些危险的操作
+
+- 分区表不使用分区过滤
+
+    将 `hive.strict.checks.no.partition.filter` 设置为 true 时，对于分区表，除非 where 语句中含有分区字段过滤条件来限制范围，否则不允许执行（不允许用户扫描所有分区）
+
+- 使用 order by 没有 limit 过滤
+
+    将 `hive.strict.checks.orderby.no.limit` 设置为 true 的时候，对于已经使用了 order by 语句的查询，要求必须使用 limit 语句，因为 order by 为了执行排序过程会将所有的结果数据分发到同一个 reducer 中进行处理
+
+- 笛卡尔积
+
+    将 `hive.strict.checks.cartesian.product` 设置为 true 时，会限制笛卡尔积的查询
+
+### 11.8 JVM 重用 => Hadoop JVM 重用
+
+### 11.9 压缩 => 9
 
