@@ -162,3 +162,105 @@
 
 ## 3. Redis 数据类型
 
+### 3.1 Redis 键（key）
+
+- `keys *` 查看当前库所有 key
+
+- `exists key` 判断某个 key 是否存在
+
+- `type key` 查看 key 的类型
+
+- `del key` 删除指定的 key 数据
+
+- `unlink key` 根据 value 选择非阻塞删除
+
+    仅将 keys 从 keyspace 元数据中删除，真正的删除会在后续异步操作
+
+- `expire key 10` 为给定的 key 设置过期时间
+
+- `ttl key` 查看还有多少秒过期，-1 为永不过期，-2 表示已经过期
+
+### 3.2 String 
+
+String 是 Redis 的最基本数据类型，与 Memcached 一模一样的类型，一个 key 对应一个 value
+
+String 类型是二进制类型安全的，可以包含任何数据，比如图片或者序列化对象，string 作为 value 最多是 512M
+
+- 常用命令
+
+    > set \<key> \<value>
+    >
+    > ​	NX：当数据库中 key 不存在时，可以将 key-value 添加到数据库
+    >
+    > ​	XX：当数据库中 key 存在时，可以将 key-value 添加到数据库，与 NX 互斥
+    >
+    > 
+    >
+    > ​	EX seconds：key 的超时秒数
+    >
+    > ​	PX milleseconds：key 的超时毫秒数，与 EX 互斥
+    >
+    > 
+    >
+    > get \<key>
+    >
+    > append \<key> \<value>
+    >
+    > strlen \<key>
+    >
+    > setnx \<key> \<value> 只有在 key 不存在时，设置 key 的值
+    >
+    > 
+    >
+    > incr \<key>
+    >
+    > decr \<key>
+    >
+    > 
+    >
+    > incrby/decrby \<key> \<diff>
+    >
+    > 
+    >
+    > mset \<key1> \<value1> \<key1> \<value2> ...
+    >
+    > 同时设置一个或者多个 key-value
+    >
+    > mget \<key1> \<key2> ...
+    >
+    > 同时获取一个或者多个 value
+    >
+    > msetnx \<key1> \<value1> \<key2> \<value2> ...
+    >
+    > 同时设置一个或者多个 key-value，当且仅当 key 都不存在（原子性，一个失败，则全部失败）
+    >
+    > 
+    >
+    > getrange \<key> \<begin> \<end>
+    >
+    > 获得值得范围，类似 substring, str, begin, end + 1
+    >
+    > 
+    >
+    > setrange \<key> \<begin> \<value>
+    >
+    > 用 value 覆写 key 所存储得字符串的值，从 begin 开始（索引从 0 开始）
+    >
+    > 
+    >
+    > setex \<key> \<expire_time> \<value>
+    >
+    > 设置键值对以及过期时间，单位：秒
+    >
+    > getset \<key> \<value>
+    >
+    > 以新换旧，设置新值获取旧值
+
+String 的数据结构为简单动态字符串（SDS：Simple Dynamic String），是可以修改的字符串，内部结构实现类似于 Java 的 ArrayList，采用预分配冗余空间的方式来减少内存的频繁分配
+
+String 内部为当前字符串实际分配的空间 capacity 一般要高于实际字符串长度 len，当字符串长度小于 1M 时，扩容都是加倍现有的空间，如果超过 1M，扩容一次只会多扩 1M 的空间，字符串最大长度是 512M
+
+
+
+​    
+
