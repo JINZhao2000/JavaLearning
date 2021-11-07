@@ -260,7 +260,75 @@ String 的数据结构为简单动态字符串（SDS：Simple Dynamic String）�
 
 String 内部为当前字符串实际分配的空间 capacity 一般要高于实际字符串长度 len，当字符串长度小于 1M 时，扩容都是加倍现有的空间，如果超过 1M，扩容一次只会多扩 1M 的空间，字符串最大长度是 512M
 
+### 3.3 List
 
+单键多值
 
-​    
+列表是简单字符串列表，按照插入顺序排序
+
+底层是一个双向链表
+
+- 常用命令
+
+    > lpush/rpush <key\> <value1\> <value2\> <value3\> ...
+    >
+    > 从左边/右边插入一个或者多个值
+    >
+    > 从左边放是倒序
+    >
+    > 
+    >
+    > lpop/rpop <key\>
+    >
+    > 从左边/右边弹出一个值，当列表为空的时候，自动删除 key
+    >
+    > 
+    >
+    > rpoplpush <key1\> <key2\> 
+    >
+    > 从 <key1\> 列表右边弹出一个值放入 <key2\> 左边
+    >
+    > 
+    >
+    > lrange <key\> <start\> <stop\>
+    >
+    > 按照索引获取下标元素（从左到右）
+    >
+    > 
+    >
+    > lindex <key\> <index\>
+    >
+    > 按照索引下标获取元素（从左到右）
+    >
+    > llen <key\> 获得列表长度
+    >
+    > 
+    >
+    > linsert <key\> before/after <value\> <new_value\>
+    >
+    > 在第一个 value 前后插入 new_value
+    >
+    > 
+    >
+    > lrem <key\> <n\> <value\> 
+    >
+    > 从左边删除 n 个 value
+    >
+    > 
+    >
+    > lset <key\> <index\> <value\> 
+    >
+    > 将列表 key 下标为 index 的值替换成 value
+
+List 的数据结构为快速链表 quickList
+
+首先在列表元素较少的情况下会使用一块连续的内存存储，这个结构是压缩列表 ziplist
+
+它将所有的元素紧挨着一起存储，分配的是一块连续的内存
+
+当数据量比较多的时候才会改成 quicklist
+
+因为普通链表需要的附加指针空间太大，会比较浪费空间
+
+quicklist 是将多个 ziplist 使用双向指针串起来使用，满足了快速插入删除的性能，也不会有空间冗余
 
