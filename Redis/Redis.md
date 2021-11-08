@@ -332,3 +332,77 @@ List 的数据结构为快速链表 quickList
 
 quicklist 是将多个 ziplist 使用双向指针串起来使用，满足了快速插入删除的性能，也不会有空间冗余
 
+### 3.4 Set
+
+提供的功能与 list 类似，是一个列表功能，set 是可以自动排重的
+
+Set 是 string 类型的无序集合，底层其实是一个 value 为 null  的 hash 表，所以添加，查找，删除的复杂度都是 O(1)
+
+- 常用命令
+
+    >sadd <key\> <value1\> <value2\> ...
+    >
+    >将一个或者多个成员元素加入到集合 key 中，已经存在的成员元素将被忽略
+    >
+    >
+    >
+    >smembers <key\> 
+    >
+    >取出 key 对应的集合的所有值
+    >
+    >
+    >
+    >sismember <key\> <value\> 
+    >
+    >判断 key f的集合是否为含有该 value 的值：结果 1，0
+    >
+    >
+    >
+    >scard <key\> 
+    >
+    >返回该集合的元素个数
+    >
+    >
+    >
+    >srem <key\> <value1\> <value2\> ...
+    >
+    >删除集合中的某个元素
+    >
+    >
+    >
+    >spop <key\> 
+    >
+    >随机从 set 中弹出一个值
+    >
+    >
+    >
+    >srandmember <key\> <n\> 
+    >
+    >随机从集合中取出 n 个值，不会从集合中删除
+    >
+    >
+    >
+    >smove <source\> <destination\> <value\>
+    >
+    >把集合中一个值从一个 set 移动到另一个 set
+    >
+    >
+    >
+    >sinter <key1\> <key2\> 
+    >
+    >返回两个集合的交集元素
+    >
+    >
+    >
+    >sunion <key1\> <key2\> 
+    >
+    >返回两个集合的并集元素
+    >
+    >
+    >
+    >sdiff <key1\> <key2\> 
+    >
+    >返回两个集合的差集元素
+
+Set 的数据结构是 dict 字典，用 hash 表实现
+
