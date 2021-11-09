@@ -406,3 +406,58 @@ Set 是 string 类型的无序集合，底层其实是一个 value 为 null  的
 
 Set 的数据结构是 dict 字典，用 hash 表实现
 
+### 3.5 Hash
+
+Redis 中 Hash 是一个键值对集合
+
+是一个 string 类型的 field 和 value 的映射表，适合用于存储对象，类似于 Java 中的 Map<String, Object>
+
+- 常用命令
+
+    > hset <key\> <field\> <value\> 
+    >
+    > 给 key 集合中的 field 键赋值 value
+    >
+    > 
+    >
+    > hget <key\> <field\> 
+    >
+    > 从 key 集合 field 中取出 value
+    >
+    > 
+    >
+    > hmset <key\> <field1\> <value1\> <field2\> <value2\> ...
+    >
+    > 批量设置 hash 的值
+    >
+    > 
+    >
+    > hexists <key\> <field\> 
+    >
+    > 查看 hash 表 key 中，给定域 field 是否存在
+    >
+    > 
+    >
+    > hkeys <key\> 
+    >
+    > 列出该 key 对应的 hash 集合的所有 field
+    >
+    > 
+    >
+    > hvals <key\> 
+    >
+    > 列出该 key 对应的 hash 集合的所有 value
+    >
+    > 
+    >
+    > hincriby <key\> <field\> <increment\> 
+    >
+    > 为 hash 表 key 中的 field 的值增量 +/-
+    >
+    > 
+    >
+    > hsetnx <key\> <field\> <value\> 将 hash 表 key 中的域 field 的值设置为 value，当且仅当 field 不存在
+
+Hash 类型对应的数据结构是两种：ziplist 和 hashtable
+
+当 field-value 长度较短且个数较少时，用 ziplist，否则使用 hashtable
