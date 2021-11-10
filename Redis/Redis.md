@@ -461,3 +461,67 @@ Redis 中 Hash 是一个键值对集合
 Hash 类型对应的数据结构是两种：ziplist 和 hashtable
 
 当 field-value 长度较短且个数较少时，用 ziplist，否则使用 hashtable
+
+### 3.6 Zset（Sorted Set）
+
+zset 与 set 非常相似，是一个没有重复元素的字符串集合
+
+不同之处是 zset 的每个成员都关联了一个 score，这个 score 被用来按照从最低分到最高分的方式排序集合中的成员，集合成员是唯一的，但是评分是可以重复的
+
+因为元素是有序的，所以可以快速根据 score 或者 position 来获取一个范围的元素，访问 zset 的中间元素的时间开销也是比较低的
+
+- 常用命令
+
+    > zadd <key\> <score1\> <value1\> <score2\> <value2\> ...
+    >
+    > 将一个或者多个 member 的 value 及其 score 加入到 key 中
+    >
+    > 
+    >
+    > zrange <key\> <start\> <stop\> [WITHSCORES]
+    >
+    > 返回有序集 key 中，下标在 <start\> <stop\> 之间的元素
+    >
+    > 带 WITHSCORES，可以让分数一起和值返回到结果集
+    >
+    > 
+    >
+    > zrangebyscore <key\> <min\> <max\> [WITHSCORES] [LIMIT offset count]
+    >
+    > 返回有序集 key 中所有 score 介于 min 和 max 之间（闭区间）的元素，有序集按 score 值递增次序排列
+    >
+    > 
+    >
+    > zrevrangebyscore <key\> <max\> <min\> [WITHSCORES] [LIMIT offset count]
+    >
+    > 上面命令的倒序
+    >
+    > 
+    >
+    > zincrby <key\> <increment\> <value\> 
+    >
+    > 为元素的 score 加上增量
+    >
+    > 
+    >
+    > zrem <key\> <value\> 
+    >
+    > 删除该集合下指定的元素
+    >
+    > 
+    >
+    > zcount <key\> <min\> <max\> 
+    >
+    > 统计集合在分区 min 和 max 之间的元素
+    >
+    > 
+    >
+    > zrank <key\> <value\> 返回该值在集合中的排名，从 0 开始
+
+zset 一方面等价于 Java 的 Map<String, Double> 来存 score，另一方面，又类似 TreeSet，内部元素会按照 score 排序，可以得到每个元素的名次，还可以通过 score 范围来获取元素列表
+
+zset 底层用了两种数据结构
+
+- hash，用于关联 value 和 score，保障 value 的唯一性，可以通过 value 找到 score
+- 跳表，给 value 排序，根据 score 范围获取元素
+
