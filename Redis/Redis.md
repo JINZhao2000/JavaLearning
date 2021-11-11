@@ -525,3 +525,83 @@ zset 底层用了两种数据结构
 - hash，用于关联 value 和 score，保障 value 的唯一性，可以通过 value 找到 score
 - 跳表，给 value 排序，根据 score 范围获取元素
 
+## 4. Redis 配置文件
+
+- 使用配置文件
+
+    ```conf
+    # ./redis-server /path/to/redis.conf
+    ```
+
+- 单位设置方式
+
+    ```conf
+    # 1k => 1000 bytes
+    # 1kb => 1024 bytes
+    # 1m => 1000000 bytes
+    # 1mb => 1024*1024 bytes
+    # 1g => 1000000000 bytes
+    # 1gb => 1024*1024*1024 bytes
+    ```
+
+- 包含其它配置
+
+    ```conf
+    # include /path/to/local.conf
+    # include /path/to/other.conf
+    ```
+
+- 网络配置
+
+    ```conf
+    # ip 绑定
+    bind 127.0.0.1 -::1
+    # 本机访问保护模式
+    # protected-mode yes
+    # 端口
+    port 6379
+    # tcp 连接队列，backlog 队列总和 = 未完成三次握手队列 + 已经完成三次握手队列
+    tcp-backlog 511
+    # linux 内核会将这个值缩小到 /proc/sys/net/core/somaxcconn 的值 (128)
+    # 需要增大的时候需要改变 /proc/sys/net/core/somaxconn 和 /proc/sys/net/ipv4/tcp_max_syn_backlog (128) 的值
+    # 关闭超时空闲连接 0 为永不超时 (second)
+    timeout 0
+    # tcp 连接心跳检查时间 (second)
+    tcp-keepalive 300
+    # redis 后台运行
+    daemonize yes
+    # 进程号保存的文件
+    pidfile /var/run/redis_6379.pid
+    # 日志级别 debug/verbose/notice/warning
+    loglevel notice
+    # 日志文件路径
+    logfile ""
+    # 默认的 db 个数
+    databases 16
+    # 密码需求
+    # requirepass foobared
+    # 或者用命令行 config set requirepass "xxxx"
+    # 登录 auth xxxx
+    # 客户端最大连接数
+    # maxclients 10000
+    # 移除规则
+    # maxmemory-policy noeviction
+    #	valatile-lru
+    #		使用 LRU 算法移除 key，只对设置了过期时间的 key
+    #	allkeys-lru
+    #		在所有集合 key 中，使用 LRU 算法移除 key
+    #	volatile-random
+    #		在过期集合中移除随机的 key，只对设置了过期时间的 key
+    #	allkeys-random
+    #		在所有集合 key 中，移除随机的 key
+    #	volatile-ttl
+    #		移除那些 ttl 最小的 key，即即将过期的 key
+    #	noeviction
+    #		不进行移除，针对写操作返回错误信息
+    # 设置样本数量
+    # maxmemory-samples 5
+    # LRU 和 最小 TTL 算法都不是精确的算法，所以设置样本大小，redis 会检查 key 并选择其中 LRU 的一个
+    # 一般设置 3-7，数值越小样本越不准确，但性能消耗小
+    ```
+
+    
