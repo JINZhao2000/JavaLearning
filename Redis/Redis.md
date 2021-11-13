@@ -525,6 +525,42 @@ zset 底层用了两种数据结构
 - hash，用于关联 value 和 score，保障 value 的唯一性，可以通过 value 找到 score
 - 跳表，给 value 排序，根据 score 范围获取元素
 
+### 3.7 Bitmap
+
+bitmap 是对存储进行位操作
+
+- bitmap 本身不是一种数据类型，实际上是字符串，但是它可以对字符串进行一个位操作
+
+- bitmap 单独提供了一套命令，bitmap 类似一个 bit 数组，数组下标在 bitmap 中叫偏移量
+
+- 常用命令
+
+    > setbit <key\> <offset\> <value\> 
+    >
+    > 设置 bitmap 中某个偏移量的值 0/1
+    >
+    > 
+    >
+    > getbit <key\> <offset\> 
+    >
+    > 获取 bitmap 中某个偏移量的值
+    >
+    > 
+    >
+    > bitcount <key\> [start end]
+    >
+    > 统计字符串被设置为 1 的 bit 数
+    >
+    > 
+    >
+    > bitop and(or/and/xor) <destkey\> [key ......]
+    >
+    > 复合操作，它可以做多个 bitmap 的交集，并集，非，异或操作，并存在保存在 destkey 中
+
+- bitmap 与 set 对比
+
+    如果存储的是很多 0 （空的内容）bitmap 会比较浪费，但是存比较多的时候 bitmap 的空间利用效率会比较高
+
 ## 4. Redis 配置文件
 
 - 使用配置文件
