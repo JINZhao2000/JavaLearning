@@ -561,6 +561,62 @@ bitmap 是对存储进行位操作
 
     如果存储的是很多 0 （空的内容）bitmap 会比较浪费，但是存比较多的时候 bitmap 的空间利用效率会比较高
 
+### 3.8 HyperLogLog
+
+用于统计 UV（Unique Visitor）独立访客，独立 IP 数，搜索记录数等不重复元素的个数问题（基数问题）
+
+优点是：在输入元素数量或者体积非常大的时候，计算基数所需的空间是固定的
+
+每个 HyperLogLog 键只需要 12KB 内存，可以计算接近 2^64 个不同元素的基数
+
+因为 HyperLogLog 只会根据输入元素计算基数，不会储存输入元素的本身，所以不能像集合一样返回各个元素
+
+- 常用命令
+
+    >pfadd <key\> <element\> [element ...]
+    >
+    >添加指定元素到 HyperLogLog 中
+    >
+    >
+    >
+    >pfcount <key\> [key ...]
+    >
+    >计算 HLL 的近似基数，可以计算多个 HLL
+    >
+    >
+    >
+    >pfmerge <destkey\> <sourcekey\> [sourcekey ...]
+    >
+    >将一个或者多个 HLL 合并后的结果存在另一个 HLL 中
+
+### 3.9 Geospatial
+
+Redis 3.2 中增加了对 GEO 的支持，是元素的二维坐标，redis 基于该类型，提供经纬度设置，查询，范围查询，距离查询，经纬度 Hash 等操作
+
+- 常用命令
+
+    > geoadd <key\> <longitude\> <latitude\> <member\> [longitude latitude member ...]
+    >
+    > 添加一个 member 的 longitude 经度和 latitude 纬度到 key 中
+    >
+    > 
+    >
+    > geopos <key\> <member\> [member ...]
+    >
+    > 获取坐标值
+    >
+    > 
+    >
+    > geodist <key\> <member1\> <member2\> [m|km|ft|mi] 
+    >
+    > 获取两个位置之间的直线距离
+    >
+    > 
+    >
+    > georadius <key\> <longitude\> <latitude\> <radius\> m|km|ft|mi
+    >
+    > 以给定的经纬度为中心，找出某一半径内的元素
+
 ## 4. Redis 配置文件
 
 - 使用配置文件
@@ -639,7 +695,6 @@ bitmap 是对存储进行位操作
     # LRU 和 最小 TTL 算法都不是精确的算法，所以设置样本大小，redis 会检查 key 并选择其中 LRU 的一个
     # 一般设置 3-7，数值越小样本越不准确，但性能消耗小
     ```
-
 
 ## 5. Redis 发布与订阅
 
