@@ -714,3 +714,78 @@ Redis 3.2 中增加了对 GEO 的支持，是元素的二维坐标，redis 基�
     >
     >发送消息到 channel，返回订阅者数量
 
+### 6. Springboot Jedis
+
+Springboot 2.X 需要添加额外依赖
+
+```xml
+<dependency>
+    <groupId>org.apache.commons</groupId>
+    <artifactId>commons-pool2</artifactId>
+    <version>2.11.1</version>
+</dependency>
+```
+
+配置
+
+```yaml
+spring:
+	redis:
+		host: ip
+		port: port
+		database: num_db
+		timeout: ms
+		lettuce:
+			pool:
+				max-active: max-connection(-1)
+				max-wait: max-wait-time(-1)
+				max-idle: max-idle-connection
+				min-idle: min-idle-connection
+```
+
+配置类
+
+```java
+@EnableCaching
+@Configuration
+public class RedisConfig extends CachingConfigurerSupport {
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        RedisSerializer<String> redisSerializer = new StringRedisSerializer();
+        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = 
+            new Jackson2JsonRedisSerializer(Object.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
+        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
+        template.setConnectionFactory(factory);
+        template.setKeySerializer(redisSerializer);
+        template.setValueSerializer(jackson2JsonRedisSerializer);
+        template.setHashValueSerializer(jackson2JsonRedisSerializer);
+        return template;
+    }
+    
+    @Bean
+    public CacheManager cacheManager(RedisConnectionFactory factory) {
+        RedisSerializer<String> redisSerializer = new StringRedisSerializer();
+        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = 
+            new Jackson2JsonRedisSerializer(Object.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
+        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+            .entryTtl(Duration.ofSeconds(600))
+            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(redisSerializer))
+            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jackson2JsonRedisSerializer))
+            .disableCachingNullValues();
+        RedisCacheManager cacheManager = RedisCacheManager
+            .builder(factory)
+            .cacheDefaults(config)
+            .build();
+        return cacheManager;
+    }
+}
+```
+
