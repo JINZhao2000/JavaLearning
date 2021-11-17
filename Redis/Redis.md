@@ -714,7 +714,7 @@ Redis 3.2 中增加了对 GEO 的支持，是元素的二维坐标，redis 基�
     >
     >发送消息到 channel，返回订阅者数量
 
-### 6. Springboot Jedis
+## 6. Springboot Jedis
 
 Springboot 2.X 需要添加额外依赖
 
@@ -788,4 +788,52 @@ public class RedisConfig extends CachingConfigurerSupport {
     }
 }
 ```
+
+## 7. Redis 事务
+
+### 7.1 事务的定义
+
+> All the commands in a transaction are serialized and executed sequentially. It can never happen that a request issued by another client is served **in the middle** of the execution of a Redis transaction. This guarantees that the commands are executed as a single isolated operation.
+>
+> 
+>
+> Either all of the commands or none are processed, so a Redis transaction is also atomic. The [EXEC](https://redis.io/commands/exec) command triggers the execution of all the commands in the transaction, so if a client loses the connection to the server in the context of a transaction before calling the [EXEC](https://redis.io/commands/exec) command none of the operations are performed, instead if the [EXEC](https://redis.io/commands/exec) command is called, all the operations are performed. When using the [append-only file](https://redis.io/topics/persistence#append-only-file) Redis makes sure to use a single write(2) syscall to write the transaction on disk. However if the Redis server crashes or is killed by the system administrator in some hard way it is possible that only a partial number of operations are registered. Redis will detect this condition at restart, and will exit with an error. Using the `redis-check-aof` tool it is possible to fix the append only file that will remove the partial transaction so that the server can start again.
+
+Redis 事务时一个单独的隔离操作：事务中的所有命令都会序列化，按顺序执行。事务在执行的过程中，不会被其它客户端发送来的命令请求打断
+
+Redis 事务的主要作用就是串联多个命令防止别的命令插队
+
+### 7.2 Multi，Exec，Discard
+
+从输入 Multi 命令开始，输入的命令都会依次进入命令队列中，但不会执行， 直到输入 Exec 后，Redis 会将之前的命令队列中的命令依次执行，组队过程中可以通过 Discard 来放弃组队
+
+### 7.3 错误处理
+
+组队的时候某个命令出现错误，执行时整个的所有队列都会被取消
+
+如果执行阶段某个命令报错，则只有错误的命令不会被执行，其它的都会执行，不会回滚
+
+### 7.4 事务冲突问题
+
+- 悲观锁
+
+- 乐观锁（版本号）
+
+- watch/unwatch key [key ,,,,,,]
+
+    监视一个或者多个 key，如果在事务执行之前，key 被其他命令改动，那么事务将被打断
+
+### 7.5 事务特性
+
+- 单独的隔离操作
+
+    事务中的所哟命令都会被序列化，按顺序地执行，事务在执行过程中，不会被其它客户端地命令打断
+
+- 没有隔离级别的概念
+
+    队列中地命令没有提交之前都不会实际被执行，因为事务提交前任何指令都不会被实际执行
+
+- 不保证原子性
+
+    事务中如果有一条命令失败，其后地命令仍然会被执行，没有回滚
 
