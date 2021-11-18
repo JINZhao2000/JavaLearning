@@ -837,3 +837,68 @@ Redis 事务的主要作用就是串联多个命令防止别的命令插队
 
     事务中如果有一条命令失败，其后地命令仍然会被执行，没有回滚
 
+### 7.6 Jedis 并发问题
+
+- JedisConnectionPool
+- Jedis watch 乐观锁（但是会造成库存遗留问题）
+- Lua 脚本（Redis 2.6）
+
+## 8. RDB 持久化（Redis DataBase）
+
+在指定的时间间隔内将内存中的数据集快照写入磁盘，恢复时，将快照读到内存里
+
+https://redis.io/topics/persistence
+
+- 执行
+
+    Redis 会 fork （写时复制技术）一个子进程来进行持久化，会先将数据写入到一个临时文件中，待持久化进程都结束了，再用这个临时文件替换上次持久化好的文件，整个过程中，主进程是不进行任何 IO 操作的，确保了极高的性能，如果需要进行大规模数据的恢复，而且对于数据完整性不敏感，那么 RDB 比 AOF 更加高效，RDB 缺点是最后一次持久化后的数据可能丢失
+
+- dump.rdb 文件
+
+    在 redis.conf 中配置文件名称，默认为 dump.rdb（SNAPSHOTING - dbfilename）
+
+    `stop-writes-on-bgsave-error yes` 当 Redis 无法写入磁盘时，关闭 Redis 写的操作
+
+    `rdbcompression yes` 是否启用压缩
+
+    `rdbchecksum yes`  检查完整性
+
+- save <seconds\> <write_times\> 
+
+    在 seconds 时间内超过 write_times 次 key 的改变就会进行同步
+
+    只保存，全部阻塞，手动保存
+
+- bgsave
+
+    Redis 会在后台异步进行快照操作，快照还可以同时相应客户端请求
+
+- lastsave 获取上一次快照时间
+
+- rdb 备份
+
+    先通过 config get dir 查询 rdb 目录
+
+    然后备份 *.rdb 文件
+
+- rdb 恢复
+
+    关闭 redis
+
+    把备份文件放到工作目录下
+
+    启动 redis，备份数据会直接加载
+
+- 优势
+
+    - 适合大规模的数据恢复
+    - 对数据完整性和一致性要求不高更适合使用
+    - 节省磁盘空间
+    - 恢复速度快
+
+- 劣势
+
+    - Fork 的时候，内存中的数据被克隆了一份，有 2 倍的膨胀性
+    - 虽然 redis 在 fork 的时候使用了写时拷贝技术，但是如果数据庞大时还是比较消耗性能
+    - 在备份周期在一定时间做一次备份，所以 redis 意外 down 的时候，就会丢失最后一次快照的所有修改
+
