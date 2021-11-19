@@ -996,3 +996,88 @@ https://redis.io/topics/persistence
     - 每次读写都同步的话，有一定的性能压力
     - 存在个别 Bug，造成无法恢复
 
+## 10. Redis 主从复制
+
+主机数据更新后，根据配置和策略，自动同步到备机的 master / slave 机制，master 以写为主，slave 以读为主
+
+- rm读写分离
+- 容灾快速恢复
+
+配置文件
+
+```shell
+include $REDIS_HOME/redis.conf
+pidfile /var/run/redis_6379.pid
+port 6379
+dbfilename dump6379.rdb
+```
+
+执行命令
+
+`slaveof host port` 
+
+### 10.1 一主两从
+
+从服务器重新启动会重新变成 master，需要指定 master 服务器，加入后会把 master 数据从头复制，master down 了以后 slave 不会代替 master
+
+### 10.2 传递性 slave
+
+上一个 slave 可以是下一个 slave 的 master
+
+- 一旦其中一个 slave down，那么后面的 slave 都无法同步了
+- master down 了以后，所有的服务器都无法工作
+
+### 10.3 可升级为 master 的 slave
+
+`slaveof no one` 
+
+### 10.4 哨兵模式（sentinel）
+
+创建文件 `sentinel.conf` 
+
+```shell
+sentinel monitor <name> <ip> <port> <num>
+# <num> 至少有 num 个哨兵同意迁移的数量
+```
+
+启动哨兵
+
+```bash
+redis-sentinel sentinel.conf
+# 默认端口 26379
+```
+
+down 的主机恢复后不会变回 master，而是变成当前 master 的 slave
+
+__复制延时__ 
+
+从主机同步到从机会有一定的延迟，网络繁忙和从机数量增加会增大延时
+
+__选举规则__ 
+
+- 优先级靠前的优先选举：`replica-priority 100` 值越小，优先级越高
+- 选择偏移量最大的选举：和主机数据同步最高的选举
+- run id 最小的选举：redis 启动后会随机生成 40 位的 run id
+
+__主从复制__ 
+
+```java
+private static JedisSentinelPool jedisSentinelPool = null;
+
+public static Jedis getJedisFromSentinel() {
+    if (jedisSentinelPool == null) {
+        Set<String> sentinelSet = new HashSet<>();
+        sentinelSet.add("192.168.68.11:26379");
+        JedisPoolConfig cfg = new JedisPoolConfig();
+        cfg.setMaxTotal(10);
+        cfg.setMaxIdle(5);
+        cfg.setMinIdle(5);
+        cfg.setBlockWhenExhausted(true);
+        cfg.setMaxWaitMillis(2000);
+        cfg.setTestOnBorrow(true);
+        jedisSentinelPool = new JedisSentinelPool("mymaster", sentinelSet, cfg);
+    }
+    return jedisSentinelPool.getResource()
+}
+```
+
