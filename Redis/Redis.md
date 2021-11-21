@@ -1077,7 +1077,79 @@ public static Jedis getJedisFromSentinel() {
         cfg.setTestOnBorrow(true);
         jedisSentinelPool = new JedisSentinelPool("mymaster", sentinelSet, cfg);
     }
-    return jedisSentinelPool.getResource()
+    return jedisSentinelPool.getResource();
 }
 ```
 
+## 11. Redis 集群
+
+### 11.1 问题
+
+- redis 容量不够
+- 并发写操作
+
+=> 无中心化集群（Redis 3.0+）
+
+### 11.2 特点
+
+实现了对 redis 的水平扩容，即启动 N 个节点，将整个数据库分布存储在 N 个节点中，每个节点存储总数居的 1/N
+
+通过分区（partition）来提供一定程度的可用性（availability）：即使集群中有一部分节点失效或者无法进行通讯，集群也可以继续处理命令请求
+
+### 11.3 删除持久化数据
+
+需要先删除 aof 和 rdb
+
+### 11.4 配置文件
+
+```shell
+# 追加
+cluster-enabled yes
+cluster-config-file "node-6379.conf"
+cluster-node-timeout 15000
+```
+
+### 11.5 设置集群
+
+```bash
+# 需要依赖 Ruby 环境
+# 1 表示每个主节点创建一个从节点
+# 分配原则是尽量保证每个主数据库运行在不同的 IP 地址上，每个从库和主库不在一个 IP 上
+./redis-cli --cluster create --cluster-replicas 1 \
+192.168.68.10:6379 \
+192.168.68.10:6380 \
+192.168.68.10:6381 \
+192.168.68.10:6389 \
+192.168.68.10:6390 \
+192.168.68.10:6391
+```
+
+__slots__ 
+
+一个 redis 集群包含了 16384 个插槽，数据库中的每个键都属于这 16384 个插槽中的一个
+
+集群用公式 `CRC16(key)%16384` 来计算 key 属于哪个插槽，其中 `CRC16(key)` 语句用于计算 key 和 CRC16 的校验和
+
+不在一个 slot 下的键值是不能使用 mget，mset 等多键操作
+
+可以通过 {}  来定义组的概念，从而使 key 中 {} 内相同的内同的键值放到一个 slot 中去
+
+> cluster keyslot <key\>
+>
+> 计算 key 的插槽值
+>
+> cluster countkeysinslot <slot\> 
+>
+> 计算 slot 中有几个 key
+>
+> cluster getkeysinslot <slot\> <count\>
+>
+> 返回 count 个 slot 中的键
+
+### 11.6 故障恢复
+
+如果主节点下线 timeout 时间，从节点会升级为主节点
+
+主节点恢复后，回来变成从节点
+
+如果所有某一段插槽的主从节点都 down，而 cluster-require-full-converage 为 yes，那么整个集群都会 down，如果为 no，那么则无法读写该部分的 slot
