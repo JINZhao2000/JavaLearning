@@ -1166,7 +1166,7 @@ __slots__
 - 不支持多建事务
 - 不支持 Lua 脚本
 
-### 12. Redis 问题
+## 12. Redis 问题
 
 ### 12.1 缓存穿透
 
@@ -1244,7 +1244,124 @@ __解决方案__
 set <key> <value> nx ex <second>
 ```
 
+> 释放锁 => 可能释放了别人的锁
+>
+> 对锁的内容加上 UUID => 删除操作非原子性（比较完后正要删除的时候，锁过期，自动释放，然后删除了别人刚刚写入的 lock）
+>
+> LUA 脚本
 
+分布式锁四个特性
 
+- 互斥性
+- 不会发生死锁
+- 只能自己解自己锁
+- 加锁和解锁的原子性
 
+## 13. Redis 6.0 新功能
+
+### 13.1 ACL（Access Control List）访问控制列表
+
+允许根据可以执行的命令和访问的键来限制某些连接
+
+Redis 5 之前，Redis 安全规则只有密码控制，还有通过 rename 来调整高危命令（flushdb，keys*，shutdown 等）
+
+ACL 可以对用户进行更细粒度的控制
+
+- 接入权限：用户名和密码
+- 可以执行的命令
+- 可以操作的 key
+
+__命令__ 
+
+> acl list
+>
+> 显示用户权限列表
+>
+> 
+>
+> acl cat
+>
+> 查看添加权限指令类别
+>
+> 加参数名可以查看类型下具体命令
+>
+> 
+>
+> acl whoami 
+>
+> 查看当前的用户
+>
+> 
+>
+> acl setuser
+>
+> 创建和编辑用户 acl
+
+__ACL 规则__ 
+
+- 启用和禁用用户
+    - on / off
+
+- 权限的添加删除
+
+    - +<commande\> 
+
+        将指令添加到用户可以调用的指令列表中
+
+    - -<commande\> 
+
+        从用户可执行指令列表移除指令
+
+    - +@<category\> 
+
+        添加该类别中用户要调用的指令，有效类别为
+
+        - @admin
+        - @set
+        - @sortedset
+
+        通过调用 acl cat 查看完整列表
+
+        @all 表示所有命令，包括当前存在于服务器中的命令，以及将来通过模块加载的命令
+
+    - -@<category\>
+
+    - allcommands
+
+        +@all
+
+    - nocommand
+
+        -@all
+
+- 可操作键的添加
+
+    - ~<pattern\> 
+
+        添加用户可操作键的模式，~* 允许所有的键
+
+### 13.2 IO 多线程
+
+客户端交互部分的网络 IO 是多线程，然而执行命令依然是单线程
+
+__原理架构__ 
+
+Packets => Redis (MultithreadIO -> Execute Command（Single Thread）=> MultithreadIO) => Packets
+
+默认不开启
+
+`io-threads-do-reads yes` 
+
+`io-threads 4` 
+
+### 13.3 工具支持 Cluster
+
+Redis 5 中 redis-trib.rb 的功能集成到 redis-cli 中，此外 redis-benchmark 也支持 cluster 模式，通过多线程方式对多个分片进行压测
+
+### 13.4 其它新功能
+
+- RESP3 新的 Redis 通信协议：优化服务端与客户端之间的通信
+- Client side caching 客户端缓存：基于 RESP3 协议实现的客户端缓存功能
+- Proxy 集群代理模式：Proxy 功能，让 Cluster 拥有像单例一样的接入方式
+- Modules API
 
