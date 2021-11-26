@@ -78,13 +78,49 @@ set hive.vectorized.execution.reduce.enabled = true;
 
 #### 1.3.6 CBO 优化
 
+Join 表的时候的顺序关系：前面的表都会被加载到内存中，后面的表进行磁盘扫描
+
+Hive 1.1.0 后默认开启 Cost Based Optimizer 来对 HQL 执行进行优化
+
+CBO，成本优化器，代价最小的执行计划就是最好的执行计划
+
+```shell
+set hive.cbo.enable = true;
+set hive.compute.query.using.stats = true;
+set hive.stats.fetch.column.stats = true;
+set hive.stats.fetch.partition.stats = true;
+```
+
 #### 1.3.7 谓词下推
+
+将 where 谓词逻辑都尽可能提前执行，减少下游处理的数据量
+
+对应的逻辑优化器：`PredicatePushDown` ，配置项为 `hive.optimize.ppd = true` ，默认为 true 
 
 #### 1.3.8 MapJoin
 
-#### 1.3.9 大表，大表 SMB Join 
+MapJoin 是将 Join 双方比较小的表直接分发到各个 Map 进程的内存中，在 Map 进程中进行 Join 操作，这样就不用进行 Reduce 步骤，从而提高了速度，如果不指定 MapJoin 或者不符合 MapJoin 条件，那么 Hive 解析器会将 Join 操作转换成 Common Join
+
+```shell
+set hive.auto.convert.join = true;
+awr hive.mapjoin.smalltable.filesize = 25000000;
+```
+
+#### 1.3.9 大表，大表 SMB Join (Sort Merge Bucket Join)
+
+```shell
+set hive.optimize.bucketmapjoin = true;
+set hive.optimize.bucketmapjoin.sortedmerge = true;
+set hive.input.format = org.apache.hadoop.hive.ql.io.BucketizedHiveInputFormat;
+```
 
 #### 1.3.10 笛卡尔积
+
+Join 不加 on 或者无效的 on 条件，只能使用一个 Reducer 来完成笛卡尔积
+
+```shell
+set hive.mapred.mode = strict;
+```
 
 ## 2. 源码
 
