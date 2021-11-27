@@ -122,6 +122,65 @@ Join 不加 on 或者无效的 on 条件，只能使用一个 Reducer 来完成�
 set hive.mapred.mode = strict;
 ```
 
+### 1.4 数据倾斜
+
+从 HQL 角度可以把数据倾斜分为
+
+- 单表携带了 `groupby` 字段的查询
+- 两表 `join` 的查询
+
+#### 1.4.1 单表数据倾斜优化
+
+__设置参数__ 
+
+当任务中存在 groupby 操作同时聚合函数为 count 或者 sum 
+
+```shell
+set hive.map.aggr = true;
+set hive.groupby.mapaggr.checkinterval = 100000;
+set hive.groupby.skewindata = true;
+# 数据倾斜时的负载均衡
+```
+
+__增加 Reduce 数量（多个 Key 同时导致数据倾斜）__ 
+
+- 方法一
+
+    ```shell
+    set hive.exec.reducers.bytes.per.reducer = 256000000;
+    set hive.exec.reducers.max = 1009;
+    # N = min(param2, input/param1)   param1 : 256M, param2 : 1009 ↑
+    ```
+
+- 方法二
+
+    ```shell
+    # mapred-default.xml
+    set mapreduce.job.reduces = 15;
+    ```
+
+#### 1.4.2 Join 数据倾斜优化
+
+__设置参数__ 
+
+```shell
+# Join 的键对应的记录条数超过这个值则会进行分拆
+set hive.skewjoin.key = 100000;
+# Join 出现倾斜则设置为 true
+set hive.optimize.skewjoin = false;
+```
+
+`hive,skewjoin.key` 会将倾斜的 key 写入对应文件中，然后启动另一个 Job 做 MapJoin 生成结果
+
+```shell
+set hive.skewjoin.mapjoin.map.tasks = 10000;
+# 控制另一个 Job 的 Mapper 的数量
+```
+
+__MapJoin__ 
+
+=> 1.3.9
+
 ## 2. 源码
 
 ## 3. 面试题
