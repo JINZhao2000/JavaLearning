@@ -181,6 +181,131 @@ __MapJoin__
 
 => 1.3.9
 
+### 1.5 Job 优化
+
+#### 1.5.1 Map 优化
+
+__复杂文件增加 Map 数__ 
+
+当 input 文件很大，任务逻辑复杂，map 执行慢时，可以增加 map 数
+
+根据 `computeSliteSize(Math.max(minSize, Math.min(maxSize, blocksize)))` = 128
+
+调整 maxSize 最大值，让 maxSize 低于 blocksize 就可以增加 map 数
+
+__小文件合并__ 
+
+map 执行前合并小文件，减少 map 数：CombineHiveInputFormat 具有对小文件进行合并的功能
+
+```shell
+set hive.input.format = org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
+```
+
+MR 结束时合并小文件的设置
+
+```shell
+# map only 结束时合并文件
+set hive.merge.mapfiles = true;
+# mr 结束时合并
+set hive.merge.mapredfiles = true;
+# 合并文件大小 256M
+set hive.merge.size.per.task = 268435456;
+# 当输出文件小于该值时，启动一个独立的 map-reduce 任务进行 merge
+set hive.merge.smallfiles.avgsize = 16777216;
+```
+
+__Map 端聚合__ 
+
+```shell
+set hive.map.aggr = true;
+```
+
+__推测执行__ 
+
+```shell
+set mapred.map.tasks.speculative.execution = true;
+```
+
+#### 1.5.2 Reduce 优化
+
+__合理设置 reduce 数__ 
+
+=> 1.4.1 增加 reduce 个数
+
+__推测执行__ 
+
+```shell
+set mapred.map.tasks.speculative.execution = true;
+set hive.mapred.reduce.tasks.speculative.execution = true;
+```
+
+#### 1.5.3 HIve 任务整体优化
+
+__Fetch 抓取__ 
+
+Fetch 指在某些情况下的查询可以不必使用 MapReduce 计算
+
+`hive-default.xml.template` 
+
+```xml
+<property>
+	<name>hive.fetch.task.conversion</name>
+    <value>more</value>
+    <description>none, minimal, more   
+    	none : 不启用
+        minimal : SELECT STAR, FILTER on partition columns, LIMIT only
+        more : SELECT, FILTER, LIMIT only (support TABLESAMPLE and virtual columns)
+    </description>
+</property>
+```
+
+__本地模式__ 
+
+大多数 Hadoop Job 是需要 Hadoop 提供完整的可扩展性来处理大数据集的
+
+Hive 可以通过本地模式在单台机器上处理所有的任务，对于小数据集，执行时间可以明显被缩短
+
+```shell
+set hive.exec.mode.local.auto = true;
+set hive.exec.mode.local.auto.inputbytes.max = 50000000;
+set hive.exec.mode.local.auto.input.files.max = 10;
+```
+
+__并行执行__ 
+
+默认情况下 Hive 只会执行一个阶段，特定的 Job 可能包含众多阶段，这些阶段可能并非完全互相依赖的，可以并行执行
+
+```shell
+set hive.exec.parallel = true;
+set hive.exec.parallel.thread.number = 16;
+```
+
+建议在数据量大，sql 长的时候使用
+
+__严格模式__ 
+
+防止危险操作
+
+- 分区表不适用分区过滤
+
+    ```shell
+    set hive.strict.checks.no.partition.filter = true;
+    ```
+
+- 使用 order by 没有 limit 过滤
+
+    ```shell
+    set hive.strict.checks.orderby.no.limit = true;
+    ```
+
+- 笛卡尔积
+
+    ```shell
+    set hive.strict.checks.cartesian.product = true;
+    ```
+
+__JVM 重用__ （主要是小文件）
+
 ## 2. 源码
 
 ## 3. 面试题
