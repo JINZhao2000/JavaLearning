@@ -308,5 +308,45 @@ __JVM 重用__ （主要是小文件）
 
 ## 2. 源码
 
+### 2.1 Hive 核心组成
+
+=> Hive 基础
+
+### 2.2 HQL 变成 MR 任务流程说明
+
+1. 进入程序，利用 Antlr 框架定义 HQL 的语法规则，对 HQL 完成词法语法解析，将 HQL 转换为 AST（抽象语法树）
+2. 遍历 AST，抽象出查询的基本组成单元 QueryBlock（查询块），可以理解为最小的查询执行单元
+3. 遍历 QueryBlock，将其转换为 OperatorTree（操作树，也就是逻辑执行计划），可以理解为不可拆分的一个逻辑执行单元
+4. 使用逻辑优化器对 OperatorTree（操作树）进行逻辑优化（例如：合并不必要的 ReduceSinkOperator，减少 Shuffle 数据量）
+5. 遍历 OperatorTree，转换为 TaskTree，也就是翻译为 MR 任务流程，将逻辑执行计划转换为物理执行计划
+6. 使用物理优化器对 TaskTree 进行物理优化
+7. 生成最终的执行计划，提交任务到 Hadoop 集群运行
+
+流程
+
+- $HIVE_HOME/bin/hive select...
+- CliDriver
+    - 解析客户端 “-e -f” 等等参数
+    - 定义标准输入输出流
+    - 然后按照 `;` 切分 HQL 语句
+- Driver
+    - 将 HQL 语句转换为 AST（`PaserUtil.paser()` => PaserDriver）
+        - 将 HQL 语句转换为 Token
+        - 对 Token 进行解析
+    - 将 AST 转换为 TaskTree（`sem.analyse()` => SemanticAnalyzer）
+        - 将 AST 转换为 QueryBlock
+        - 将 QueryBlock 转换为 OperatorTree
+        - OperatorTree 进行逻辑优化
+        - 生成 TaskTree
+        - TaskTree 执行物理优化
+    - 提交任务执行（`TaskRunner.runSequential()` => Exec.Driver）
+        - 获取 MR 临时任务
+        - 定义 Partitioner
+        - 定义 Mapper 和 Reducer
+        - 实例化 Job
+        - 提交 Job
+
+### 2.3 程序入口 - CliDriver
+
 ## 3. 面试题
 
