@@ -348,5 +348,215 @@ __JVM 重用__ （主要是小文件）
 
 ### 2.3 程序入口 - CliDriver
 
+```java
+public class CliDriver {
+    public static void main(String[] args) throws Exception {
+        int ret = new CliDriver().run(args);
+        System.exit(ret);
+    }
+
+    public int run(String[] args) throws Exception {
+        OptionsProcessor oproc = new OptionsProcessor();
+        if (!oproc.process_stage1(args)) {
+            return 1;
+        }
+        // stdin stdout stdinfo stderr
+        ss.in = System.in;
+        try {
+            ss.out = new PrintStream(System.out, true, "UTF-8");
+            ss.info = new PrintStream(System.err, true, "UTF-8");
+            ss.err = new CachingPrintStream(System.err, true, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            return 3;
+        }
+        if (!oproc.process_stage2(ss)) {
+            return 2;
+        }
+        // ...
+        // 解析输入的参数
+        HiveConf conf = ss.getConf();
+        for (Map.Entry<Object, Object> item : ss.cmdProperties.entrySet()) {
+            conf.set((String) item.getKey(), (String) item.getValue());
+            ss.getOverriddenConfigurations().put((String) item.getKey(), (String) item.getValue());
+        }
+        // 命令行打印的前缀
+        prompt = conf.getVar(HiveConf.ConfVars.CLIPROMPT);
+        // ...
+        try {
+            return executeDriver(ss, conf, oproc);
+        } finally {
+            ss.resetThreadName();
+            ss.close();
+        }
+    }
+    
+    private int executeDriver(CliSessionState ss, HiveConf conf, OptionsProcessor oproc) throws Exception {
+        // ...
+        // 判断执行程序的引擎是否是 MR
+        if ("mr".equals(HiveConf.getVar(conf, ConfVars.HIVE_EXECUTION_ENGINE))) {
+            console.printInfo(HiveConf.generateMrDeprecationWarning());
+        }
+        // ...
+        // 读取命令行内容
+        while ((line = reader.readLine(curPrompt + "> ")) != null) {
+            // 空的直接换行
+            if (!prefix.equals("")) {
+                prefix += '\n';
+            }
+            // 注释
+            if (line.trim().startsWith("--")) {
+                continue;
+            }
+            // 是否以分号结尾
+            if (line.trim().endsWith(";") && !line.trim().endsWith("\\;")) {
+                line = prefix + line;
+                // 处理行
+                ret = cli.processLine(line, true);
+                prefix = "";
+                curDB = getFormattedDb(conf, ss);
+                curPrompt = prompt + curDB;
+                dbSpaces = dbSpaces.length() == curDB.length() ? dbSpaces : spacesForString(curDB);
+            } else {
+                // 没有分号，追加
+                prefix = prefix + line;
+                curPrompt = prompt2 + dbSpaces;
+                continue;
+            }
+        }
+        // ...
+    }
+    
+    public int processLine(String line, boolean allowInterrupting) {
+        // ...
+        try {
+            // ...
+            // 通过分号分隔命令行
+            List<String> commands = splitSemiColon(line);
+            String command = "";
+            for (String oneCmd : commands) {
+                if (StringUtils.endsWith(oneCmd, "\\")) {
+                    command += StringUtils.chop(oneCmd) + ";";
+                    continue;
+                } else {
+                    command += oneCmd;
+                }
+                // 不管空行
+                if (StringUtils.isBlank(command)) {
+                    continue;
+                }
+
+                ret = processCmd(command);
+                command = "";
+                // ...
+            }
+            return lastRet;
+        } finally {
+            // ...
+        }
+    }
+    
+    public int processCmd(String cmd) {
+        // quit exit 退出
+        if (cmd_trimmed.toLowerCase().equals("quit") || cmd_trimmed.toLowerCase().equals("exit")) {
+            ss.close();
+            System.exit(0);
+        // source 执行 hql 文件
+        } else if (tokens[0].equalsIgnoreCase("source")) {
+            // ...
+        // ! 开头执行 shell 命令
+        } else if (cmd_trimmed.startsWith("!")) {
+            // ...
+        // hql
+        }  else { // local mode
+            try {
+                try (CommandProcessor proc = CommandProcessorFactory.get(tokens, (HiveConf) conf)) {
+                    if (proc instanceof IDriver) {
+                        // Let Driver strip comments using sql parser
+                        ret = processLocalCmd(cmd, proc, ss);
+                    } else {
+                        ret = processLocalCmd(cmd_trimmed, proc, ss);
+                    }
+                }
+            } catch (SQLException e) {
+                // ...
+            } catch (Exception e) {
+                /
+            }
+        }
+        // ...
+    }
+}
+
+public class OptionsProcessor {
+    // 检查 hiveconf, hive,root.logger, define, hivevar 参数合法性
+    public boolean process_stage1(String[] argv) {
+        try {
+            commandLine = new GnuParser().parse(options, argv);
+            Properties confProps = commandLine.getOptionProperties("hiveconf");
+            for (String propKey : confProps.stringPropertyNames()) {
+                if (propKey.equalsIgnoreCase("hive.root.logger")) {
+                    CommonCliOptions.splitAndSetLogger(propKey, confProps);
+                } else {
+                    System.setProperty(propKey, confProps.getProperty(propKey));
+                }
+            }
+            Properties hiveVars = commandLine.getOptionProperties("define");
+            //
+            Properties hiveVars2 = commandLine.getOptionProperties("hivevar");
+            //
+        } catch (ParseException e) {
+            // 
+        }
+        return true;
+    }
+    
+    // 解析命令行参数
+    public boolean process_stage2(CliSessionState ss) {
+        ss.getConf();
+        if (commandLine.hasOption('H')) {
+            printUsage();
+            return false;
+        }
+        ss.setIsSilent(commandLine.hasOption('S'));
+        ss.database = commandLine.getOptionValue("database");
+        ss.execString = commandLine.getOptionValue('e');
+        ss.fileName = commandLine.getOptionValue('f');
+        ss.setIsVerbose(commandLine.hasOption('v'));
+        String[] initFiles = commandLine.getOptionValues('i');
+        if (null != initFiles) {
+            ss.initFiles = Arrays.asList(initFiles);
+        }
+        if (ss.execString != null && ss.fileName != null) {
+            System.err.println("The '-e' and '-f' options cannot be specified simultaneously");
+            printUsage();
+            return false;
+        }
+        if (commandLine.hasOption("hiveconf")) {
+            Properties confProps = commandLine.getOptionProperties("hiveconf");
+            for (String propKey : confProps.stringPropertyNames()) {
+                ss.cmdProperties.setProperty(propKey, confProps.getProperty(propKey));
+            }
+        }
+        return true;
+    }
+}
+
+public class HiveConf extends Configuration {
+    public static enum ConfVars {
+        // ...
+        CLIPROMPT("hive.cli.prompt", "hive",
+                  "Command line prompt configuration value. Other hiveconf can be used in this configuration value. \n" +
+                  "Variable substitution will only be invoked at the Hive CLI startup."),
+        HIVE_EXECUTION_ENGINE("hive.execution.engine", "mr", new StringSet(true, "mr", "tez", "spark"),
+        "Chooses execution engine. Options are: mr (Map reduce, default), tez, spark. While MR\n" +
+        "remains the default engine for historical reasons, it is itself a historical engine\n" +
+        "and is deprecated in Hive 2 line. It may be removed without further warning."),
+        // ...
+    }
+}
+```
+
+
+
 ## 3. 面试题
 
