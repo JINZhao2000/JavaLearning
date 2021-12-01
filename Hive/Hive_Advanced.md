@@ -471,7 +471,7 @@ public class CliDriver {
             try {
                 try (CommandProcessor proc = CommandProcessorFactory.get(tokens, (HiveConf) conf)) {
                     if (proc instanceof IDriver) {
-                        // Let Driver strip comments using sql parser
+                        // 真正解析 hql
                         ret = processLocalCmd(cmd, proc, ss);
                     } else {
                         ret = processLocalCmd(cmd_trimmed, proc, ss);
@@ -485,10 +485,57 @@ public class CliDriver {
         }
         // ...
     }
+    
+    int processLocalCmd(String cmd, CommandProcessor proc, CliSessionState ss) {
+        // ...
+        if (proc != null) {
+            if (proc instanceof IDriver) {
+                IDriver qp = (IDriver) proc;
+                // 获取输出流
+                PrintStream out = ss.out;
+                // 获取当前时间
+                long start = System.currentTimeMillis();
+                // ...
+				// 运行 command
+                ret = qp.run(cmd).getResponseCode();
+                // ...
+                // 获取运行完时间
+                long end = System.currentTimeMillis();
+                double timeTaken = (end - start) / 1000.0;
+                ArrayList<String> res = new ArrayList<String>();
+                // 打印头信息
+                printHeader(qp, out);
+                int counter = 0;
+                try {
+                    if (out instanceof FetchConverter) {
+                        ((FetchConverter) out).fetchStarted();
+                    }
+                    while (qp.getResults(res)) {
+                        // ...
+                        // 统计查询结果
+                        counter += res.size();
+                        res.clear();
+                        if (out.checkError()) {
+                            break;
+                        }
+                    }
+                } catch (IOException e) {
+                    // ...
+                }
+                // ...
+                // 输出信息
+                console.printInfo(
+                    "Time taken: " + timeTaken + " seconds" + (counter == 0 ? "" : ", Fetched: " + counter + " row(s)"));
+            } else {
+                // ...
+            }
+        }
+        // ...
+    }
 }
 
 public class OptionsProcessor {
-    // 检查 hiveconf, hive,root.logger, define, hivevar 参数合法性
+    // 检查 hiveconf, hive.root.logger, define, hivevar 参数合法性
     public boolean process_stage1(String[] argv) {
         try {
             commandLine = new GnuParser().parse(options, argv);
@@ -556,7 +603,78 @@ public class HiveConf extends Configuration {
 }
 ```
 
+### 2.4 准备编译和执行 cmd
 
+```java
+public class Driver implements IDriver {
+    public CommandProcessorResponse run(String command, boolean alreadyCompiled) {
+        try {
+            // 准备执行编译等流程
+            runInternal(command, alreadyCompiled);
+            return createProcessorResponse(0);
+        } catch (CommandProcessorResponse cpr) {
+            // ...
+        }
+    }
+    
+    private void runInternal(String command, boolean alreadyCompiled) throws CommandProcessorResponse {
+        // ...
+        try {
+            // ... 
+            // 开始编译
+            if (!alreadyCompiled) {
+                compileInternal(command, true);
+                perfLogger = SessionState.getPerfLogger();
+            } else {
+                // ...
+            }
+            // ...
+            try {
+                if (!isValidTxnListState()) {
+                    // 如果没有编译，进行编译
+                    if (!alreadyCompiled) {
+                        compileInternal(command, true);
+                    } else {
+                        plan.setQueryStartTime(queryDisplay.getQueryStartTime());
+                    }
+                    // ...
+                }
+            } catch (LockException e) {
+                throw handleHiveException(e, 13);
+            }
+
+            try {
+                // 执行
+                execute();
+            } catch (CommandProcessorResponse cpr) {
+                rollback(cpr);
+                throw cpr;
+            }
+            // ...
+            
+        } finally {
+            // ...
+        }
+    }
+    
+    private void compileInternal(String command, boolean deferClose) throws CommandProcessorResponse {
+        // ...
+        try {
+            // 开始编译
+            compile(command, true, deferClose);
+        } catch (CommandProcessorResponse cpr) {
+            // ...
+        } finally {
+            compileLock.unlock();
+        }
+        // ...
+    }
+    
+    private void compile(String command, boolean resetTaskIds, boolean deferClose) throws CommandProcessorResponse {
+        
+    }
+}
+```
 
 ## 3. 面试题
 
