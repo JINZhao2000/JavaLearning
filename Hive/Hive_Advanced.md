@@ -676,5 +676,78 @@ public class Driver implements IDriver {
 }
 ```
 
+### 2.5 HQL 生成 AST 抽象语法树
+
+```java
+public class Driver implements IDriver {
+    private void compile(String command, boolean resetTaskIds, boolean deferClose) throws CommandProcessorResponse {
+        // ...
+        try {
+            ASTNode tree;
+            try {
+                // 解析器
+                tree = ParseUtils.parse(command, ctx);
+            } catch (ParseException e) {
+                parseError = true;
+                throw e;
+            } finally {
+                hookRunner.runAfterParseHook(command, parseError);
+            }
+        }
+        // ...
+        BaseSemanticAnalyzer sem = SemanticAnalyzerFactory.get(queryState, tree);
+        // ...
+        // 编译器和优化器
+        sem.analyze(tree, ctx);
+        // ...
+    }
+}
+
+public final class ParseUtils {
+    public static ASTNode parse(
+        String command, Context ctx, String viewFullyQualifiedName) throws ParseException {
+        ParseDriver pd = new ParseDriver();
+        ASTNode tree = pd.parse(command, ctx, viewFullyQualifiedName);
+        tree = findRootNonNullToken(tree);
+        handleSetColRefs(tree);
+        return tree;
+    }
+}
+
+public class ParseDriver {
+    public ASTNode parse(String command, Context ctx, String viewFullyQualifiedName) throws ParseException {
+        // ...
+        // 构建词法解析器 Antlr 框架
+        HiveLexerX lexer = new HiveLexerX(new ANTLRNoCaseStringStream(command));
+        // 将 HQL 语句转换为 Token
+        TokenRewriteStream tokens = new TokenRewriteStream(lexer);
+        // ...
+        // 对 Token 进行解析
+        HiveParser parser = new HiveParser(tokens);
+        // ...
+        try {
+            r = parser.statement();
+        } catch (RecognitionException e) {
+            e.printStackTrace();
+            throw new ParseException(parser.errors);
+        }
+        // ...
+        ASTNode tree = (ASTNode) r.getTree();
+        tree.setUnknownTokenBoundaries();
+        return tree;
+    }
+}
+```
+
+Hive 用 Antlr 实现 SQL 词法和语法解析
+
+Hive 中 5 个语法规则文件
+
+- HiveLexer.g
+- SelectClauseParser.g
+- FromClauseParser.g
+- IdentifiersParser.g
+- HiveParser.g
+
 ## 3. 面试题
 
