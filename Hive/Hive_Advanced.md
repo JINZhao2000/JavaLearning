@@ -726,6 +726,7 @@ public class ParseDriver {
         HiveParser parser = new HiveParser(tokens);
         // ...
         try {
+            // 进行语法解析，生成最终的 AST
             r = parser.statement();
         } catch (RecognitionException e) {
             e.printStackTrace();
@@ -748,6 +749,138 @@ Hive 中 5 个语法规则文件
 - FromClauseParser.g
 - IdentifiersParser.g
 - HiveParser.g
+
+### 2.6 将 AST 转换为 TaskTree
+
+```java
+public abstract class BaseSemanticAnalyzer {
+    public void analyze(ASTNode ast, Context ctx) throws SemanticException {
+        initCtx(ctx);
+        init(true);
+        analyzeInternal(ast);
+    }
+}
+
+public class SemanticAnalyzer extends BaseSemanticAnalyzer {
+    @Override
+    @SuppressWarnings("nls")
+    public void analyzeInternal(ASTNode ast) throws SemanticException {
+        analyzeInternal(ast, new PlannerContextFactory() {
+            @Override
+            public PlannerContext create() {
+                return new PlannerContext();
+            }
+        });
+    }
+    
+    void analyzeInternal(ASTNode ast, PlannerContextFactory pcf) throws SemanticException {
+        // 1. Generate Resolved Parse tree from syntax tree
+        boolean needsTransform = needsTransform();
+        // 将 AST 转换为 QueryBlock
+        // 将 QueryBlock 转换为 OperatorTree
+        // ...
+        // 2. Gen OP Tree from resolved Parse Tree
+        Operator sinkOp = genOPTree(ast, plannerCtx);
+        // ...
+        // 3. Deduce Resultset Schema
+        if (createVwDesc != null && !this.ctx.isCboSucceeded()) {
+            resultSchema = convertRowSchemaToViewSchema(opParseCtx.get(sinkOp).getRowResolver());
+        } else {
+            // resultSchema will be null if
+            // (1) cbo is disabled;
+            // (2) or cbo is enabled with AST return path (whether succeeded or not,
+            // resultSchema will be re-initialized)
+            // It will only be not null if cbo is enabled with new return path and it
+            // succeeds.
+            if (resultSchema == null) {
+                resultSchema = convertRowSchemaToResultSetSchema(
+                    opParseCtx.get(sinkOp).getRowResolver(),
+                    HiveConf.getBoolVar(conf, HiveConf.ConfVars.HIVE_RESULTSET_USE_UNIQUE_COLUMN_NAMES));
+            }
+        }
+        // 4. Generate Parse Context for Optimizer & Physical compiler
+        copyInfoToQueryProperties(queryProperties);
+        // ...
+        // 5. Take care of view creation
+        if (createVwDesc != null) {
+            // ...
+        }
+        // ...
+        // 6. Generate table access stats if required
+        if (HiveConf.getBoolVar(this.conf, HiveConf.ConfVars.HIVE_STATS_COLLECT_TABLEKEYS)) {
+            TableAccessAnalyzer tableAccessAnalyzer = new TableAccessAnalyzer(pCtx);
+            setTableAccessInfo(tableAccessAnalyzer.analyzeTableAccess());
+        }
+        // 7. Perform Logical optimization
+        // ...
+        Optimizer optm = new Optimizer();
+        optm.setPctx(pCtx);
+        optm.initialize(conf);
+        // OperatorTree 进行逻辑优化
+        // 生成 TaskTree
+        pCtx = optm.optimize();
+        // ...
+        // 8. Generate column access stats if required - wait until column pruning
+        // takes place during optimization
+        boolean isColumnInfoNeedForAuth = SessionState.get().isAuthorizationModeV2()
+            && HiveConf.getBoolVar(conf, HiveConf.ConfVars.HIVE_AUTHORIZATION_ENABLED);
+        // ...
+        // 9. Optimize Physical op tree & Translate to target execution engine (MR, TEZ, SPAR)
+        if (!ctx.getExplainLogical()) {
+            TaskCompiler compiler = TaskCompilerFactory.getCompiler(conf, pCtx);
+            compiler.init(queryState, console, db);
+            // TaskTree 执行物理优化
+            compiler.compile(pCtx, rootTasks, inputs, outputs);
+            fetchTask = pCtx.getFetchTask();
+        }
+        //find all Acid FileSinkOperatorS
+        QueryPlanPostProcessor qp = new QueryPlanPostProcessor(rootTasks, acidFileSinks, ctx.getExecutionId());
+        // 10. Attach CTAS/Insert-Commit-hooks for Storage Handlers
+        final Optional<TezTask> optionalTezTask =
+            rootTasks.stream().filter(task -> task instanceof TezTask).map(task -> (TezTask) task)
+            .findFirst();
+        // ...
+        // 11. put accessed columns to readEntity
+        if (HiveConf.getBoolVar(this.conf, HiveConf.ConfVars.HIVE_STATS_COLLECT_SCANCOLS)) {
+            putAccessedColumnsToReadEntity(inputs, columnAccessInfo);
+        }
+        // ...
+    }
+}
+
+public class Optimizer {
+    // Invoke all the transformations one-by-one, and alter the query plan.
+    public ParseContext optimize() throws SemanticException {
+        for (Transform t : transformations) {
+            t.beginPerfLogging();
+            pctx = t.transform(pctx);
+            t.endPerfLogging(t.toString());
+        }
+        return pctx;
+    }
+}
+
+public abstract class TaskCompiler {
+    public void compile(final ParseContext pCtx,
+      final List<Task<? extends Serializable>> rootTasks,
+      final HashSet<ReadEntity> inputs, final HashSet<WriteEntity> outputs) throws SemanticException {
+        // ...
+        optimizeOperatorPlan(pCtx, inputs, outputs);
+    }
+    
+    protected void optimizeOperatorPlan(ParseContext pCtxSet, Set<ReadEntity> inputs,
+                                        Set<WriteEntity> outputs) throws SemanticException {}
+}
+```
+
+常用优化器
+
+- SimplePredicatePushDown
+- GroupByOptimizer
+- PartitionConditionRemover
+- SkewJoinOptimizer
+- MapJoinProcessor
+- ReduceSinkDeDuplication
 
 ## 3. 面试题
 
