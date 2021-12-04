@@ -882,5 +882,152 @@ public abstract class TaskCompiler {
 - MapJoinProcessor
 - ReduceSinkDeDuplication
 
+### 2.7 提交任务并执行
+
+```java
+public class Driver implements IDriver {
+    private void runInternal(String command, boolean alreadyCompiled) throws CommandProcessorResponse {
+        // ...
+        try {
+            execute();
+        } catch (CommandProcessorResponse cpr) {
+            rollback(cpr);
+            throw cpr;
+        }
+        // ...
+    }
+    
+    private void execute() throws CommandProcessorResponse {
+        // ...
+        try {
+            // ...
+            // 构建任务：根据任务树构建 MRJob
+            int jobs = mrJobs + Utilities.getTezTasks(plan.getRootTasks()).size()
+                + Utilities.getSparkTasks(plan.getRootTasks()).size();
+            // ...
+            while (driverCxt.isRunning()) {
+                // Launch upto maxthreads tasks
+                Task<? extends Serializable> task;
+                while ((task = driverCxt.getRunnable(maxthreads)) != null) {
+                    // 启动任务
+                    TaskRunner runner = launchTask(task, queryId, noName, jobname, jobs, driverCxt);
+                    if (!runner.isRunning()) {
+                        break;
+                    }
+                }
+                // ...
+            }
+        }
+        // ...
+        // 结束打印结果
+        if (console != null) {
+            console.printInfo("OK");
+        }
+    }
+    
+    private TaskRunner launchTask(Task<? extends Serializable> tsk, String queryId, boolean noName,
+                                  String jobname, int jobs, DriverContext cxt) throws HiveException {
+		// ...
+        // 添加任务
+        TaskRunner tskRun = new TaskRunner(tsk);
+        cxt.launching(tskRun);
+        // ...
+        // 真正运行任务
+        if (HiveConf.getBoolVar(conf, HiveConf.ConfVars.EXECPARALLEL) && tsk.canExecuteInParallel()) {
+            // Launch it in the parallel mode, as a separate thread only for MR tasks
+            if (LOG.isInfoEnabled()){
+                LOG.info("Starting task [" + tsk + "] in parallel");
+            }
+            // 并行
+            tskRun.start();
+        } else {
+            if (LOG.isInfoEnabled()){
+                LOG.info("Starting task [" + tsk + "] in serial mode");
+            }
+            tskRun.runSequential();
+        }
+    }
+}
+
+public class DriverContext {
+    public synchronized void launching(TaskRunner runner) throws HiveException {
+        checkShutdown();
+        running.add(runner);
+    }
+}
+
+public class TaskRunner extends Thread {
+    @Override
+    public void run() {
+        runner = Thread.currentThread();
+        try {
+            SessionState.start(ss);
+            runSequential();
+        } finally {
+            // ...
+        }
+    }
+
+    public void runSequential() {
+        int exitVal = -101;
+        try {
+            exitVal = tsk.executeTask(ss == null ? null : ss.getHiveHistory());
+        } catch (Throwable t) {
+            // ...
+        }
+        // ...
+    }
+}
+
+public abstract class Task<T extends Serializable> implements Serializable, Node {
+    public int executeTask(HiveHistory hiveHistory) {
+        try {
+            // ...
+            int retval = execute(driverContext);
+            // ...
+        } catch (IOException e) {
+            throw new RuntimeException("Unexpected error: " + e.getMessage(), e);
+        }
+    }
+}
+
+public class ExecDriver extends Task<MapredWork> implements Serializable, HadoopJobExecHook {
+    @Override
+    public int execute(DriverContext driverContext) {
+        // ...
+        job.setOutputFormat(HiveOutputFormatImpl.class);
+        job.setMapRunnerClass(ExecMapRunner.class);
+        job.setMapperClass(ExecMapper.class);
+        job.setMapOutputKeyClass(HiveKey.class);
+        job.setMapOutputValueClass(BytesWritable.class);
+        try {
+            String partitioner = HiveConf.getVar(job, ConfVars.HIVEPARTITIONER);
+            job.setPartitionerClass(JavaUtils.loadClass(partitioner));
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+        propagateSplitSettings(job, mWork);
+        job.setNumReduceTasks(rWork != null ? rWork.getNumReduceTasks().intValue() : 0);
+        job.setReducerClass(ExecReducer.class);
+        // ...
+        job.setBoolean(MRJobConfig.REDUCE_SPECULATIVE, useSpeculativeExecReducers);
+        // ...
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+        // ...
+        if (noName) {
+            job.set(MRJobConfig.JOB_NAME, "JOB" + Utilities.randGen.nextInt());
+        }
+        try{
+            // ...
+            jc = new JobClient(job);
+            // ...
+            rj = jc.submitJob(job);
+            // ...
+        }
+    }
+}
+```
+
 ## 3. 面试题
 
