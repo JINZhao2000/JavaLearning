@@ -1029,5 +1029,30 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
 }
 ```
 
+### 2.8 Debug
+
+```shell
+-agentlib:jdwp=transport=dt_socket, server=y, suspend=n, address=8000
+```
+
 ## 3. 面试题
 
+间隔连续
+
+- 开窗数据下推
+- diff
+- sum if
+- 分组
+
+间隔交叉问题
+
+- 开窗最大值到上一行
+- 如果大则不需要操作，否则替换
+- diff
+- sum if
+
+交叉数据最大值
+
+- 对开始点的数据标 1，结束点标 2
+- 排序
+- 算法：求连续最大和
