@@ -41,5 +41,79 @@ __Spark 核心模块__
 
 不需要其它任何节点资源，可以在本地执行 Spark 代码的环境
 
-### 2.2 解压缩文件
+- shell
+
+    ```bash
+    bin/spark-shell
+    ```
+
+    ```scala
+    sc.textFile("/apps/modules/spark-3.2.0/data/demo/").flatMap(_.split(" ")).map((_, 1)).reduceByKey(_+_).collect()
+    ```
+
+- 提交任务
+
+    ```bash
+    bin/spark-submit \
+    --class org.apache.spark.examples.SparkPi \ # 应用程序入口
+    --master local[2] \ # 数字为分配的 CPU 核数量
+    ./examples/jars/spark-examples_2.13-3.2.0.jar \  # 应用类所在 jar 包
+    10 # 入口参数，应用的任务数量
+    ```
+
+### 2.2 Standalone 模式（独立部署）
+
+版本：3.2.0 配置文件名为 `workers` 以前版本为 `slaves` 
+
+`workers` 文件中写入节点的 ip （或域名）
+
+`spark-env.sh` 中写入
+
+```shell
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+SPARK_MASTER_HOST=hadoop01
+SPARK_MASTER_PORT=7077
+```
+
+提交任务
+
+```shell
+bin/spark-submit \
+--class org.apache.spark.examples.SparkPi \
+--master spark://host:7077 \
+./examples/jars/spark-examples_2.13-3.2.0.jar \
+10
+```
+
+参数列表
+
+- --class
+
+    含 main 类全限定名
+
+- --master
+
+    运行环境
+
+    - local
+    - spark://
+    - yarn
+
+- --executor-memory 1G
+
+    指定每个 executor 可用内存
+
+- --total-executor-cores 2
+
+    指定所有 executor 使用的 cpu 核数
+
+- --executor-cores
+
+    指定每个 executor 使用的 cpu 核数
+
+- application-jar
+
+    包含依赖的 jar 包，url 在集群中全局可见，比如 hdfs
+
+
 
