@@ -115,5 +115,22 @@ bin/spark-submit \
 
     包含依赖的 jar 包，url 在集群中全局可见，比如 hdfs
 
+### 2.3 历史服务
 
+- spark-default.conf
 
+    ```shell
+    spark.eventLog.enabled	true
+    spark.eventLog.dir		hdfs://hadoop01:8020/spark_history
+    ```
+
+- spark-env.sh
+
+    ```shell
+    export SPARK_HISTORY_OPTS="
+    -Dspark.history.ui.port=18080
+    -Dspark.history.fs.logDirectory=hdfs://hadoop01:8020/spark_history
+    -Dspark.history.retainedApplications=30"
+    ```
+
+- 必须先启动 HDFS，此外，必须先创建 logDirectory
