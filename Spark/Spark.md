@@ -134,3 +134,54 @@ bin/spark-submit \
     ```
 
 - 必须先启动 HDFS，此外，必须先创建 logDirectory
+
+### 2.4 高可用
+
+- zookeeper
+
+- spark-env 配置
+
+    ```shell
+    # SPARK_MASTER_HOST=host
+    # SPARK_MASTER_PORT=port
+    # 之前的这两条注释掉
+    SPARK_MASTER_WEBUI_PORT=8989 # 原因是可能核 zookeeper 端口冲突
+    export SPARK_DAEMON_JAVA_OPTS="
+    -Dspark.deploy.recoveryMode=ZOOKEEPER
+    -Dspark.deploy.zookeeper.url=host1,host2,host3
+    -Dspark.deploy.zookeeper.dir=/dir"
+    ```
+
+- 然后在要配置备用的 Master 节点单独启动 master
+
+### 2.5 YARN
+
+- yarn-site.xml
+
+    ```xml
+    <property>
+        <name>yarn.modemanager.pmem-check-enabled</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.vmem-check-enabled</name>
+        <value>false</value>
+    </property>
+    ```
+
+- spark-env
+
+    ```shell
+    export JAVA_HOME=XXX
+    YARN_CONF_DIR=/apps/modules/hadoop-3.3.1/etc/hadoop/
+    ```
+
+- history 在 spark-default 中
+
+    ```shell
+    spark.yarn.historyServer.address=host:port
+    spark.history.ui.port=port
+    ```
+
+### 2.6 K8S & Mesos
+
