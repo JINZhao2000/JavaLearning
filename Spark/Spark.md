@@ -185,3 +185,45 @@ bin/spark-submit \
 
 ### 2.6 K8S & Mesos
 
+## 3. Spark 运行架构
+
+### 3.1 运行架构
+
+master-slave
+
+- Driver Program
+    - SparkContext
+- Worker Node
+    - Executor
+        - Cache
+        - Task
+- Cluster Manager
+
+### 3.2 核心组件
+
+- Driver
+
+    Spark 驱动器节点，用于执行 Spark 任务中的 main 方法，负责实际代码的执行工作
+
+    - 将用户程序转化为 Job
+    - 在 Executor 之间调度 Task
+    - 跟踪 Executor 执行情况
+    - 通过 UI 展示查询运行的情况
+
+- Executor
+
+    是集群 Worker 中的一个 JVM 进程，负责在 Spark 作业中运行具体的任务，任务彼此之间相互独立，Spark 启动时，Executor 节点被同时启动，并始终伴随整个 Spark 应用的生命周期而存在，如果有 Executor 节点 down 时，Spark 应用也可以继续执行，会将出错的节点上的任务调度到其它 Executor 节点上继续执行
+
+    两个核心功能
+
+    - 运行 Spark 的 Task 并将结果返回给 Driver
+    - 通过自身的 Block Manager 为用户程序中要求缓存的 RDD 提供内存式存储，RDD 是直接缓存在 Executor 进程内的，因此任务可以在运行时充分利用缓存数据加速运算
+
+- Master & Worker
+
+    在独立部署的时候，不依赖其它的资源调度框架，自身通过 Master 和 Worker 实现调度（类似于 YARN 的 RM 和 NM）
+
+- ApplicationMaster
+
+    Hadoop 用户向 YARN 集群提交应用程序时，需要包含 ApplicationMaster，用于向资源调度器申请执行任务的 Container 来运行 Job，来监控任务执行，跟踪任务状态
+
