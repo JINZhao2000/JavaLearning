@@ -227,3 +227,40 @@ master-slave
 
     Hadoop 用户向 YARN 集群提交应用程序时，需要包含 ApplicationMaster，用于向资源调度器申请执行任务的 Container 来运行 Job，来监控任务执行，跟踪任务状态
 
+### 3.3 核心概念
+
+#### 3.3.1 Executor 与 Core
+
+Spark Executor 是集群中运行在 Worker 中的一个 JVM 进程，是用于计算的节点，在提交应用中，可以提供参数指定计算的节点，以及对应的资源（指 Executor 的内存大小和是哟个的 VCORE 数量）
+
+参数：
+
+| 名称              | 作用                     |
+| ----------------- | ------------------------ |
+| --num-executors   | Executor 数量            |
+| --executor-memory | 每个 Executor 内存大小   |
+| --executors-cores | 每个 Executor vcore 数量 |
+
+#### 3.3.2 Parallelism
+
+整个集群并行执行的任务的数量成为并发度，取决于框架默认配置，可以在运行中动态修改
+
+#### 3.3.3 DAG 有向无环图
+
+### 3.4 提交流程
+
+1. 任务提交
+2. Driver 运行
+3. 向集群管理器注册应用程序
+4. Executor 启动
+5. 反向注册到 Driver
+6. （资源满足后）执行 main 函数
+7. （懒执行）执行到 action 算子
+8. （触发 job）stage 划分
+9. 创建 taskSet
+10. 将 task 分发给指定的 Executor
+
+#### 3.4.1 Yarn Client 模式
+
+#### 3.4.2 Yarn Cluster 模式
+
