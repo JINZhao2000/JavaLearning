@@ -390,3 +390,46 @@ def slice[T: ClassTag](seq: Seq[T], numSlices: Int): Seq[Seq[T]] = {
 }
 ```
 
+读取文件时，数据按照 Hadoop 文件读取的规则进行切片分区
+
+```scala
+class SparkContext(config: SparkConf) extends Logging {
+    def textFile(
+        path: String,
+        minPartitions: Int = defaultMinPartitions): RDD[String] = withScope {
+        assertNotStopped()
+        hadoopFile(path, classOf[TextInputFormat], classOf[LongWritable], classOf[Text],
+                   minPartitions).map(pair => pair._2.toString).setName(path)
+    }
+    
+    def defaultMinPartitions: Int = math.min(defaultParallelism, 2) // local[*]
+    
+    // totalSize
+    // goalSize = totalSize / 2 
+    def hadoopFile[K, V](
+        path: String,
+        inputFormatClass: Class[_ <: InputFormat[K, V]], // TextInputFormat
+        keyClass: Class[K],
+        valueClass: Class[V],
+        minPartitions: Int = defaultMinPartitions): RDD[(K, V)] = withScope {
+        assertNotStopped()
+
+        // This is a hack to enforce loading hdfs-site.xml.
+        // See SPARK-11227 for details.
+        FileSystem.getLocal(hadoopConfiguration)
+
+        // A Hadoop configuration can be about 10 KiB, which is pretty big, so broadcast it.
+        val confBroadcast = broadcast(new SerializableConfiguration(hadoopConfiguration))
+        val setInputPathsFunc = (jobConf: JobConf) => FileInputFormat.setInputPaths(jobConf, path)
+        new HadoopRDD(
+            this,
+            confBroadcast,
+            Some(setInputPathsFunc),
+            inputFormatClass,
+            keyClass,
+            valueClass,
+            minPartitions).setName(path)
+    }
+}
+```
+
