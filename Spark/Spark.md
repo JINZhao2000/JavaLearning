@@ -433,3 +433,21 @@ class SparkContext(config: SparkConf) extends Logging {
 }
 ```
 
+#### 4.1.5 RDD 转换算子
+
+RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value 类型和 Key-Value 类型
+
+- Value 类型
+
+    - map（分区内执行有序，分区间执行无序）
+
+        `def map[U: ClassTag](f: T=>U): RDD[U]` 
+
+        将数据逐条进行映射转换（类型或值）
+
+    - mapPartitions
+
+        `def mapPartitions[U : ClassTag](f: Iterator[T] => Iterator[U], preservesPartitioning: Boolean = false): RDD[U]` 
+
+        以分区为单位进行数据转换操作，但是会将整个分区数据加载到内存进行引用，处理完的是不会释放掉内存的
+
