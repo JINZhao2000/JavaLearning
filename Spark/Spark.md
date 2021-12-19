@@ -450,4 +450,42 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
         `def mapPartitions[U : ClassTag](f: Iterator[T] => Iterator[U], preservesPartitioning: Boolean = false): RDD[U]` 
 
         以分区为单位进行数据转换操作，但是会将整个分区数据加载到内存进行引用，处理完的是不会释放掉内存的
+        
+    - mapPartitionsWithIndex
+    
+        `def mapPartitionsWithIndex[U : ClassTag](f: (Int, Iterator[T]) => Iterator[U], preservesPartitioning: Boolean = false): RDD[U]` 
+    
+        将待处理的数据以分区为单位发送到计算节点进行处理（计算，合并，过滤等）
+    
+    - flatMap
+    
+        `def flatMap[U : ClassTag](f: T => TraversableOnce[U]): RDD[U]` 
+    
+        将处理的数据进行扁平化处理后，在进行映射处理（扁平映射）
+    
+    - glom
+    
+        `def glom(): RDD[Array[T]]` 
+    
+        将同一个分区的数据直接转换为相同类型的内存数据进行处理，分区不变
+    
+    区别：
+    
+    - 数据处理角度
+    
+        Map 算子是分区内一个数据一个数据德执行，类似于串行操作
+    
+        MapPartition 算子是以分区为单位，进行批处理操作
+    
+    - 功能的角度
+    
+        Map 算子主要目的是将数据源中的数据进行转换和改变，但不会减少和增多数据
+    
+        MapPartition 算子需要传递一个迭代器，返回一个迭代器，没有要求元素个数保持不变，可以增加或减少数据
+    
+    - 性能的角度
+    
+        Map 算子类似于串行操作，性能较低
+    
+        MapPartition 算子类似于批处理，所以性能较高，但是会长时间占用内存，可能导致内存溢出
 
