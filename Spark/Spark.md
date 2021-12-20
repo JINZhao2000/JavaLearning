@@ -468,6 +468,56 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
         `def glom(): RDD[Array[T]]` 
     
         将同一个分区的数据直接转换为相同类型的内存数据进行处理，分区不变
+        
+    - groupBy
+    
+        `def groupBy[K](f: T => K)(implicit kt: ClassTag[K]): RDD[(K, Iterable[T])]` 
+    
+        将数据根据指定的规则进行分组，分区默认不变，但是数据会被打乱重新组合（shuffle），极限情况下，数据可能被分在同一分区中
+    
+    - filter
+    
+        `def filter(f: T => Boolean): RDD[T]` 
+    
+        将数据根据指定的规则进行筛选过滤，符合规则的数据保留，不符合规则的数据丢弃
+    
+        当数据进行筛选过后，分区不变，但是分区内的数据可能不均衡，可能会出现数据倾斜
+    
+    - sample
+    
+        `def sample(withReplacement: Boolean, fraction: Double, seed: Long = Utils.random.nextLong): RDD[T]` 
+    
+        - withReplacement
+    
+            抽取数据不放回
+    
+            false：伯努利算法
+    
+            true：泊松分布
+    
+        - fraction
+    
+            比例
+    
+        - seed
+    
+            随机数种子
+    
+        根据指定的规则从数据集中抽取数据（可以用于数据倾斜场合）
+    
+    - distinct
+    
+        `def distinct()(implicit ord: Ordering[T] = null): RDD[T]` 
+    
+        `def distinct(numPartitions: Int)(implicit ord: Ordering[T] = null): RDD[T]` 
+    
+        去重
+    
+        实现方式
+    
+        ```scala
+        map(x => (x, null)).reduceByKey((x, _) => x, numPartitions).map(_._1)
+        ```
     
     区别：
     
