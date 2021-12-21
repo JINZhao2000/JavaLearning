@@ -542,6 +542,16 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
         }
         ```
     
+    - sortBy
+    
+        ```scala
+        def sortBy[K](
+            f: (T) => K,
+            ascending: Boolean = true,
+            numPartitions: Int = this.partitions.length)
+            (implicit ord: Ordering[K], ctag: ClassTag[K]): RDD[T]
+        ```
+    
     区别：
     
     - 数据处理角度
@@ -561,4 +571,32 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
         Map 算子类似于串行操作，性能较低
     
         MapPartition 算子类似于批处理，所以性能较高，但是会长时间占用内存，可能导致内存溢出
+    
+- 双 Value 类型
+
+    - intersection
+
+        `def intersection(other: RDD[T]): RDD[T]` 
+
+        交集
+
+    - union
+
+        `def union(other: RDD[T]): RDD[T]` 
+
+        可重复并集
+
+    - subtract
+
+        `def subtract(other: RDD[T]): RDD[T]` 
+
+        差集
+
+    - zip
+
+        `def zip[U: ClassTag](other: RDD[U]): RDD[(T, U)]` 
+
+        拉链
+
+- 
 
