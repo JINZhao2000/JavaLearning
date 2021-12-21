@@ -519,6 +519,29 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
         map(x => (x, null)).reduceByKey((x, _) => x, numPartitions).map(_._1)
         ```
     
+    - coalesce
+    
+        ```scala
+        def coalesce(numPartitions: Int, shuffle: Boolean = false,
+                     partitionCoalescer: Option[PartitionCoalescer] = Option.empty)
+                    (implicit ord: Ordering[T] = null)
+            : RDD[T]
+        ```
+    
+        根据数据量缩减分区，用于大数据集过滤后，提高小数据集的执行效率
+    
+        默认情况下不会将分区的数据打乱，可能导致数据不均衡
+    
+        扩大分区：用 shuffle = true 
+    
+    - repartition
+    
+        ```scala
+        def repartition(numPartitions: Int)(implicit ord: Ordering[T] = null): RDD[T] = withScope {
+            coalesce(numPartitions, shuffle = true)
+        }
+        ```
+    
     区别：
     
     - 数据处理角度
