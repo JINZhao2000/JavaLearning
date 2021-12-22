@@ -598,5 +598,11 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
 
         拉链
 
-- 
+- Key - Value 类型
+
+    - partitionBy（PairRDDFunctions 隐式转换 implicit）
+
+        `def partitionBy(partitioner: Partitioner): RDD[(K, V)]` 
+
+        
 
