@@ -604,5 +604,25 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
 
         `def partitionBy(partitioner: Partitioner): RDD[(K, V)]` 
 
-        
+        根据传入的 Partitioner 重新进行分区，Spark 默认分区器是 HashPartitioner
+    
+    - reduceByKey
+    
+        `def reduceByKey(func: (V, V)=>V): RDD[(K, V)]` 
+    
+        `def reduceByKey(func: (V, V)=>V, numPartitions: Int): RDD[(K, V)]` 
+    
+        将数据按照相同的 Key 对 Value 进行聚合
+    
+    - groupByKey
+    
+        `def groupByKey(): RDD[(K, Iterable[V])]` 
+    
+        `def groupByKey(partitioner: Partitioner): RDD[(K, Iterable[V])]` 
+    
+        `def groupByKey(numPartitions: Int): RDD[(K, Iterable[V])]` 
+    
+        将分区的数据直接转换为相同类型的内存数组进行后续处理
+
+
 
