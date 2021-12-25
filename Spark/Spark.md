@@ -623,6 +623,22 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
         `def groupByKey(numPartitions: Int): RDD[(K, Iterable[V])]` 
     
         将分区的数据直接转换为相同类型的内存数组进行后续处理
-
-
-
+    
+        和 `reduceByKey` 区别
+    
+        - groupByKey 和 reduceByKey 存在 shuffle 操作
+        
+            shuffle 操作必须落盘处理（写入文件），不能再内存中等待，会导致内存溢出
+        
+        - 但是 groupByKey 会统一将数据落盘，但是 reduceByKey 会在落盘前进行分区内 combine（预聚合），减少文件 IO
+        
+        - 功能上 reduceByKey 包含分组和聚合的功能，groupByKey 只能分组，不能聚合
+        
+    - aggregateByKey
+    
+        ```scala
+        def aggregateByKey[U: ClassTag](zeroValue: U, partitioner: Partitioner)(seqOp: (U, V) => U,
+            combOp: (U, U) => U): RDD[(K, U)]
+        ```
+    
+        将数据根据不同的规则进行分区内计算和分区间计算
