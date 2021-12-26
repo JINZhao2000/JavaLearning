@@ -642,3 +642,38 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
         ```
     
         将数据根据不同的规则进行分区内计算和分区间计算
+        
+    - combineByKey
+    
+        ```scala
+        def combineByKey[C](
+            createCombiner: V => C,
+            mergeValue: (C, V) => C,
+            mergeCombiners: (C, C) => C,
+            partitioner: Partitioner,
+            mapSideCombine: Boolean = true,
+            serializer: Serializer = null): RDD[(K, C)]
+        ```
+    
+        - 第一个参数是第一次遇到一个 key 后的转换
+        - 第二个参数是分区内操作
+        - 第三个参数是分区间操作
+    
+        4 个方法的最终使用同一个方法
+    
+        ```scala
+        def combineByKeyWithClassTag[C](
+              createCombiner: V => C,
+              mergeValue: (C, V) => C,
+              mergeCombiners: (C, C) => C,
+              partitioner: Partitioner,
+              mapSideCombine: Boolean = true,
+              serializer: Serializer = null)(implicit ct: ClassTag[C]): RDD[(K, C)]
+        ```
+    
+    - join
+    
+        `def join[W](other: RDD[(K, W)], partitioner: Partitioner): RDD[(K, (V, W))]` 
+    
+        在类型为（K，V）和（K，W）的 RDD 上调用，返回一个相同 key 对应的所有元素连接在一起的（K，（V，W））的 RDD
+
