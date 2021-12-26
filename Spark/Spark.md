@@ -676,4 +676,26 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
         `def join[W](other: RDD[(K, W)], partitioner: Partitioner): RDD[(K, (V, W))]` 
     
         在类型为（K，V）和（K，W）的 RDD 上调用，返回一个相同 key 对应的所有元素连接在一起的（K，（V，W））的 RDD
+    
+    - leftOuterJoin
+    
+        `def leftOuterJoin[W](other: RDD[(K, W)], partitioner: Partitioner): RDD[(K, (V, Option[W]))]` 
+    
+        类似于 SQL 的左外连接
+    
+    - rightOuterJoin
+    
+        `def rightOuterJoin[W](other: RDD[(K, W)], partitioner: Partitioner): RDD[(K, (Option[V], W))]` 
+    
+        类似于 SQL 的右外连接
+    
+    - cogroup
+    
+        `def cogroup[W](other1: RDD[(K, W)]): RDD[(K, (Iterable[V], Iterable[W]))]` 
+    
+        在类型为（K，V）和（K，W）的 RDD 上调用，返回一个（K，（Iterable\<V\>，Iterable\<W\>））类型的 RDD
+    
+#### 4.1.6 RDD 行动算子
+
+触发整个计算执行的方法
 
