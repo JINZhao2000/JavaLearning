@@ -697,5 +697,60 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
     
 #### 4.1.6 RDD 行动算子
 
-触发整个计算执行的方法
+触发整个作业（Job）执行的方法
 
+底层代码调用的是环境对象的 `runJob` 方法
+
+底层代码中会创建 `ActiveJob` 并提交执行
+
+- reduce
+
+    `def reduce(f: (T, T) => T): T` 
+
+    聚集 RDD 中所有元素，先聚合分区内数据，再聚合分区间数据
+
+- collect
+
+    `def collect(): Array[T]` 
+
+    在驱动程序中，以数组 Array 的形式返回数据集的所有元素
+
+    将不同分区的数据按照分区顺序采集到 Driver 内存中，形成数组
+
+- count
+
+    `def count(): Long` 
+
+    返回 RDD 中元素的个数
+
+- first
+
+    `def first(): T` 
+
+    取数据元中第一个元素
+
+- take
+
+    `def take(num: Int): Array[T]` 
+
+    返回一个由 RDD 的前 n 个元素组成的数组
+
+- takeOrdered
+
+    `def takeOrdered(num: Int)(implicit ord: Ordering[T]): Array[T]` 
+
+    返回该 RDD 排序后的前 n 个元素组成的数组
+
+- aggregate
+
+    `def aggregate[U: ClassTag](zeroValue: U)(seqOp: (U, T) => U, combOp: (U, U) => U): U` 
+
+    分区的数据通过初始值和分区内的数据进行聚合，然后再和初始值进行分区间的聚合
+
+    初始值不仅会参与分区内计算，还会参与分区间计算
+
+- fold
+
+    `def fold(zeroValue: T)(op: (T, T) => T): T` 
+
+    折叠操作，aggregate 简化版操作
