@@ -754,3 +754,27 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
     `def fold(zeroValue: T)(op: (T, T) => T): T` 
 
     折叠操作，aggregate 简化版操作
+    
+- countByKey
+
+    `def countByKey(): Map[K, Long]` 
+
+    计算 key 出现的个数
+
+- countByValue
+
+    `def countByValue()(implicit ord: Ordering[T] = null): Map[T, Long]` 
+
+    计算 value 出现的个数
+
+- save 相关算子
+
+    ```scala
+    def saveAsTextFile(path: String): Unit
+    def saveAsObjectFile(path: String): Unit
+    def saveAsSequenceFile(
+          path: String,
+          codec: Option[Class[_ <: CompressionCodec]] = None): Unit
+    ```
+
+    将数据保存到不同格式的文件中
