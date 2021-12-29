@@ -772,9 +772,42 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
     ```scala
     def saveAsTextFile(path: String): Unit
     def saveAsObjectFile(path: String): Unit
+    // sequence 要求数据格式必须为 key - value 类型
     def saveAsSequenceFile(
           path: String,
           codec: Option[Class[_ <: CompressionCodec]] = None): Unit
     ```
-
+    
     将数据保存到不同格式的文件中
+    
+- foreach
+
+    ```scala
+    def foreach(f: T => Unit): Unit = withScope {
+      val cleanF = sc.clean(f)
+      sc.runJob(this, (iter: Iterator[T]) => iter.foreach(cleanF))
+    }
+    ```
+
+    分布式遍历 RDD 中每个元素，调用指定函数
+
+    闭包检测是否可序列化
+
+    ```scala
+    private[spark] def clean[F <: AnyRef](f: F, checkSerializable: Boolean = true): F = {
+        ClosureCleaner.clean(f, checkSerializable)
+        f
+    }
+    
+    private def ensureSerializable(func: AnyRef): Unit = {
+        try {
+            if (SparkEnv.get != null) {
+                SparkEnv.get.closureSerializer.newInstance().serialize(func)
+            }
+        } catch {
+            case ex: Exception => throw new SparkException("Task not serializable", ex)
+        }
+    }
+    ```
+
+#### 4.1.7 RDD 序列化
