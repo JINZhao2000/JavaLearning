@@ -825,3 +825,34 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
     Java 序列化能序列化任何类，但是是重量级序列化，Spark 2.0 开始支持另外一种 Kryo 序列化机制，Kryo 速度是 Serializable 的 10 倍。
 
     当 RDD 在 shuffle 数据的时候，简单数据类型，数组和字符串类型在 Spark 内部会使用 Kryo 来序列化
+
+#### 4.1.8 RDD 依赖关系
+
+- RDD 血缘关系
+
+    RDD 只支持粗粒度转换，即在大量记录上执行的单个操作，将创建 RDD 的一系列 Lineage（血统）记录下来，以便恢复丢失的分区。RDD 的 Lineage 会记录 RDD 的元数据信息和转换行为，当 RDD 的部分分区数据丢失时，可以根据这些信息来重新运算和恢复丢失的数据分区
+
+    ```console
+    WordCount : 
+    
+    (2) dataset/wordcount MapPartitionsRDD[1] at textFile at RDDDependency.scala:11 []
+     |  dataset/wordcount HadoopRDD[0] at textFile at RDDDependency.scala:11 []
+    
+    (2) MapPartitionsRDD[2] at flatMap at RDDDependency.scala:13 []
+     |  dataset/wordcount MapPartitionsRDD[1] at textFile at RDDDependency.scala:11 []
+     |  dataset/wordcount HadoopRDD[0] at textFile at RDDDependency.scala:11 []
+    
+    (2) MapPartitionsRDD[3] at map at RDDDependency.scala:15 []
+     |  MapPartitionsRDD[2] at flatMap at RDDDependency.scala:13 []
+     |  dataset/wordcount MapPartitionsRDD[1] at textFile at RDDDependency.scala:11 []
+     |  dataset/wordcount HadoopRDD[0] at textFile at RDDDependency.scala:11 []
+    
+    (2) ShuffledRDD[4] at reduceByKey at RDDDependency.scala:17 []
+     +-(2) MapPartitionsRDD[3] at map at RDDDependency.scala:15 []
+        |  MapPartitionsRDD[2] at flatMap at RDDDependency.scala:13 []
+        |  dataset/wordcount MapPartitionsRDD[1] at textFile at RDDDependency.scala:11 []
+        |  dataset/wordcount HadoopRDD[0] at textFile at RDDDependency.scala:11 []
+    ```
+
+    
+
