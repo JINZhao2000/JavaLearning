@@ -854,5 +854,27 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
         |  dataset/wordcount HadoopRDD[0] at textFile at RDDDependency.scala:11 []
     ```
 
-    
+- RDD 依赖关系
+
+    指的是两个相邻 RDD 之间的关系
+
+    - `org.apache.spark.OneToOneDependency` (NarrowDependency)
+
+        新的 RDD 的一个分区的数据依赖于旧的 RDD __一个__分区的数据
+
+    - `org.apache.spark.ShuffleDependency` 
+
+        新的 RDD 的一个分区的数据依赖于旧的 RDD __多个__分区的数据
+
+- RDD 窄依赖（Narrow）
+
+    窄依赖表示每一个父（上游）RDD 的 Partition 最多被子（下游）RDD 的一个 Partition 使用
+
+- RDD 宽依赖
+
+    宽依赖表示每一个父（上游）RDD 的 Partition 被多个子（下游）RDD 的 Partition 使用
+
+- RDD 阶段划分
+
+    DAG（Directed Acyclic Graph）有向无环图是由点和线组成的拓扑图形，有向，无闭环
 
