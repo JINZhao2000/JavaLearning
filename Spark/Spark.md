@@ -877,4 +877,110 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
 - RDD 阶段划分
 
     DAG（Directed Acyclic Graph）有向无环图是由点和线组成的拓扑图形，有向，无闭环
+    
+- RDD 分阶段源码
+
+    ```scala
+    private[spark] class DAGScheduler(
+        // ...
+    )extends Logging {
+        def runJob[T, U](
+            // ...
+        ): Unit = {
+            val waiter = submitJob(rdd, func, partitions, callSite, resultHandler, properties)
+            // ...
+        }
+        
+        def submitJob[T, U](
+            // ...
+        ): JobWaiter[U] = {
+            // ...
+            val waiter = new JobWaiter[U](this, jobId, partitions.size, resultHandler)
+            eventProcessLoop.post(JobSubmitted(
+                jobId, rdd, func2, partitions.toArray, callSite, waiter,
+                Utils.cloneProperties(properties)))
+            waiter
+        }
+        
+        private[scheduler] def handleJobSubmitted(
+        	// ...
+        ): Unit = {
+            var finalStage: ResultStage = null
+            try {
+                finalStage = createResultStage(finalRDD, func, partitions, jobId, callSite)
+            } catch {
+                // ...
+            }
+            // ...
+        }
+        
+        // ResultStage 只会出现一个，最后执行的阶段
+        private def createResultStage(
+            // ...
+        ): ResultStage = {
+            val (shuffleDeps, resourceProfiles) = getShuffleDependenciesAndResourceProfiles(rdd)
+            // ...
+            val parents = getOrCreateParentStages(shuffleDeps, jobId)
+            // ...
+            val stage = new ResultStage(id, rdd, func, partitions, parents, jobId,
+                                        callSite, resourceProfile.id)
+            // ...
+        }
+        
+        private[scheduler] def getShuffleDependenciesAndResourceProfiles(
+            rdd: RDD[_]): (HashSet[ShuffleDependency[_, _, _]], HashSet[ResourceProfile]) = {
+            val parents = new HashSet[ShuffleDependency[_, _, _]]
+            val resourceProfiles = new HashSet[ResourceProfile]
+            val visited = new HashSet[RDD[_]]
+            val waitingForVisit = new ListBuffer[RDD[_]]
+            waitingForVisit += rdd
+            while (waitingForVisit.nonEmpty) {
+                val toVisit = waitingForVisit.remove(0)
+                if (!visited(toVisit)) {
+                    visited += toVisit
+                    Option(toVisit.getResourceProfile).foreach(resourceProfiles += _)
+                    toVisit.dependencies.foreach {
+                        case shuffleDep: ShuffleDependency[_, _, _] =>
+                        parents += shuffleDep
+                        case dependency =>
+                        waitingForVisit.prepend(dependency.rdd)
+                    }
+                }
+            }
+            (parents, resourceProfiles)
+        }
+        
+        private def getOrCreateParentStages(shuffleDeps: HashSet[ShuffleDependency[_, _, _]],
+                                            firstJobId: Int): List[Stage] = {
+            shuffleDeps.map { shuffleDep =>
+                getOrCreateShuffleMapStage(shuffleDep, firstJobId)
+            }.toList
+        }
+        
+        // 当 RDD 中存在 shuffle 依赖时，阶段会自动增加一个
+       	// 阶段的数量 = shuffle 的数量 + 1
+        private def getOrCreateShuffleMapStage(
+            shuffleDep: ShuffleDependency[_, _, _],
+            firstJobId: Int): ShuffleMapStage = {
+            shuffleIdToMapStage.get(shuffleDep.shuffleId) match {
+                // ...
+                case None =>
+                // ...
+                createShuffleMapStage(shuffleDep, firstJobId)
+            }
+        }
+        
+        def createShuffleMapStage[K, V, C](
+            shuffleDep: ShuffleDependency[K, V, C], jobId: Int): ShuffleMapStage = {
+            // ...
+            val stage = new ShuffleMapStage(
+                id, rdd, numTasks, parents, jobId, rdd.creationSite, shuffleDep, mapOutputTracker,
+                resourceProfile.id)
+            // .
+            stage
+        }
+    }
+    ```
+
+    
 
