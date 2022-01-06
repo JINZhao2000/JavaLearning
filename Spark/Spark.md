@@ -982,5 +982,36 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
     }
     ```
 
-    
+- RDD 任务划分
+
+    RDD 任务切分中间分为：Application，Job，Stage 和 Task（每层都是 1 对 N 的关系）
+
+    - Application：初始化一个 SparkContext 即生成一个 Application
+    - Job：一个 Action 算子就会生成一个 Job
+    - Stage：Stage 等于宽依赖（ShuffleDependency）个数 + 1
+    - Task：一个 Stage 阶段中，最后一个 RDD 的分区个数就是 Task 的个数
+
+    任务执行过程
+
+    - RDD Objects
+
+        build operator DAG
+
+    - DAGScheduler
+
+        split graph into stages of tasks
+
+        submit each stage as ready
+
+    - TaskScheduler
+
+        launch tasks via cluster manager
+
+        retry failed or straggling tasks
+
+    - Worker
+
+        execute tasks
+
+        store and serve blocks
 
