@@ -1015,3 +1015,43 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
 
         store and serve blocks
 
+#### 4.1.9 RDD 持久化
+
+- RDD Cache
+
+    RDD 通过 Cache 或者 Persist 方法将前面的计算结果缓存，默认情况下会把数据以缓存在 JVM 的堆内存中，但是并不是这两个方法被调用时立即缓存，而是触发后面的 action 算子时，该 RDD 将会被被缓存在计算节点的内存中（因为不触发行动算子还没有数据）
+
+    ```scala
+    def cache(): this.type = persist()
+    def persist(): this.type = persist(StorageLevel.MEMORY_ONLY)
+    
+    @DeveloperApi
+    def fromString(s: String): StorageLevel = s match {
+        case "NONE" => NONE
+        case "DISK_ONLY" => DISK_ONLY
+        case "DISK_ONLY_2" => DISK_ONLY_2
+        case "DISK_ONLY_3" => DISK_ONLY_3
+        case "MEMORY_ONLY" => MEMORY_ONLY
+        case "MEMORY_ONLY_2" => MEMORY_ONLY_2
+        case "MEMORY_ONLY_SER" => MEMORY_ONLY_SER
+        case "MEMORY_ONLY_SER_2" => MEMORY_ONLY_SER_2
+        case "MEMORY_AND_DISK" => MEMORY_AND_DISK
+        case "MEMORY_AND_DISK_2" => MEMORY_AND_DISK_2
+        case "MEMORY_AND_DISK_SER" => MEMORY_AND_DISK_SER
+        case "MEMORY_AND_DISK_SER_2" => MEMORY_AND_DISK_SER_2
+        case "OFF_HEAP" => OFF_HEAP
+        case _ => throw new IllegalArgumentException(s"Invalid StorageLevel: $s")
+    }
+    ```
+
+    存储级别：
+
+    | 级别                | 使用的空间 | CPU 时间 | 是否在内存中 | 是否在磁盘上 | 备注                                                         |
+    | ------------------- | ---------- | -------- | ------------ | ------------ | ------------------------------------------------------------ |
+    | MEMORY_ONLY         | high       | low      | yes          | no           |                                                              |
+    | MEMORY_ONLY_SER     | low        | high     | yes          | no           |                                                              |
+    | MEMORY_AND_DISK     | high       | medium   | part         | part         | 如果数据在内存中放不下，则溢写到磁盘上                       |
+    | MEMORY_AND_DISK_SER | low        | high     | part         | part         | 如果数据在内存中放不下，则溢写到磁盘上，在内存中存放序列化后的数据 |
+    | DISK_ONLY           | low        | high     | yes          | yes          |                                                              |
+
+    缓存有可能丢失，或者存储于内存的数据由于内存不足而被剔除，RDD 的缓存容错机制保证了即使缓存丢失也能保证计算的正确执行，通过基于 RDD 的一些列转换，丢失的数据会被重算，由于 RDD 的各个 Partition 是相对独立的，因此只需要计算丢失的部分即可
