@@ -1087,3 +1087,29 @@ RDD 根据处理方式不同，将算子整体上分为 Value 类型，双 Value
         执行过程中，会切断血缘关系，重新建立新的血缘关系
 
         checkpoint 等同于改变数据源
+
+#### 4.1.10 RDD 分区器
+
+Spark 目前支持 Hash 分区和 Range 分区以及用户自定义分区，Hash 分区为当前默认分区
+
+分区器决定了 RDD 中的分区个数，RDD 中每条数据经过 Shuffle 后进入哪个分区，进而决定了 Reduce 的个数
+
+- 只有 Key-Value 类型的 RDD 才有分区器，非 Key-Value 类型的 RDD 分区的值是 None
+- 每个 RDD 的分区 ID 范围：0 ~ (numPartitions-1)，决定这个值是属于哪个分区的
+
+#### 4.1.11 RDD 文件读取与保存
+
+Spark 数据读取及数据保存可以从两个维度来做区分：文件格式以及文件系统
+
+文件格式分类：text，csv，sequence，Object
+
+文件系统分类：local，HDFS，HBase，DB
+
+```scala
+sc.textFile()
+sc.sequenceFile[(K, V)]()
+sc.objectFile[(K, V)]()
+```
+
+### 4.2 ACC
+
