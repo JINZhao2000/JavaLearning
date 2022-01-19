@@ -1111,5 +1111,13 @@ sc.sequenceFile[(K, V)]()
 sc.objectFile[(K, V)]()
 ```
 
-### 4.2 ACC
+### 4.2 ACC 累加器
+
+#### 4.2.1 实现原理
+
+累加器用来把 Executor 端变量信息聚合到 Driver 端，在 Driver 程序中定义的变量，在 Executor 端的每个 Task 都会得到这个变量的一个新的副本，每个 Task 更新这些副本的值后，传回 Driver 端进行 merge
+
+
+
+
 
