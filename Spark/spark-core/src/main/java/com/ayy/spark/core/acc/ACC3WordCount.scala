@@ -4,7 +4,6 @@ import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.collection.mutable
-import scala.jdk.Accumulator
 
 object ACC3WordCount {
   def main(args: Array[String]): Unit = {
