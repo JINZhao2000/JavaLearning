@@ -1122,3 +1122,59 @@ sc.objectFile[(K, V)]()
 #### 4.3.1 实现原理
 
 广播变量用来高效分发较大的对象，向所有节点发送一个较大的只读值，以供一个或多个 Spark 操作使用。（比如发送一个较大的只读查询表）
+
+
+
+# Spark SQL
+
+## 1. 关于 Spark SQL
+
+### 1.1 什么是 Spark SQL
+
+Spark SQL 是 Spark 用于结构化数据处理的 Spark 模块
+
+### 1.2 Spark 与 Hive
+
+Hive on Spark 与 Spark SQL
+
+- Hive on Spark 还是 Hive 的那一套，只不过将 MapReduce 部分改成了 Spark
+- Spark SQL 是 Spark 单独有的，不再受限于 Hive，兼容 Hive
+- Spark SQL 提供了两个 编程抽象：`DataFrame` `DataSet` 
+
+### 1.3 Spark SQL 特点
+
+- 易整合
+
+    无缝整合了 SQL 查询和 Spark 编程
+
+- 统一的数据访问
+
+    使用相同的方式连接不同的数据源
+
+- 兼容 Hive
+
+    在已有的仓库上直接运行 SQL 或者 HiveSQL
+
+- 标准的数据连接
+
+    通过 JDBC 或者 ODBC 来连接
+
+### 1.4 DataFrame
+
+DataFrame 是一种以 RDD 为基础的分布式数据集，类似于传统数据库中的二维表格
+
+DataFrame 与 RDD 主要区别是在于，DataFrame 带有 schema 信息，即每一列都带有名称和类型
+
+DataFrame 支持嵌套数据类型（array，struct，map）
+
+DataFrame 也是懒执行的，在性能上比 RDD 要高（查询计划通过 Spark catalyst optimizer）进行优化
+
+### 1.5 DataSet
+
+DataSet 是分布式数据集合，是 DataFrame 的一个扩展，可以使用功能性转换（map，flatMap，filter 等）
+
+- DataSet 是 DataFrame API 的一个扩展，是 SparkSQL 最新的数据抽象
+- 用户友好的 API 风格，既具有类型安全检查，也具有 DataFrame 优化查询的特性
+- 用样例类来对 DataSet 中定义数据的结构信息，样例类中每个属性的名称直接映射到 DataSet 中的字段名称（ORM ?）
+- DataSet 是强类型的，即 DataSet[T]
+- DataFrame 是 DataSet 的特例，`DataFrame = DataSet[Row]`，所以可以通过 as 方法将 DataFrame 转换为 DataSet
