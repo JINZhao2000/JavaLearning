@@ -1178,3 +1178,44 @@ DataSet 是分布式数据集合，是 DataFrame 的一个扩展，可以使用�
 - 用样例类来对 DataSet 中定义数据的结构信息，样例类中每个属性的名称直接映射到 DataSet 中的字段名称（ORM ?）
 - DataSet 是强类型的，即 DataSet[T]
 - DataFrame 是 DataSet 的特例，`DataFrame = DataSet[Row]`，所以可以通过 as 方法将 DataFrame 转换为 DataSet
+
+## 2. Spark SQL 编程
+
+### 2.1 Context
+
+Spark Core 中使用的是 SparkContext
+
+Spark SQL 提供了两个 SQL 查询起始点：SQLContext，HiveContext
+
+SparkSession 将 SQLContext 与 HiveContext 整合在一起，通过 SparkContext 完成计算
+
+### 2.2 DataFrame
+
+DataFrame API 可以不需要注册临时表或者生成 SQL 表达式，既有 transformation 操作，也有 action 操作
+
+#### 2.2.1 DataFrame 创建
+
+- 从文件读取
+
+    ```shell
+    > spark.read.
+    csv	format	jdbc	json	load	option	options	orc	parquet	schema	table	text	textFile
+    ```
+
+- 从 RDD 转换
+
+- 从 Hive 中查询返回
+
+#### 2.2.2 SQL 语法
+
+```scala
+val df = spark.read.json("xxx.json")
+// 创建临时表
+df.createOrReplaceTempView("xxx")
+val sqlDF = spark.sql("<sql>")
+// 结果展示
+sqlDF.show()
+// 创建全局表 在不同 Session 中访问  select ... from global_temp.xxx
+df,createGlobalTempView("xxx")
+```
+
