@@ -1219,3 +1219,26 @@ sqlDF.show()
 df,createGlobalTempView("xxx")
 ```
 
+#### 2.2.3 DSL 语法
+
+```scala
+val df = spark.read.json("xxx.json")
+// 打印 Schema 信息
+df.printSchema
+df.select("<field>").show()
+// 涉及到运算，每列必须用 $ 或者 ‘
+df.select($"<field>", $"<field>"+1).show()
+df.select('<field>, '<field>+1).show()
+df.select($"<field>", $"<field>"+1 as "<new_name>").show()
+df.select($"<field>", $"<field>" > 0).show()
+df.filter($"<filed>" > 0).show()
+df.groupBy("<field>").count.show
+```
+
+#### 2.2.4 RDD 转换为 DataFrame
+
+```scala
+val df = rdd.toDF("<field>");
+val rddR = df.r
+```
+
