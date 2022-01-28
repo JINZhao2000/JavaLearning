@@ -1242,3 +1242,52 @@ val df = rdd.toDF("<field>");
 val rddR = df.r
 ```
 
+### 2.3 DataSet
+
+DataSet 是具有强类型的数据集合，需要提供对应信息
+
+#### 2.3.1 创建 DataSet
+
+- 使用样例类创建 DataSet
+
+    ```scala
+    case class A(fieldA: type, fieldB: type)
+    val list = List(A(x1, y1), A(x2, y2))
+    val ds = list.toDS()
+    ds.show()
+    ```
+
+- DataFrame 创建 DataSet
+
+    ```scala
+    case class Emp(fieldA: type, fieldB: type)
+    val ds = df.as[Emp]
+    ds.show()
+    ds.toDF()
+    ```
+
+- RDD 创建
+
+    ```scala
+    val rdd = sc.makeRDD(List(Emp(x,y)))
+    val ds = rdd.toDS()
+    ds.rdd
+    ```
+
+### 2.4 RDD, DataFrame, DataSet 三者关系
+
+Spark 1.0 => RDD
+
+Spark 2.0 => DataFrame
+
+Spark 3.0 => DataSet
+
+#### 2.4.1 共性
+
+- 都是 Spark 下的分布式弹性数据集
+- 都有惰性机制，只有 Action 才会开始运算
+- 有许多共同函数
+- DataFrame 与 DataSet 都需要 `import spark.implicits` 
+- 会根据 Spark 内存自动缓存运算
+- 都有 partition 概念
+- DataFrame 与 DataSet 都可以使用模式匹配获取各个字段的值和类型
