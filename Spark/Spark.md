@@ -1291,3 +1291,17 @@ Spark 3.0 => DataSet
 - 会根据 Spark 内存自动缓存运算
 - 都有 partition 概念
 - DataFrame 与 DataSet 都可以使用模式匹配获取各个字段的值和类型
+
+#### 2.4.2 区别
+
+- RDD
+    - RDD 一般和 spark mllib 同时使用
+    - RDD 不支持 sparksql 操作
+- DataFrame
+    - 与 RDD 和 DataSet 不同，DataFrame 每一行的类型固定为 Row，每一列的值没法直接访问，只有通过解析，才能获取各个字段的值
+    - DataFrame 与 DataSet 一般不与 spark mllib 使用
+    - DataFrame 与 DataSet 均支持 SparkSQL 操作
+    - DataFrame 与 DataSet 支持一些特别方便的保存方式，比如 csv，可以带上表头
+- DataSet
+    - DataSet 与 DataFrame 拥有完全相同的成员函数，区别只是每一行的数据类型不同，DataFrame 其实就是 DataSet 的一个特例 `type DataFrame = DataSet[Row]` 
+    - DataFrame 也可以叫 DataSet[Row]，每一行类型是 Row，不解析，每一行有哪些字段，什么字段是什么类型无从得知，只能用 getAS 方法或者共性中的第七条提到的模式匹配拿出特定的字段，而 DataSet 中，每一行是什么类型是不一定的，在自定义 `case class` 之后可以自由地获得每一行信息
