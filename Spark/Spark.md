@@ -1305,3 +1305,104 @@ Spark 3.0 => DataSet
 - DataSet
     - DataSet 与 DataFrame 拥有完全相同的成员函数，区别只是每一行的数据类型不同，DataFrame 其实就是 DataSet 的一个特例 `type DataFrame = DataSet[Row]` 
     - DataFrame 也可以叫 DataSet[Row]，每一行类型是 Row，不解析，每一行有哪些字段，什么字段是什么类型无从得知，只能用 getAS 方法或者共性中的第七条提到的模式匹配拿出特定的字段，而 DataSet 中，每一行是什么类型是不一定的，在自定义 `case class` 之后可以自由地获得每一行信息
+
+### 2.5 UDF
+
+通过 spark.udf 功能添加用户自定义函数，实现自定义功能
+
+### 2.6 UDAF
+
+通过继承 Aggregator 来定义强类型聚合函数
+
+### 2.7 数据加载和保存
+
+SparkSQL 提供了通用的保存数据和加载数据的方式，使用相同的 API，根据不同的参数读取和保存不同格式的数据，默认保存和读取的文件格式为 parquet
+
+```scala
+spark.read.format("")[.option("")].load("")
+// format : csv, jdbc, json, orc, parquet, textFile
+df.write.save/csv/jdbc/json/orc/parquet/textFile
+// option . SaveMode
+// ErrorIfExist | Append | Overwrite | Ignore
+```
+
+#### 2.7.1 Parquet
+
+Parquet 是一种能够有效存储嵌套式数据的列式存储格式
+
+`spark.sql.sources.default` 可以修改默认数据源格式
+
+#### 2.7.2 JSON
+
+Spark SQL 可以自动推测 JSON 数据集结构，并将它加载为一个 DataSet[Row]
+
+### 2.7.3 CSV
+
+读取 CSV 文件，CSV 第一行设置为数据列
+
+```scala
+spark.read.format("csv").option("sep", ",").option("inferSchema", "true").option("header", "true").load("")
+```
+
+### 2.7.4 MySQL
+
+```scala
+val df = spark.read.format("jdbc")
+	.option("url", "jdbc:mysql://host:3306/db")
+	.option("driver", "com.mysql.cj.jdbc.Driver")
+	.option("user", "")
+	.option("password", "")
+	.option("dbtable", "table")
+	.load()
+
+spark.write.format("jdbc")
+	.option("url", "jdbc:mysql://host:3306/db")
+	.option("driver", "com.mysql.cj.jdbc.Driver")
+	.option("user", "")
+	.option("password", "")
+	.option("dbtable", "table2")
+	.mode(SaveMode.Append)
+	.s()
+```
+
+#### 2.7.5 Hive
+
+内置 Hive
+
+```scala
+// 会自动初始化 metadata
+spark.sql("show tables;").show()
+spark.sql("load data local inpath '' into table xxx")
+```
+
+ 外部 Hive
+
+- shell
+
+    1. 把 `hive-site.xml` 文件放到 spark 的 conf/ 下
+    2. 把 MySQL 驱动 放到 jars/ 下
+    3. 如果访问不到 HDFS，需要把 `core-site.xml` 和 `hdfs-site.xml` 放到 conf/ 下
+
+- code
+
+    ```scala
+    val spark = SparkSession.builder().enableHiveSupport().config(sparkConf).getOrCreate()
+    ```
+
+- beeline
+
+    1. 按 shell 操作
+
+    2. 启动 thrift server
+
+        ```bash
+        sbin/start-thriftserver.sh
+        ```
+
+    3. beeline 连接
+
+        ```bash
+        bin/beeline -u jdbc:hive2://host:port -n u
+        ```
+
+        
