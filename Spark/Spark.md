@@ -1405,4 +1405,46 @@ spark.sql("load data local inpath '' into table xxx")
         bin/beeline -u jdbc:hive2://host:port -n u
         ```
 
-        
+
+# Spark Streaming
+
+## 1. Spark Streaming 简介
+
+准实时，微批次处理
+
+### 1.1 结构
+
+支持数据源：Kafka，Flume，Twitter，ZeroMQ，HDFS/S3，Kinesis 和简单的 TCP 套接字等
+
+使用离散化流（discretized stream）作为抽象，为 DStream
+
+DStream 是随时间推移而收到的数据的序列
+
+美国和时间区间收到的数据作为 RDD 存在，而 DStream 正是由这些 RDD 所组成的序列
+
+### 1.2 特点
+
+易用，容错，易整合（老三样了）
+
+### 1.3 架构
+
+Spark Streaming Driver
+
+- Receiver Tracker
+- Job Generator
+- Job Scheduler
+
+Spark Driver
+
+- Spark Context
+
+Executor
+
+- Receiver
+- Block Manager
+
+### 1.3.1 背压机制（Spark Streaming Backpressure）
+
+根据 JobScheduler 反馈作业的执行信息来动态调整 Receiver 数据接收率
+
+通过属性 `spark.streaming.backpressure.enabled` 来控制是否启用，默认为 false
