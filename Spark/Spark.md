@@ -1448,3 +1448,50 @@ Executor
 根据 JobScheduler 反馈作业的执行信息来动态调整 Receiver 数据接收率
 
 通过属性 `spark.streaming.backpressure.enabled` 来控制是否启用，默认为 false
+
+## 2. DStream 创建
+
+### 2.1 RDD 队列
+
+使用 `ssc.queueStream(queueOfRDDs)` 来创建 DStream，每一个推送到这个队列中的 RDD 都会作为一个 DStream 处理
+
+### 2.2 自定义数据源
+
+需要继承 Receiver，并实现 `onStart()` 和 `onStop()` 来自定义数据源采集
+
+### 2.3 Kafka 数据源
+
+//TODO
+
+## 3. DStream 转换
+
+DStream 分为 Transformations（转换）和 Output Operations（输出）两种；此外转换操作中有一些比较特殊的原语，比如 `updateStateByKey()`，`transform()` 以及各种 Windows 相关的原语
+
+### 3.1 无状态转化操作
+
+即把简单的 RDD 转化操作应用到每个批次上，即转化 DStream 中每一个 RDD
+
+针对 K-V 的 DStream 转化操作需要 `import StreamingContext._` 
+
+#### 3.1.1 Transform
+
+允许 DStream 上执行任意的 RDD-to-RDD 函数，即使这些函数并没有在 DStream 的 API 中暴露出来，通过该函数可以方便地扩展 Spark API
+
+##### 3.1.2 Join
+
+两个流之间 Join 需要两个流地批次大小一致，这样才能做到同时计算，计算过程就是对当前批次的两个流中各自的 RDD 进行 Join，与两个 RDD 的 Join 效果相同
+
+### 3.2 有状态转化操作
+
+需要设定 `checkpoint` 
+
+#### 3.2.1 UpdateStateByKey
+
+用于记录历史记录，来跨批次维护状态
+
+#### 3.2.2 WindowOperation
+
+设置窗口的大小和滑动窗口的间隔来动态地获取当前 Streaming 地允许状态
+
+- 窗口时长：计算内容的时间范围
+- 滑动步长：隔多久触发一次计算
