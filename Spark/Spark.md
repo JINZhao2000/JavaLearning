@@ -1495,3 +1495,19 @@ DStream 分为 Transformations（转换）和 Output Operations（输出）两�
 
 - 窗口时长：计算内容的时间范围
 - 滑动步长：隔多久触发一次计算
+
+这两者都必须为采集周期大小的整数倍
+
+```scala
+// 基于对源 DStream 窗口的批次进行计算，返回一个新的 DStream
+window(windowLength, slideInterval)
+// 返回一个滑动窗口计数流中的元素个数
+countByWindow(windowLength, slideInterval)
+// 通过使用自定义函数整合滑动区间流元素来创建一个新的单元素流
+reduceByWindow(func, windowLength, slideInterval)
+// 当在一个 (K, V) 对的 DStream 上调用此函数，会返回一个新 (K,V) 对的 DStream，此处通过对滑动窗口中批次数据使用 reduce 函数来整合每个 key 的 value 值
+reduceByKeyAndWindow(func, windowLength, slideInterval, [numTasks])
+// han'shu
+reduceByKeyAndWindow(func, invFunc, windowLength, slideInterval, [numTasks])
+```
+
