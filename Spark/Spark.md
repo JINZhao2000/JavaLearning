@@ -1511,3 +1511,22 @@ reduceByKeyAndWindow(func, windowLength, slideInterval, [numTasks])
 reduceByKeyAndWindow(func, invFunc, windowLength, slideInterval, [numTasks])
 ```
 
+## 4. DStream 输出
+
+如果 StreamingContext 中没有设定输出来操作，整个 context 不会启动
+
+> print()
+>
+> saveAsTextFiles(prefix, [suffix])
+>
+> saveAsObjectFiles(prefix, [suffix])
+>
+> saveAsHadoopFiles(prefix, [suffix])
+>
+> foreachRDD(func)
+
+注意：
+
+1. 连接不能写在 Driver 层面（序列化）
+2. 如果写在 foreach 则每个 RDD 中的每一条数据都创建，得不偿失
+3. 增加 foreachPartition，在分区创建（获取）
