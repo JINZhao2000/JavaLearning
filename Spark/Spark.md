@@ -1530,3 +1530,27 @@ reduceByKeyAndWindow(func, invFunc, windowLength, slideInterval, [numTasks])
 1. 连接不能写在 Driver 层面（序列化）
 2. 如果写在 foreach 则每个 RDD 中的每一条数据都创建，得不偿失
 3. 增加 foreachPartition，在分区创建（获取）
+
+## 5. 优雅关闭
+
+相对应的概念是强制关闭，例如 `thread.stop()` 
+
+需要创建新线程，在新线程中进行优雅关闭
+
+尽量依赖第三方的标识，例如 MySQL，Redis，ZooKeeper，HDFS
+
+```scala
+ssc.getState() // == StreamingContextState.ACTIVE
+ssc.stop(true, true) // stopSparkContext, stopGracefully
+```
+
+同时也可以从检查点恢复数据
+
+```scala
+val ssc = StreamingContext.getActiveOrCreate("checkpointpath", ()=>{
+    val sparkConf = ...
+    val ssc = new StreamingContext(...)
+    ssc
+})
+```
+
