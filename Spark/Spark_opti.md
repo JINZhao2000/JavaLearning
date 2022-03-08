@@ -51,3 +51,23 @@
 - Other 内存 = 自定义数据结构 * 每个 executor 核数 （用户自定义数据结构， Spark 内部元数据）
 - Storage 内存 = 广播变量 + cache/Executor 数量
 - Executor 内存 = 每个 Executor 核数 * （数据集大小  /  并行度）（Shuffle, Join, Group）
+
+#### 1.1.3 调整内存资源
+
+spark.memory.fraction = (估算 storage 内存 + 估算 Execution 内存) / (估算 storage 内存 + 估算 Execution 内存 + 估算 Other 内存)
+
+spark.memory.storageFraction = (估算 storage 内存) / (估算 storage 内存 + 估算 Execution 内存)
+
+### 2.1 持久化和序列化
+
+#### 2.1.1 RDD
+
+kryo 序列化
+
+```scala
+set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+```
+
+#### 2.1.2 DataFrame 和 DataSet
+
+默认为 MEMORY_AND_DISK，可以通过使用 MEMORY_AND_DISK_SER 来序列化，不过区别不大
